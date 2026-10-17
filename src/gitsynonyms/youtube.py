@@ -135,18 +135,23 @@ def _run_yt_dlp(arguments: Sequence[str]) -> subprocess.CompletedProcess:
     executable = shutil.which("yt-dlp")
     if not executable:
         raise RuntimeError("yt-dlp is required for organized YouTube subtitle exports.")
-    try:
-        return subprocess.run(
-            [executable, *arguments],
-            check=True,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-        )
-    except subprocess.CalledProcessError as error:
-        details = (error.stderr or error.stdout or str(error)).strip()
-        raise RuntimeError(f"yt-dlp failed: {details}") from error
+    failures = []
+    for client in ("default", "ios", "android", "tv_embedded", "mweb"):
+        command = [executable, *arguments]
+        if client != "default":
+            command[1:1] = ["--extractor-args", f"youtube:player_client={client}"]
+        try:
+            return subprocess.run(
+                command,
+                check=True,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+        except subprocess.CalledProcessError as error:
+            failures.append((error.stderr or error.stdout or str(error)).strip())
+    raise RuntimeError("yt-dlp failed for all player clients:\n" + "\n---\n".join(failures))
 
 
 def _download_yt_dlp_track(
