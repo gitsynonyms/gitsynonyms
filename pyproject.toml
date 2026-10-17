@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gitsynonyms"
+version = "0.2.0"
+description = "Dictionary-style lookup for common Git command synonyms and aliases, plus quick YouTube subtitle helpers"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "Copilot" }]
+license = { text = "MIT" }
+keywords = ["git", "cli", "alias", "synonyms", "youtube", "subtitle"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+dependencies = [
+  "youtube-transcript-api>=0.6.2",
+  "deep-translator>=1.11.4,<2.0",
+]
+
+[project.scripts]
+gitsynonyms = "gitsynonyms.cli:main"
+gitsynonyms-youtube = "gitsynonyms.youtube:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
