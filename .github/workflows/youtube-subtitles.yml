@@ -1,0 +1,49 @@
+name: Download YouTube subtitles
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: YouTube video URL or ID
+        required: true
+        type: string
+        default: https://www.youtube.com/watch?v=IySF_8OArvw
+      event:
+        description: Optional event title override
+        required: false
+        type: string
+      date:
+        description: Optional folder date override (YYYY-MM-DD)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  subtitles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install subtitle tools
+        run: python -m pip install .
+      - name: Download and organize subtitle tracks
+        env:
+          YOUTUBE_URL: ${{ inputs.url }}
+          EVENT_TITLE: ${{ inputs.event }}
+          EVENT_DATE: ${{ inputs.date }}
+        run: |
+          args=(--url "$YOUTUBE_URL" --output-dir output)
+          if [[ -n "$EVENT_TITLE" ]]; then args+=(--event "$EVENT_TITLE"); fi
+          if [[ -n "$EVENT_DATE" ]]; then args+=(--date "$EVENT_DATE"); fi
+          gitsynonyms-youtube-archive "${args[@]}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: youtube-subtitles
+          path: output/
+          if-no-files-found: error
+          retention-days: 30

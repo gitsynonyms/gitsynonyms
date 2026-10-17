@@ -37,3 +37,13 @@ gitsynonyms-youtube --url "https://www.youtube.com/watch?v=IySF_8OArvw" --output
 ```
 
 This fetches the English transcript, translates each line to Chinese, and writes a bilingual SRT where Chinese is on top and English is underneath.
+
+## Organized YouTube subtitle archive
+
+```powershell
+gitsynonyms-youtube-archive --url "https://www.youtube.com/watch?v=IySF_8OArvw"
+```
+
+The command creates `output/YYYY-MM-DD_event-title_VIDEO-ID/` with separate English, Chinese, and bilingual SRT files. Filenames label the source as `manual`, `auto-generated`, or `auto-translated`; a YouTube transcript marked as manual is not independently verified as proofread. If no Chinese subtitle or YouTube auto-translation is available, the command reports an error rather than writing incorrect content. Use `--event`, `--date`, or `--output-dir` to override the folder metadata or archive location.
+
+The organized archive command uses `yt-dlp` to list and download YouTube manual/automatic caption tracks, including YouTube-generated translations such as `zh-Hans`.

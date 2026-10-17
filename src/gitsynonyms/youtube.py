@@ -1,16 +1,25 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
+import shutil
+import subprocess
 import time
-from datetime import timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Iterable, List, Sequence
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlencode, urlparse
+from urllib.request import urlopen
 
 from deep_translator import GoogleTranslator
 from deep_translator.exceptions import TooManyRequests
 from youtube_transcript_api import YouTubeTranscriptApi
+
+
+class SubtitleTranslationError(RuntimeError):
+    pass
 
 
 def extract_video_id(url: str) -> str:
@@ -41,6 +50,216 @@ def _format_timestamp(seconds: float) -> str:
     hours, remainder = divmod(int(td.total_seconds()), 3600)
     minutes, secs = divmod(remainder, 60)
     return f"{hours:02d}:{minutes:02d}:{secs:02d},{total_ms:03d}"
+
+
+def build_srt(entries: Sequence[dict], *, chinese: Sequence[str] | None = None) -> str:
+    if chinese is not None and len(chinese) != len(entries):
+        raise ValueError("English and Chinese subtitle entries must have matching counts.")
+    lines: List[str] = []
+    for index, entry in enumerate(entries, start=1):
+        start = float(entry.get("start", 0.0))
+        duration = float(entry.get("duration", 0.0))
+        text = str(entry.get("text", "")).strip()
+        lines.append(str(index))
+        lines.append(f"{_format_timestamp(start)} --> {_format_timestamp(start + duration)}")
+        if chinese is not None:
+            lines.append(str(chinese[index - 1]).strip())
+        lines.append(text)
+        lines.append("")
+    return "\n".join(lines).strip() + "\n"
+
+
+def _fetch_title(video_id: str) -> str:
+    url = "https://www.youtube.com/oembed?" + urlencode(
+        {"url": f"https://www.youtube.com/watch?v={video_id}", "format": "json"}
+    )
+    with urlopen(url, timeout=15) as response:
+        return str(json.load(response)["title"])
+
+
+def _event_date(title: str) -> str:
+    for fmt in ("%b. %d, %Y", "%b %d, %Y", "%B %d, %Y"):
+        match = re.search(r"([A-Z][a-z]{2,8}\.? \d{1,2}, \d{4})", title)
+        if match:
+            try:
+                return datetime.strptime(match.group(1), fmt).date().isoformat()
+            except ValueError:
+                continue
+    return date.today().isoformat()
+
+
+def _safe_slug(text: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:80] or "youtube-video"
+
+
+def _transcript_entries(transcript) -> List[dict]:
+    return [
+        {"start": item.start, "duration": item.duration, "text": item.text}
+        for item in transcript.fetch()
+    ]
+
+
+def _parse_srt(content: str) -> List[dict]:
+    pattern = re.compile(
+        r"\d+\s*\n(\d{2}:\d{2}:\d{2}[,.]\d{3})\s*-->\s*"
+        r"(\d{2}:\d{2}:\d{2}[,.]\d{3})[^\n]*\n(.*?)(?=\n\s*\n|\Z)",
+        re.DOTALL,
+    )
+
+    def seconds(timestamp: str) -> float:
+        hours, minutes, rest = timestamp.replace(",", ".").split(":")
+        return int(hours) * 3600 + int(minutes) * 60 + float(rest)
+
+    entries = []
+    for match in pattern.finditer(content.lstrip("\ufeff").replace("\r\n", "\n")):
+        start = seconds(match.group(1))
+        end = seconds(match.group(2))
+        text = re.sub(r"<[^>]+>", "", match.group(3)).strip()
+        entries.append({"start": start, "duration": end - start, "text": text})
+    if not entries:
+        raise ValueError("yt-dlp returned an empty or unreadable SRT file.")
+    return entries
+
+
+def _align_translations(english: Sequence[dict], translated: Sequence[dict]) -> List[str]:
+    return [
+        min(
+            translated,
+            key=lambda item: abs(float(item["start"]) - float(entry["start"])),
+        )["text"]
+        for entry in english
+    ]
+
+
+def _run_yt_dlp(arguments: Sequence[str]) -> subprocess.CompletedProcess:
+    executable = shutil.which("yt-dlp")
+    if not executable:
+        raise RuntimeError("yt-dlp is required for organized YouTube subtitle exports.")
+    try:
+        return subprocess.run(
+            [executable, *arguments],
+            check=True,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+    except subprocess.CalledProcessError as error:
+        details = (error.stderr or error.stdout or str(error)).strip()
+        raise RuntimeError(f"yt-dlp failed: {details}") from error
+
+
+def _download_yt_dlp_track(
+    video_url: str,
+    video_id: str,
+    language: str,
+    source_kind: str,
+    directory: Path,
+) -> List[dict]:
+    flag = "--write-subs" if source_kind == "manual" else "--write-auto-subs"
+    template = str(directory / "%(id)s.%(language)s.%(ext)s")
+    _run_yt_dlp(
+        [
+            "--no-warnings",
+            "--skip-download",
+            "--retries",
+            "5",
+            "--sleep-subtitles",
+            "2",
+            flag,
+            "--sub-langs",
+            language,
+            "--sub-format",
+            "srt",
+            "-o",
+            template,
+            video_url,
+        ]
+    )
+    candidates = list(directory.glob(f"{video_id}.{language}.*"))
+    if not candidates:
+        raise RuntimeError(f"yt-dlp completed but did not create a {language} subtitle file.")
+    return _parse_srt(candidates[0].read_text(encoding="utf-8-sig"))
+
+
+def save_youtube_archive(
+    video_url: str,
+    output_dir: str | Path = "output",
+    *,
+    event: str | None = None,
+    event_date: str | None = None,
+) -> Path:
+    video_id = extract_video_id(video_url)
+    metadata = json.loads(
+        _run_yt_dlp(["--no-warnings", "--skip-download", "--dump-single-json", video_url]).stdout
+    )
+    manual_tracks = metadata.get("subtitles", {})
+    automatic_tracks = metadata.get("automatic_captions", {})
+    english_code = next((code for code in ("en", "en-orig") if code in manual_tracks), None)
+    english_kind = "manual"
+    if english_code is None:
+        english_code = next((code for code in ("en", "en-orig") if code in automatic_tracks), None)
+        english_kind = "auto-generated"
+    if english_code is None:
+        raise ValueError("No English transcript is available for this video.")
+
+    chinese_code = next(
+        (code for code in ("zh-Hans", "zh-CN", "zh", "zh-Hant", "zh-TW") if code in manual_tracks),
+        None,
+    )
+    chinese_kind = "manual"
+    if chinese_code is None:
+        chinese_code = next(
+            (code for code in ("zh-Hans", "zh-CN", "zh", "zh-Hant", "zh-TW") if code in automatic_tracks),
+            None,
+        )
+        chinese_kind = (
+            "auto-translated" if chinese_code and english_code.startswith("en") else "auto-generated"
+        )
+    if chinese_code is None:
+        raise SubtitleTranslationError("YouTube does not list a Chinese subtitle track for this video.")
+
+    title = event or str(metadata.get("title") or _fetch_title(video_id))
+    upload_date = str(metadata.get("upload_date") or "")
+    default_date = (
+        datetime.strptime(upload_date, "%Y%m%d").date().isoformat()
+        if re.fullmatch(r"\d{8}", upload_date)
+        else _event_date(title)
+    )
+    folder_date = event_date or (_event_date(title) if re.search(r"[A-Z][a-z]{2,8}\.? \d{1,2}, \d{4}", title) else default_date)
+    folder = Path(output_dir) / f"{folder_date}_{_safe_slug(title)}_{video_id}"
+    folder.mkdir(parents=True, exist_ok=True)
+
+    with TemporaryDirectory(prefix="youtube-captions-") as temp:
+        temp_dir = Path(temp)
+        english = _download_yt_dlp_track(video_url, video_id, english_code, english_kind, temp_dir)
+        chinese = _download_yt_dlp_track(video_url, video_id, chinese_code, chinese_kind, temp_dir)
+
+    (folder / f"{english_kind}_English.srt").write_text(build_srt(english), encoding="utf-8-sig")
+    (folder / f"{chinese_kind}_Chinese-{chinese_code}.srt").write_text(
+        build_srt(chinese), encoding="utf-8-sig"
+    )
+    bilingual_kind = (
+        "auto-translated"
+        if chinese_kind == "auto-translated"
+        else english_kind
+        if english_kind == chinese_kind
+        else "mixed"
+    )
+    (folder / f"{bilingual_kind}_Bilingual.srt").write_text(
+        build_srt(english, chinese=_align_translations(english, chinese)),
+        encoding="utf-8-sig",
+    )
+    (folder / "INFO.txt").write_text(
+        f"Video: {title}\n"
+        f"Video ID: {video_id}\n"
+        f"Event date: {folder_date}\n"
+        f"Source: https://www.youtube.com/watch?v={video_id}\n"
+        f"English subtitle type: {english_kind} (not independently proofread)\n"
+        f"Chinese subtitle type: {chinese_kind} ({chinese_code})\n",
+        encoding="utf-8",
+    )
+    return folder
 
 
 def translate_text(text: str, *, target_lang: str = "zh-CN", translator=None) -> str:
@@ -93,6 +312,22 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     path = save_bilingual_srt(args.url, args.output, target_lang=args.lang)
     print(path)
+    return 0
+
+
+def archive_main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Save available YouTube subtitles in a date/event/video-ID folder."
+    )
+    parser.add_argument("--url", required=True, help="YouTube watch URL or video ID.")
+    parser.add_argument("--output-dir", default="output", help="Subtitle archive root directory.")
+    parser.add_argument("--event", help="Override the video title used as the event folder name.")
+    parser.add_argument("--date", help="Override folder date (YYYY-MM-DD).")
+    args = parser.parse_args(argv)
+    folder = save_youtube_archive(
+        args.url, args.output_dir, event=args.event, event_date=args.date
+    )
+    print(folder)
     return 0
 
 
