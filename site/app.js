@@ -23,7 +23,7 @@ function makeCommand(videoUrl, location) {
     return [
       `$script = Join-Path $PWD 'download_youtube_bilingual_srt.py'`,
       `Invoke-WebRequest -Uri '${SCRIPT_URL}' -OutFile $script`,
-      `& 'C:\\Users\\a2023\\anaconda3\\python.exe' $script ${quotedUrl} --languages zh-Hans,en-orig --output-dir 'D:\\MyDownload'`,
+      `python $script ${quotedUrl} --languages zh-Hans,en-orig --output-dir 'D:\\MyDownload'`,
     ].join("; ");
   }
   return `gh workflow run youtube-subtitles.yml --repo ${REPOSITORY} --ref main -f source=${quotedUrl}`;
@@ -44,7 +44,7 @@ form.addEventListener("submit", (event) => {
   if (location === "local") {
     instructionsTitle.textContent = "本地 Anaconda 运行";
     instructionsCopy.textContent =
-      "点击复制后，在 Windows PowerShell 中粘贴并运行。脚本会下载两种语言的字幕，并保存单语及双语 SRT 到 D:\\MyDownload；本地需要已安装 yt-dlp。";
+      "点击复制后，在已初始化 Anaconda 的 Anaconda Prompt（或已激活 Anaconda 环境的 PowerShell）中粘贴运行；python 将自动使用当前环境，不依赖固定的用户名或安装目录。脚本会下载两种语言的字幕，并保存单语及双语 SRT 到 D:\\MyDownload；本地需要已安装 yt-dlp。";
   } else {
     instructionsTitle.textContent = "GitHub 云端 runner 运行";
     instructionsCopy.textContent =
