@@ -265,7 +265,7 @@ def main(argv: list[str] | None = None) -> int:
         "--sleep-subtitles",
         type=int,
         default=56,
-        help="Wait before downloading the second subtitle track (default: 56 seconds).",
+        help="Wait before each subtitle track request (default: 56 seconds per track).",
     )
     args = parser.parse_args(argv)
     if args.sleep_subtitles < 0:
@@ -302,14 +302,19 @@ def main(argv: list[str] | None = None) -> int:
 
         with tempfile.TemporaryDirectory(prefix="youtube-srt-") as temp:
             temp_path = Path(temp)
-            first = download_track(
-                args.url, video_id, first_code, first_kind, temp_path, 0
-            )
             second = download_track(
                 args.url,
                 video_id,
                 second_code,
                 second_kind,
+                temp_path,
+                args.sleep_subtitles,
+            )
+            first = download_track(
+                args.url,
+                video_id,
+                first_code,
+                first_kind,
                 temp_path,
                 args.sleep_subtitles,
             )

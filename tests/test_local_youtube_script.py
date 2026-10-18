@@ -116,6 +116,8 @@ def test_download_track_matches_yt_dlp_extended_language_filename(monkeypatch, t
 
 
 def test_main_saves_both_individual_tracks_and_the_bilingual_srt(monkeypatch, tmp_path, capsys):
+    downloaded_languages = []
+
     def fake_run_yt_dlp(arguments):
         if "--dump-single-json" in arguments:
             metadata = {
@@ -129,6 +131,8 @@ def test_main_saves_both_individual_tracks_and_the_bilingual_srt(monkeypatch, tm
             return subprocess.CompletedProcess([], 0, json.dumps(metadata), "")
 
         language = arguments[arguments.index("--sub-langs") + 1]
+        wait = arguments[arguments.index("--sleep-subtitles") + 1]
+        downloaded_languages.append((language, wait))
         template = Path(arguments[arguments.index("-o") + 1])
         subtitle_path = Path(
             str(template)
@@ -149,8 +153,6 @@ def test_main_saves_both_individual_tracks_and_the_bilingual_srt(monkeypatch, tm
             "https://www.youtube.com/watch?v=IySF_8OArvw",
             "--output-dir",
             str(tmp_path),
-            "--sleep-subtitles",
-            "0",
         ]
     ) == 0
 
@@ -167,3 +169,4 @@ def test_main_saves_both_individual_tracks_and_the_bilingual_srt(monkeypatch, tm
     assert "Hello" in english.read_text(encoding="utf-8-sig")
     assert "你好" in chinese.read_text(encoding="utf-8-sig")
     assert "你好\nHello" in bilingual.read_text(encoding="utf-8-sig")
+    assert downloaded_languages == [("en-orig", "56"), ("zh-Hans", "56")]
