@@ -57,3 +57,23 @@ gitsynonyms-youtube-srt --url "https://www.youtube.com/watch?v=IySF_8OArvw"
 This prefers the automatic English original (`en-orig`) and YouTube's Simplified Chinese auto-translation (`zh-Hans`), waits 56 seconds before requesting the Chinese track, then creates an event/date/video-ID folder containing separately labeled English, Chinese, and time-aligned bilingual `.srt` files. Override track codes, wait time, output root, event title, or date with `--english`, `--chinese`, `--sleep-subtitles`, `--output-dir`, `--event`, and `--date`. It downloads subtitle files, not the video itself. Availability and access depend on YouTube and the network; no downloader can guarantee every video is accessible.
 
 The GitHub Actions workflow defaults to the latest White House channel upload. Run **Download YouTube subtitles** manually to resolve the channel's latest video in the cloud and upload its English, Chinese, and bilingual SRTs as a downloadable Actions artifact.
+
+### Local standalone script (no Python environment changes)
+
+Run with the existing Anaconda interpreter; the script itself uses only the Python standard library and the `yt-dlp` command already available on `PATH`:
+
+```powershell
+& "C:\Users\a2023\anaconda3\python.exe" .\scripts\download_youtube_bilingual_srt.py "https://www.youtube.com/watch?v=IySF_8OArvw" --languages zh-Hans,en-orig --output-dir "D:\MyDownload"
+```
+
+It downloads two selected caption tracks, waits 56 seconds before requesting the second, and saves each track as its own SRT plus a time-aligned bilingual SRT under `date_event_video-id\`. The first language passed to `--languages` appears above the second in the bilingual file. Use `yt-dlp --list-subs URL` to see the video's language codes; choose any two listed codes. Use `--output-dir`, `--event`, `--date`, and `--sleep-subtitles` to customize it. All three outputs are normalized to sequential cue numbers, `HH:MM:SS,mmm` timestamps, non-empty caption text, blank-line cue separators, UTF-8 BOM, and Windows CRLF; non-standard styling tags are removed/rejected so the result remains plain SRT.
+
+The reusable YouTube subtitle workflow skill is in `.github/skills/youtube-bilingual-srt/SKILL.md`.
+
+### GitHub Pages subtitle web app
+
+After GitHub Pages is enabled with **GitHub Actions** as the source, the web app is available at `https://gitsynonyms.github.io/gitsynonyms/`. Paste a YouTube link and a temporary fine-grained PAT scoped to this repository with `Actions: Read and write`; it dispatches the subtitle workflow, then displays download links and previews for the separate Chinese and English SRTs and the bilingual SRT. The token is held only in page memory and is not saved. Video/caption processing runs on GitHub Actions.
+
+### What can SRT format
+
+SRT carries cue numbers, start/end times, and text. Styling tags such as `<b>`, `<i>`, `<u>`, and `<font color>` are inconsistently interpreted by players and some upload validators reject them. This downloader produces plain SubRip without styling tags for broad compatibility. For styling control (colors per language, font, position, outline, speaker styling), use ASS/SSA instead of SRT.

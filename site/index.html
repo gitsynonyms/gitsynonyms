@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0b1020">
+    <title>YouTube 字幕下载器</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <p class="eyebrow">GITSYNONYMS · CLOUD CAPTIONS</p>
+        <h1>YouTube 字幕下载器</h1>
+        <p class="intro">输入 YouTube 视频链接，在云端生成中文、英文单语字幕和中英双语 SRT。</p>
+      </header>
+
+      <form id="download-form" class="panel">
+        <label for="video-url">YouTube 视频链接</label>
+        <input id="video-url" name="url" type="url" placeholder="https://www.youtube.com/watch?v=..." required>
+
+        <label for="github-token">GitHub 临时访问令牌</label>
+        <input id="github-token" name="token" type="password" autocomplete="off" spellcheck="false" required>
+        <p class="hint">
+          使用仅授权此仓库、仅含 <code>Actions: Read and write</code> 权限的 fine-grained PAT。
+          令牌只在本页面内存中用于调用 GitHub API，不会保存或发送到其他服务。
+          <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noreferrer">创建令牌</a>
+        </p>
+
+        <button id="submit-button" type="submit">获取字幕</button>
+      </form>
+
+      <section id="status" class="status" aria-live="polite" hidden></section>
+      <section id="results" class="results" aria-label="生成的字幕文件"></section>
+
+      <footer>
+        字幕由 GitHub Actions 云端 runner 获取。YouTube 可能限制自动字幕访问；失败时页面会提供运行日志链接。
+      </footer>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>
