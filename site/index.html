@@ -12,29 +12,35 @@
       <header>
         <p class="eyebrow">GITSYNONYMS · CLOUD CAPTIONS</p>
         <h1>YouTube 字幕下载器</h1>
-        <p class="intro">输入 YouTube 视频链接，在云端生成中文、英文单语字幕和中英双语 SRT。</p>
+        <p class="intro">输入视频链接，选择由 GitHub 云端 runner 或本机生成中文、英文单语字幕和中英双语 SRT。</p>
       </header>
 
       <form id="download-form" class="panel">
         <label for="video-url">YouTube 视频链接</label>
         <input id="video-url" name="url" type="url" placeholder="https://www.youtube.com/watch?v=..." required>
 
-        <label for="github-token">GitHub 临时访问令牌</label>
-        <input id="github-token" name="token" type="password" autocomplete="off" spellcheck="false" required>
-        <p class="hint">
-          使用仅授权此仓库、仅含 <code>Actions: Read and write</code> 权限的 fine-grained PAT。
-          令牌只在本页面内存中用于调用 GitHub API，不会保存或发送到其他服务。
-          <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noreferrer">创建令牌</a>
-        </p>
+        <label for="run-location">运行位置</label>
+        <select id="run-location" name="run-location">
+          <option value="runner">GitHub 云端 runner</option>
+          <option value="local">本地 Anaconda</option>
+        </select>
 
-        <button id="submit-button" type="submit">获取字幕</button>
+        <button id="submit-button" type="submit">生成运行命令</button>
       </form>
 
       <section id="status" class="status" aria-live="polite" hidden></section>
-      <section id="results" class="results" aria-label="生成的字幕文件"></section>
+      <section id="run-instructions" class="instructions" hidden>
+        <h2 id="instructions-title"></h2>
+        <p id="instructions-copy" class="hint"></p>
+        <pre id="run-command" class="command"></pre>
+        <div class="actions">
+          <button id="copy-command" type="button">复制命令</button>
+          <a id="workflow-link" class="secondary-button" target="_blank" rel="noreferrer" hidden>打开 Actions</a>
+        </div>
+      </section>
 
       <footer>
-        字幕由 GitHub Actions 云端 runner 获取。YouTube 可能限制自动字幕访问；失败时页面会提供运行日志链接。
+        页面不会要求或保存访问令牌。本地模式仅下载字幕；云端模式使用 GitHub 登录会话或 GitHub CLI 授权启动 Actions。YouTube 可能限制 runner 访问字幕。
       </footer>
     </main>
     <script src="app.js"></script>

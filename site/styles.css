@@ -63,7 +63,8 @@ label {
   font-weight: 650;
 }
 
-input {
+input,
+select {
   width: 100%;
   min-height: 48px;
   padding: 12px 14px;
@@ -99,6 +100,7 @@ a {
 
 button {
   min-height: 48px;
+  padding: 0 18px;
   border: 0;
   border-radius: 9px;
   background: #6366f1;
@@ -118,7 +120,7 @@ button:disabled {
 }
 
 .status,
-.results {
+.instructions {
   margin-top: 20px;
 }
 
@@ -137,53 +139,44 @@ button:disabled {
   color: #ffc8ce;
 }
 
-.file {
-  margin-top: 12px;
-  padding: 16px;
+.instructions {
+  padding: 20px;
   border: 1px solid #28334c;
   border-radius: 12px;
   background: #11192d;
 }
 
-.file-head {
+.instructions h2 {
+  margin: 0 0 10px;
+  font-size: 19px;
+}
+
+.command {
+  margin: 14px 0;
+  padding: 14px;
+  border: 1px solid #28334c;
+  border-radius: 9px;
+  background: #090d18;
+  color: #d9e0f2;
+  font: 12px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
 }
 
-.file-name {
-  overflow-wrap: anywhere;
-  font-weight: 650;
-}
-
-.file a {
-  flex: 0 0 auto;
-  padding: 8px 11px;
+.secondary-button {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  padding: 0 16px;
   border: 1px solid #525ca4;
   border-radius: 8px;
   text-decoration: none;
-}
-
-details {
-  margin-top: 14px;
-}
-
-summary {
-  color: #b6bfd3;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-pre {
-  max-height: 360px;
-  overflow: auto;
-  padding: 12px;
-  border-radius: 8px;
-  background: #090d18;
-  color: #d9e0f2;
-  font: 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
-  white-space: pre-wrap;
 }
 
 footer {

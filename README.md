@@ -72,7 +72,7 @@ The reusable YouTube subtitle workflow skill is in `.github/skills/youtube-bilin
 
 ### GitHub Pages subtitle web app
 
-After GitHub Pages is enabled with **GitHub Actions** as the source, the web app is available at `https://gitsynonyms.github.io/gitsynonyms/`. Paste a YouTube link and a temporary fine-grained PAT scoped to this repository with `Actions: Read and write`; it dispatches the subtitle workflow, then displays download links and previews for the separate Chinese and English SRTs and the bilingual SRT. The token is held only in page memory and is not saved. Video/caption processing runs on GitHub Actions.
+After GitHub Pages is enabled with **GitHub Actions** as the source, the web app is available at `https://gitsynonyms.github.io/gitsynonyms/`. Paste a YouTube link and choose either local Anaconda or a GitHub-hosted runner. Local mode generates a PowerShell command that downloads and runs the standalone script. Runner mode generates a `gh workflow run` command; run `gh auth login` first if needed, or open Actions and manually start the workflow. No token is pasted into or stored by the page. Cloud jobs require a GitHub account with permission to run the repository workflow.
 
 ### What can SRT format
 
