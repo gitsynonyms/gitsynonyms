@@ -40,6 +40,9 @@ def test_language_preference_is_case_insensitive():
     assert youtube_srt.classify_track(
         "en-orig", {"language": "en", "automatic_captions": {"en-orig": []}}
     ) == "auto-generated"
+    assert youtube_srt.subtitle_wait("en-orig", 56) == 0
+    assert youtube_srt.subtitle_wait("zh-Hans", 56) == 56
+    assert youtube_srt.subtitle_wait("zh-CN", 20) == 20
 
 
 def test_parser_removes_markup_and_empty_caption_lines():
@@ -98,6 +101,7 @@ def test_download_track_matches_yt_dlp_extended_language_filename(monkeypatch, t
 
     def fake_run(_args, **_kwargs):
         assert _kwargs["capture_output"] is False
+        assert "--sleep-subtitles" not in _args
         subtitle = tmp_path / "IySF_8OArvw.en.en-orig.srt"
         subtitle.write_text(
             "1\n00:00:01,000 --> 00:00:02,000\nHello\n\n", encoding="utf-8"
@@ -132,7 +136,8 @@ def test_main_saves_both_individual_tracks_and_the_bilingual_srt(monkeypatch, tm
             return subprocess.CompletedProcess([], 0, json.dumps(metadata), "")
 
         language = arguments[arguments.index("--sub-langs") + 1]
-        wait = arguments[arguments.index("--sleep-subtitles") + 1]
+        wait_index = arguments.index("--sleep-subtitles") if "--sleep-subtitles" in arguments else None
+        wait = arguments[wait_index + 1] if wait_index is not None else "0"
         downloaded_languages.append((language, wait))
         template = Path(arguments[arguments.index("-o") + 1])
         subtitle_path = Path(
@@ -172,4 +177,4 @@ def test_main_saves_both_individual_tracks_and_the_bilingual_srt(monkeypatch, tm
     assert "Hello" in english.read_text(encoding="utf-8-sig")
     assert "你好" in chinese.read_text(encoding="utf-8-sig")
     assert "你好\nHello" in bilingual.read_text(encoding="utf-8-sig")
-    assert downloaded_languages == [("en-orig", "56"), ("zh-Hans", "56")]
+    assert downloaded_languages == [("en-orig", "0"), ("zh-Hans", "56")]

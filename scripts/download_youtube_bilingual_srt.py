@@ -181,6 +181,10 @@ def classify_track(language: str, metadata: dict) -> str:
     return "auto-generated" if source_language and track_language == source_language else "auto-translated"
 
 
+def subtitle_wait(language: str, chinese_wait: int) -> int:
+    return chinese_wait if language.lower().split("-")[0] == "zh" else 0
+
+
 def run_ytdlp(
     args: Sequence[str], *, show_progress: bool = False
 ) -> subprocess.CompletedProcess:
@@ -214,8 +218,10 @@ def download_track(
         "--skip-download",
         "--retries",
         "5",
-        "--sleep-subtitles",
-        str(wait),
+    ]
+    if wait:
+        args.extend(["--sleep-subtitles", str(wait)])
+    args.extend([
         "--write-subs" if track_kind == "manual" else "--write-auto-subs",
         "--sub-langs",
         language,
@@ -226,7 +232,7 @@ def download_track(
         "-o",
         str(directory / "%(id)s.%(language)s.%(ext)s"),
         url,
-    ]
+    ])
     run_ytdlp(args, show_progress=True)
     matches = [
         path
@@ -272,7 +278,7 @@ def main(argv: list[str] | None = None) -> int:
         "--sleep-subtitles",
         type=int,
         default=56,
-        help="Wait before each subtitle track request (default: 56 seconds per track).",
+        help="Wait before requesting Chinese subtitles (default: 56 seconds; English is not delayed).",
     )
     args = parser.parse_args(argv)
     if args.sleep_subtitles < 0:
@@ -322,7 +328,7 @@ def main(argv: list[str] | None = None) -> int:
                 second_code,
                 second_kind,
                 temp_path,
-                args.sleep_subtitles,
+                subtitle_wait(second_code, args.sleep_subtitles),
             )
             print(f"Step 3/5: Downloading top track ({first_code})...", flush=True)
             first = download_track(
@@ -331,7 +337,7 @@ def main(argv: list[str] | None = None) -> int:
                 first_code,
                 first_kind,
                 temp_path,
-                args.sleep_subtitles,
+                subtitle_wait(first_code, args.sleep_subtitles),
             )
 
         print("Step 4/5: Writing separate and bilingual SRT files...", flush=True)
