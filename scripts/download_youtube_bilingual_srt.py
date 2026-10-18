@@ -4,14 +4,12 @@
 from __future__ import annotations
 
 import argparse
-import html
 import json
 import math
 import re
 import shutil
 import subprocess
 import sys
-import tempfile
 from datetime import date, datetime
 from pathlib import Path
 from typing import Sequence
@@ -51,7 +49,7 @@ def timestamp_to_seconds(value: str) -> float:
 
 
 def parse_srt(content: str) -> list[dict]:
-    normalized = content.lstrip("\ufeff").replace("\r\n", "\n").replace("\r", "\n").strip()
+    normalized = content.lstrip("\ufeff").replace("\r\n", "\n").replace("\r", "\n")
     timestamp = r"\d{2}:\d{2}:\d{2}[,.]\d{3}"
     cue_start = re.compile(
         rf"(?m)^[ \t]*(\d+)[ \t]*\n({timestamp})[ \t]*-->[ \t]*"
@@ -67,20 +65,25 @@ def parse_srt(content: str) -> list[dict]:
         end = timestamp_to_seconds(match.group(3))
         if end <= start:
             raise ValueError(f"SRT cue end must be after its start: {match.group(0).strip()!r}")
-        text = clean_caption_text(normalized[match.end() : body_end])
-        if text:
-            result.append({"start": start, "end": end, "text": text})
+        lines = normalized[match.end() : body_end].split("\n")
+        while lines and lines[0] == "":
+            lines.pop(0)
+        while lines and lines[-1] == "":
+            lines.pop()
+        text = "\n".join(lines)
+        if text.strip():
+            result.append(
+                {
+                    "start": start,
+                    "end": end,
+                    "start_timestamp": match.group(2),
+                    "end_timestamp": match.group(3),
+                    "text": text,
+                }
+            )
     if not result:
         raise ValueError("Subtitle file is empty or not valid SRT.")
     return result
-
-
-def clean_caption_text(text: str) -> str:
-    text = html.unescape(text)
-    text = re.sub(r"</?(?:b|i|u|font|c|v|lang)\b[^>]*>", "", text, flags=re.IGNORECASE)
-    text = re.sub(r"<[^>]+>", "", text)
-    lines = [re.sub(r"[ \t]+", " ", line).strip() for line in text.splitlines()]
-    return "\n".join(line for line in lines if line)
 
 
 def align_and_merge(
@@ -89,43 +92,54 @@ def align_and_merge(
 ) -> str:
     if not first or not second:
         raise ValueError("Both subtitle tracks must contain cues.")
-    blocks = []
-    for index, primary in enumerate(first, 1):
-        if primary["end"] <= primary["start"] or not primary["text"].strip():
-            raise ValueError("Cannot serialize empty or invalid subtitle cues.")
-        midpoint = (primary["start"] + primary["end"]) / 2
-        secondary = min(
-            second,
-            key=lambda cue: (
-                0
-                if cue["start"] <= midpoint <= cue["end"]
-                else min(abs(midpoint - cue["start"]), abs(midpoint - cue["end"]))
-            ),
-        )
-        start = format_timestamp(primary["start"])
-        end = format_timestamp(primary["end"])
-        top = clean_caption_text(primary["text"])
-        bottom = clean_caption_text(secondary["text"])
-        if not top or not bottom:
-            raise ValueError("Cannot serialize a bilingual cue with an empty caption.")
-        blocks.append(f"{index}\n{start} --> {end}\n{top}\n{bottom}")
-    return "\n\n".join(blocks) + "\n"
+    cues = [*first, *second]
+    if any(cue["end"] <= cue["start"] or not cue["text"].strip() for cue in cues):
+        raise ValueError("Cannot serialize empty or invalid subtitle cues.")
 
-
-def serialize_track(cues: Sequence[dict]) -> str:
-    if not cues:
-        raise ValueError("Subtitle track must contain cues.")
-    blocks = []
-    for index, cue in enumerate(cues, 1):
-        if cue["end"] <= cue["start"] or not cue["text"].strip():
-            raise ValueError("Cannot serialize empty or invalid subtitle cues.")
-        text = clean_caption_text(cue["text"])
-        if not text:
-            raise ValueError("Cannot serialize an empty subtitle cue.")
-        blocks.append(
-            f"{index}\n{format_timestamp(cue['start'])} --> "
-            f"{format_timestamp(cue['end'])}\n{text}"
+    unmatched_top = set(range(len(first)))
+    paired = []
+    for bottom in second:
+        matches = [
+            (max(0.0, min(top["end"], bottom["end"]) - max(top["start"], bottom["start"])), i)
+            for i, top in enumerate(first)
+        ]
+        overlap, top_index = max(matches, default=(0.0, -1))
+        top_text = first[top_index]["text"] if overlap > 0 else ""
+        if overlap > 0:
+            unmatched_top.discard(top_index)
+        paired.append(
+            {
+                "start": bottom["start"],
+                "end": bottom["end"],
+                "start_timestamp": bottom.get("start_timestamp"),
+                "end_timestamp": bottom.get("end_timestamp"),
+                "top": top_text,
+                "bottom": bottom["text"],
+            }
         )
+    paired.extend(
+        {
+            "start": first[i]["start"],
+            "end": first[i]["end"],
+            "start_timestamp": first[i].get("start_timestamp"),
+            "end_timestamp": first[i].get("end_timestamp"),
+            "top": first[i]["text"],
+            "bottom": "",
+        }
+        for i in unmatched_top
+        if not any(
+            first[i]["start"] < bottom["end"] and first[i]["end"] > bottom["start"]
+            for bottom in second
+        )
+    )
+    paired.sort(key=lambda cue: (cue["start"], cue["end"]))
+
+    blocks = []
+    for index, cue in enumerate(paired, 1):
+        start = (cue["start_timestamp"] or format_timestamp(cue["start"])).replace(".", ",")
+        end = (cue["end_timestamp"] or format_timestamp(cue["end"])).replace(".", ",")
+        text = "\n".join(line for line in (cue["top"], cue["bottom"]) if line)
+        blocks.append(f"{index}\n{start} --> {end}\n{text}")
     return "\n\n".join(blocks) + "\n"
 
 
@@ -152,8 +166,6 @@ def validate_srt(content: str) -> int:
             raise ValueError(f"Generated SRT cue {expected_number} has an invalid time range.")
         if not any(line.strip() for line in lines[2:]):
             raise ValueError(f"Generated SRT cue {expected_number} has no caption text.")
-        if any(re.search(r"<[^>]+>", line) for line in lines[2:]):
-            raise ValueError("Generated SRT contains non-standard styling tags.")
     return len(blocks)
 
 
@@ -208,7 +220,7 @@ def run_ytdlp(
 
 def download_track(
     url: str, video_id: str, language: str, track_kind: str, directory: Path, wait: int
-) -> list[dict]:
+) -> tuple[Path, list[dict]]:
     print(
         f"  Requesting {language} ({track_kind}); yt-dlp will wait {wait}s before the request.",
         flush=True,
@@ -218,6 +230,7 @@ def download_track(
         "--skip-download",
         "--retries",
         "5",
+        "--no-overwrites",
     ]
     if wait:
         args.extend(["--sleep-subtitles", str(wait)])
@@ -237,11 +250,12 @@ def download_track(
     matches = [
         path
         for path in directory.glob(f"{video_id}.*")
-        if path.is_file() and path.name.lower().endswith(f"{language.lower()}.srt")
+        if path.is_file() and path.name.lower().endswith(f".{language.lower()}.srt")
     ]
     if not matches:
         raise RuntimeError(f"yt-dlp did not produce the requested {language} SRT.")
-    return parse_srt(matches[0].read_text(encoding="utf-8-sig"))
+    source_path = matches[0]
+    return source_path, parse_srt(source_path.read_text(encoding="utf-8-sig"))
 
 
 def safe_name(value: str) -> str:
@@ -319,43 +333,36 @@ def main(argv: list[str] | None = None) -> int:
         folder = Path(args.output_dir) / f"{event_date}_{safe_name(title)}_{video_id}"
         folder.mkdir(parents=True, exist_ok=True)
 
-        with tempfile.TemporaryDirectory(prefix="youtube-srt-") as temp:
-            temp_path = Path(temp)
-            print(f"Step 2/5: Downloading bottom track ({second_code}) first...", flush=True)
-            second = download_track(
-                args.url,
-                video_id,
-                second_code,
-                second_kind,
-                temp_path,
-                subtitle_wait(second_code, args.sleep_subtitles),
-            )
-            print(f"Step 3/5: Downloading top track ({first_code})...", flush=True)
-            first = download_track(
-                args.url,
-                video_id,
-                first_code,
-                first_kind,
-                temp_path,
-                subtitle_wait(first_code, args.sleep_subtitles),
-            )
+        print("Step 2/5: Downloading bottom track ({}) first...".format(second_code), flush=True)
+        second_path, second = download_track(
+            args.url,
+            video_id,
+            second_code,
+            second_kind,
+            folder,
+            subtitle_wait(second_code, args.sleep_subtitles),
+        )
+        print(f"Step 3/5: Downloading top track ({first_code})...", flush=True)
+        first_path, first = download_track(
+            args.url,
+            video_id,
+            first_code,
+            first_kind,
+            folder,
+            subtitle_wait(first_code, args.sleep_subtitles),
+        )
 
-        print("Step 4/5: Writing separate and bilingual SRT files...", flush=True)
-        first_output = folder / f"{first_kind}_{safe_name(first_code)}.srt"
-        second_output = folder / f"{second_kind}_{safe_name(second_code)}.srt"
-        write_srt(first_output, serialize_track(first))
-        write_srt(second_output, serialize_track(second))
-
+        print("Step 4/5: Merging the unchanged downloaded tracks...", flush=True)
         combined_kind = f"{first_kind}+{second_kind}"
         output = folder / f"{combined_kind}_Bilingual_{first_code}-{second_code}.srt"
         write_srt(output, align_and_merge(first, second))
         print("Step 5/5: Validating generated SRT files...", flush=True)
-        for path in (first_output, second_output, output):
-            cue_count = validate_srt(path.read_text(encoding="utf-8-sig"))
-            print(f"  OK: {path.name} ({cue_count} cues)", flush=True)
+        cue_count = validate_srt(output.read_text(encoding="utf-8-sig"))
+        print(f"  OK: {output.name} ({cue_count} cues)", flush=True)
+        print("Original downloaded subtitles were left untouched:", flush=True)
+        print(first_path.resolve())
+        print(second_path.resolve())
         print("Done. Subtitle files:", flush=True)
-        print(first_output.resolve())
-        print(second_output.resolve())
         print(output.resolve())
         return 0
     except (OSError, ValueError, RuntimeError) as error:

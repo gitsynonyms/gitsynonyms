@@ -23,12 +23,53 @@ def test_parse_and_merge_srt_chinese_above_english():
     assert youtube_srt.validate_srt(result) == 1
 
 
-def test_serialize_single_track_as_strict_srt():
-    result = youtube_srt.serialize_track(
-        [{"start": 1, "end": 2, "text": "<i>Hello</i>"}]
+def test_merge_preserves_source_caption_text_verbatim():
+    chinese = youtube_srt.parse_srt(
+        "4\n00:00:01,230 --> 00:00:02,340\n  <b>Source &amp; markup</b>  \n\n"
     )
-    assert result == "1\n00:00:01,000 --> 00:00:02,000\nHello\n"
-    assert youtube_srt.validate_srt(result) == 1
+    english = youtube_srt.parse_srt(
+        "8\n00:00:01,000 --> 00:00:03,000\n <i>Source &amp; markup</i> \n\n"
+    )
+    merged = youtube_srt.align_and_merge(chinese, english)
+    assert merged == (
+        "1\n00:00:01,000 --> 00:00:03,000\n"
+        "  <b>Source &amp; markup</b>  \n"
+        " <i>Source &amp; markup</i> \n"
+    )
+
+
+def test_merge_keeps_bottom_track_cues_separate_and_uses_only_overlapping_translation():
+    chinese = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:03,000\n中文原句\n\n"
+    )
+    english = youtube_srt.parse_srt(
+        "1\n00:00:02,000 --> 00:00:04,000\nEnglish source\n\n"
+    )
+
+    merged = youtube_srt.align_and_merge(chinese, english)
+
+    assert merged == (
+        "1\n00:00:02,000 --> 00:00:04,000\n中文原句\nEnglish source\n"
+    )
+    assert youtube_srt.validate_srt(merged) == 1
+
+
+def test_merge_preserves_overlapping_english_cues_as_distinct_blocks():
+    chinese = youtube_srt.parse_srt(
+        "1\n00:00:01,840 --> 00:00:06,840\n介绍\n\n"
+        "2\n00:00:03,480 --> 00:00:10,360\n身份\n\n"
+    )
+    english = youtube_srt.parse_srt(
+        "1\n00:00:01,840 --> 00:00:06,840\nLadies and gentlemen\n\n"
+        "2\n00:00:03,480 --> 00:00:10,360\nthe United States\n\n"
+    )
+
+    merged = youtube_srt.align_and_merge(chinese, english)
+
+    assert "00:00:01,840 --> 00:00:06,840\n介绍\nLadies and gentlemen" in merged
+    assert "00:00:03,480 --> 00:00:10,360\n身份\nthe United States" in merged
+    assert merged.index("Ladies and gentlemen") < merged.index("the United States")
+    assert youtube_srt.validate_srt(merged) == 2
 
 
 def test_language_preference_is_case_insensitive():
@@ -45,11 +86,18 @@ def test_language_preference_is_case_insensitive():
     assert youtube_srt.subtitle_wait("zh-CN", 20) == 20
 
 
-def test_parser_removes_markup_and_empty_caption_lines():
+def test_subtitle_wait_only_applies_to_chinese_tracks():
+    assert youtube_srt.subtitle_wait("en", 56) == 0
+    assert youtube_srt.subtitle_wait("en-orig", 56) == 0
+    assert youtube_srt.subtitle_wait("zh-Hans", 56) == 56
+    assert youtube_srt.subtitle_wait("zh-Hant", 30) == 30
+
+
+def test_parser_preserves_original_markup_and_caption_text():
     parsed = youtube_srt.parse_srt(
-        "1\n00:00:01,000 --> 00:00:02,000\n<b>Hello</b>\n<i>world</i>\n\n"
+        "1\n00:00:01,000 --> 00:00:02,000\n<b>Hello</b>\n<i> world </i>\n\n"
     )
-    assert parsed[0]["text"] == "Hello\nworld"
+    assert parsed[0]["text"] == "<b>Hello</b>\n<i> world </i>"
 
 
 def test_parser_handles_blank_after_timestamp_without_shifting_cues():
@@ -76,13 +124,10 @@ def test_strict_validator_rejects_styling_tags_and_bad_times():
         raise AssertionError("Expected non-positive subtitle time range to fail")
 
 
-def test_strict_validator_rejects_nonstandard_markup():
-    try:
-        youtube_srt.validate_srt('1\n00:00:01,000 --> 00:00:02,000\n<b>Text</b>\n')
-    except ValueError as error:
-        assert "styling tags" in str(error)
-    else:
-        raise AssertionError("Expected styling markup to fail strict SRT validation")
+def test_validator_allows_original_caption_markup_in_merged_srt():
+    assert youtube_srt.validate_srt(
+        "1\n00:00:01,000 --> 00:00:02,000\n<b>Text</b>\n<i>翻译</i>\n"
+    ) == 1
 
 
 def test_write_srt_emits_utf8_bom_and_crlf(tmp_path):
@@ -117,11 +162,16 @@ def test_download_track_matches_yt_dlp_extended_language_filename(monkeypatch, t
         tmp_path,
         0,
     )
+    source_path, entries = entries
+    assert source_path.read_text(encoding="utf-8") == (
+        "1\n00:00:01,000 --> 00:00:02,000\nHello\n\n"
+    )
     assert entries[0]["text"] == "Hello"
 
 
-def test_main_saves_both_individual_tracks_and_the_bilingual_srt(monkeypatch, tmp_path, capsys):
+def test_main_preserves_raw_tracks_and_merges_original_caption_content(monkeypatch, tmp_path, capsys):
     downloaded_languages = []
+    original_bytes = {}
 
     def fake_run_yt_dlp(arguments, **_kwargs):
         if "--dump-single-json" in arguments:
@@ -146,11 +196,12 @@ def test_main_saves_both_individual_tracks_and_the_bilingual_srt(monkeypatch, tm
             .replace("%(language)s", language)
             .replace("%(ext)s", "srt")
         )
-        text = "Hello" if language == "en-orig" else "你好"
-        subtitle_path.write_text(
-            f"1\n00:00:01,000 --> 00:00:02,000\n{text}\n\n",
-            encoding="utf-8",
+        text = "<i>Hello &amp; welcome</i>" if language == "en-orig" else "<b>你好</b>"
+        source_content = (
+            f"1\n00:00:01,000 --> 00:00:02,000\n{text}\n\n"
         )
+        subtitle_path.write_text(source_content, encoding="utf-8")
+        original_bytes[language] = subtitle_path.read_bytes()
         return subprocess.CompletedProcess([], 0, "", "")
 
     monkeypatch.setattr(youtube_srt, "run_ytdlp", fake_run_yt_dlp)
@@ -162,19 +213,24 @@ def test_main_saves_both_individual_tracks_and_the_bilingual_srt(monkeypatch, tm
         ]
     ) == 0
 
-    output_lines = [
-        line for line in capsys.readouterr().out.splitlines() if line.endswith(".srt")
+    output_lines = capsys.readouterr().out.splitlines()
+    source_paths = [
+        Path(line)
+        for line in output_lines
+        if line.startswith(str(tmp_path)) and "IySF_8OArvw." in line
     ]
-    assert len(output_lines) == 3
-    chinese = Path(output_lines[0])
-    english = Path(output_lines[1])
-    bilingual = Path(output_lines[2])
-    assert chinese.name == "auto-translated_zh-Hans.srt"
-    assert english.name == "auto-generated_en-orig.srt"
-    assert bilingual.name == (
-        "auto-translated+auto-generated_Bilingual_zh-Hans-en-orig.srt"
-    )
-    assert "Hello" in english.read_text(encoding="utf-8-sig")
-    assert "你好" in chinese.read_text(encoding="utf-8-sig")
-    assert "你好\nHello" in bilingual.read_text(encoding="utf-8-sig")
+    bilingual_paths = [
+        Path(line)
+        for line in output_lines
+        if line.startswith(str(tmp_path)) and "_Bilingual_" in line
+    ]
+    assert len(source_paths) == 2
+    assert len(bilingual_paths) == 1
+    raw_files = {path.name.split(".")[-2]: path for path in source_paths}
+    assert raw_files["en-orig"].read_bytes() == original_bytes["en-orig"]
+    assert raw_files["zh-Hans"].read_bytes() == original_bytes["zh-Hans"]
+    bilingual = bilingual_paths[0].read_text(encoding="utf-8-sig")
+    assert "<b>你好</b>\n<i>Hello &amp; welcome</i>" in bilingual
+    assert "&amp;" in bilingual
+    assert "<i>" in bilingual
     assert downloaded_languages == [("en-orig", "0"), ("zh-Hans", "56")]

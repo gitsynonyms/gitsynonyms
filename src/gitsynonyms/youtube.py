@@ -79,6 +79,77 @@ def build_srt(entries: Sequence[dict], *, chinese: Sequence[str] | None = None) 
     return "\n".join(lines).strip() + "\n"
 
 
+def _build_synchronized_srt(top_track: Sequence[dict], bottom_track: Sequence[dict]) -> str:
+    if not top_track or not bottom_track:
+        raise ValueError("Both subtitle tracks must contain cues.")
+    cues = [
+        {
+            "start": float(cue["start"]),
+            "end": float(cue["start"]) + float(cue["duration"]),
+            "text": str(cue["text"]),
+        }
+        for cue in (*top_track, *bottom_track)
+    ]
+    if any(cue["end"] <= cue["start"] or not cue["text"].strip() for cue in cues):
+        raise ValueError("Cannot serialize empty or invalid subtitle cues.")
+
+    top = cues[: len(top_track)]
+    bottom = cues[len(top_track) :]
+    unmatched_top = set(range(len(top)))
+    paired = []
+    for bottom_cue in bottom:
+        matches = [
+            (
+                max(
+                    0.0,
+                    min(top_cue["end"], bottom_cue["end"])
+                    - max(top_cue["start"], bottom_cue["start"]),
+                ),
+                index,
+            )
+            for index, top_cue in enumerate(top)
+        ]
+        overlap, top_index = max(matches, default=(0.0, -1))
+        top_text = top[top_index]["text"] if overlap > 0 else ""
+        if overlap > 0:
+            unmatched_top.discard(top_index)
+        paired.append(
+            {
+                "start": bottom_cue["start"],
+                "end": bottom_cue["end"],
+                "top": top_text,
+                "bottom": bottom_cue["text"],
+            }
+        )
+    paired.extend(
+        {
+            "start": top[index]["start"],
+            "end": top[index]["end"],
+            "top": top[index]["text"],
+            "bottom": "",
+        }
+        for index in unmatched_top
+        if not any(
+            top[index]["start"] < bottom_cue["end"]
+            and top[index]["end"] > bottom_cue["start"]
+            for bottom_cue in bottom
+        )
+    )
+    paired.sort(key=lambda cue: (cue["start"], cue["end"]))
+    lines = []
+    for index, cue in enumerate(paired, 1):
+        text = "\n".join(value for value in (cue["top"], cue["bottom"]) if value)
+        lines.extend(
+            (
+                str(index),
+                f"{_format_timestamp(cue['start'])} --> {_format_timestamp(cue['end'])}",
+                text,
+                "",
+            )
+        )
+    return "\n".join(lines).rstrip("\n") + "\n"
+
+
 def _fetch_title(video_id: str) -> str:
     url = "https://www.youtube.com/oembed?" + urlencode(
         {"url": f"https://www.youtube.com/watch?v={video_id}", "format": "json"}
@@ -124,33 +195,11 @@ def _parse_srt(content: str) -> List[dict]:
     for match in pattern.finditer(content.lstrip("\ufeff").replace("\r\n", "\n")):
         start = seconds(match.group(1))
         end = seconds(match.group(2))
-        text = re.sub(r"<[^>]+>", "", match.group(3)).strip()
+        text = match.group(3).rstrip("\n")
         entries.append({"start": start, "duration": end - start, "text": text})
     if not entries:
         raise ValueError("yt-dlp returned an empty or unreadable SRT file.")
     return entries
-
-
-def _align_translations(english: Sequence[dict], translated: Sequence[dict]) -> List[str]:
-    if not translated:
-        raise ValueError("No translated subtitle cues were downloaded.")
-
-    def distance(entry: dict, midpoint: float) -> float:
-        start = float(entry["start"])
-        end = start + float(entry["duration"])
-        if start <= midpoint <= end:
-            return 0.0
-        return min(abs(midpoint - start), abs(midpoint - end))
-
-    return [
-        min(
-            translated,
-            key=lambda item: distance(
-                item, float(entry["start"]) + float(entry["duration"]) / 2
-            ),
-        )["text"]
-        for entry in english
-    ]
 
 
 def _run_yt_dlp(arguments: Sequence[str]) -> subprocess.CompletedProcess:
@@ -188,7 +237,7 @@ def _download_yt_dlp_track(
     source_kind: str,
     directory: Path,
     sleep_seconds: int = 56,
-) -> List[dict]:
+) -> tuple[Path, List[dict]]:
     flag = "--write-subs" if source_kind == "manual" else "--write-auto-subs"
     template = str(directory / "%(id)s.%(language)s.%(ext)s")
     _run_yt_dlp(
@@ -211,10 +260,15 @@ def _download_yt_dlp_track(
             video_url,
         ]
     )
-    candidates = list(directory.glob(f"{video_id}.{language}.*"))
+    candidates = [
+        path
+        for path in directory.glob(f"{video_id}.{language}.*")
+        if path.is_file() and path.suffix.lower() == ".srt"
+    ]
     if not candidates:
         raise RuntimeError(f"yt-dlp completed but did not create a {language} subtitle file.")
-    return _parse_srt(candidates[0].read_text(encoding="utf-8-sig"))
+    source_path = candidates[0]
+    return source_path, _parse_srt(source_path.read_text(encoding="utf-8-sig"))
 
 
 def save_youtube_archive(
@@ -276,10 +330,10 @@ def save_youtube_archive(
 
     with TemporaryDirectory(prefix="youtube-captions-") as temp:
         temp_dir = Path(temp)
-        english = _download_yt_dlp_track(
+        english_path, english = _download_yt_dlp_track(
             video_url, video_id, english_code, english_kind, temp_dir, sleep_seconds=0
         )
-        chinese = _download_yt_dlp_track(
+        chinese_path, chinese = _download_yt_dlp_track(
             video_url,
             video_id,
             chinese_code,
@@ -287,11 +341,11 @@ def save_youtube_archive(
             temp_dir,
             sleep_seconds=sleep_seconds,
         )
+        english_source = english_path.read_bytes()
+        chinese_source = chinese_path.read_bytes()
 
-    (folder / f"{english_kind}_English.srt").write_text(build_srt(english), encoding="utf-8-sig")
-    (folder / f"{chinese_kind}_Chinese-{chinese_code}.srt").write_text(
-        build_srt(chinese), encoding="utf-8-sig"
-    )
+    (folder / f"{english_kind}_English.srt").write_bytes(english_source)
+    (folder / f"{chinese_kind}_Chinese-{chinese_code}.srt").write_bytes(chinese_source)
     bilingual_kind = (
         "auto-translated"
         if chinese_kind == "auto-translated"
@@ -300,7 +354,7 @@ def save_youtube_archive(
         else "mixed"
     )
     (folder / f"{bilingual_kind}_Bilingual.srt").write_text(
-        build_srt(english, chinese=_align_translations(english, chinese)),
+        _build_synchronized_srt(chinese, english),
         encoding="utf-8-sig",
     )
     (folder / "INFO.txt").write_text(

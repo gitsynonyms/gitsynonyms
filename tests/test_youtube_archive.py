@@ -1,8 +1,15 @@
 import json
 import subprocess
+from pathlib import Path
 
 from gitsynonyms import youtube
-from gitsynonyms.youtube import _align_translations, _event_date, _parse_srt, _safe_slug, build_srt
+from gitsynonyms.youtube import (
+    _event_date,
+    _parse_srt,
+    _safe_slug,
+    _build_synchronized_srt,
+    build_srt,
+)
 
 
 def test_build_srt_places_chinese_above_english():
@@ -31,7 +38,34 @@ def test_parse_and_align_srt_entries():
     english = _parse_srt("1\n00:00:01,000 --> 00:00:02,000\nHello\n\n")
     chinese = _parse_srt("1\n00:00:01,000 --> 00:00:02,000\n你好\n\n")
     assert english[0]["text"] == "Hello"
-    assert _align_translations(english, chinese) == ["你好"]
+    assert _build_synchronized_srt(chinese, english) == (
+        "1\n00:00:01,000 --> 00:00:02,000\n你好\nHello\n"
+    )
+
+
+def test_parse_srt_keeps_caption_markup_and_spacing():
+    parsed = _parse_srt("1\n00:00:01,000 --> 00:00:02,000\n  <b>Text</b>  \n\n")
+    assert parsed[0]["text"] == "  <b>Text</b>  "
+
+
+def test_bilingual_srt_splits_at_source_cue_boundaries():
+    chinese = [{"start": 1, "duration": 2, "text": "中文"}]
+    english = [{"start": 2, "duration": 2, "text": "English"}]
+    assert _build_synchronized_srt(chinese, english) == (
+        "1\n00:00:02,000 --> 00:00:04,000\n中文\nEnglish\n"
+    )
+
+
+def test_bilingual_srt_preserves_english_rolling_cues_as_separate_blocks():
+    chinese = [{"start": 1, "duration": 4, "text": "中文"}]
+    english = [
+        {"start": 1, "duration": 3, "text": "Earlier caption"},
+        {"start": 2, "duration": 3, "text": "Latest caption"},
+    ]
+    merged = _build_synchronized_srt(chinese, english)
+    assert "00:00:01,000 --> 00:00:04,000\n中文\nEarlier caption" in merged
+    assert "00:00:02,000 --> 00:00:05,000\n中文\nLatest caption" in merged
+    assert merged.index("Earlier caption") < merged.index("Latest caption")
 
 
 def test_extract_youtube_url_variants_and_reject_unrelated_host():
@@ -51,6 +85,7 @@ def test_find_track_is_case_insensitive():
 
 def test_archive_saves_separate_labeled_files(monkeypatch, tmp_path):
     monkeypatch.setattr(youtube.shutil, "which", lambda _: "yt-dlp.exe")
+    original_tracks = {}
 
     def fake_run(arguments):
         if "--dump-single-json" in arguments:
@@ -73,6 +108,7 @@ def test_archive_saves_separate_labeled_files(monkeypatch, tmp_path):
         text = "Hello" if language == "en" else "你好"
         with open(file_path, "w", encoding="utf-8") as output:
             output.write(f"1\n00:00:00,000 --> 00:00:01,000\n{text}\n\n")
+        original_tracks[language] = Path(file_path).read_bytes()
         return subprocess.CompletedProcess([], 0, "", "")
 
     monkeypatch.setattr(youtube, "_run_yt_dlp", fake_run)
@@ -83,5 +119,6 @@ def test_archive_saves_separate_labeled_files(monkeypatch, tmp_path):
     assert folder.name == "2026-10-15_president-trump-oct-15-2026_IySF_8OArvw"
     assert (folder / "auto-generated_English.srt").is_file()
     assert (folder / "auto-translated_Chinese-zh-Hans.srt").is_file()
+    assert (folder / "auto-generated_English.srt").read_bytes() == original_tracks["en"]
     bilingual = (folder / "auto-translated_Bilingual.srt").read_text(encoding="utf-8-sig")
     assert "你好\nHello" in bilingual
