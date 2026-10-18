@@ -3,11 +3,11 @@ name: Download YouTube subtitles
 on:
   workflow_dispatch:
     inputs:
-      url:
-        description: YouTube video URL or ID
+      source:
+        description: Video URL/ID or channel videos URL for latest upload
         required: true
         type: string
-        default: https://www.youtube.com/watch?v=IySF_8OArvw
+        default: https://www.youtube.com/@WhiteHouse/videos
       event:
         description: Optional event title override
         required: false
@@ -33,15 +33,25 @@ jobs:
         run: python -m pip install .
       - name: Download and organize subtitle tracks
         env:
-          YOUTUBE_URL: ${{ inputs.url }}
+          YOUTUBE_SOURCE: ${{ inputs.source }}
           EVENT_TITLE: ${{ inputs.event }}
           EVENT_DATE: ${{ inputs.date }}
         shell: bash
         run: |
-          args=(--url "$YOUTUBE_URL" --output-dir output)
+          source="$YOUTUBE_SOURCE"
+          if [[ "$source" == *youtube.com/@*"/videos"* || "$source" == *youtube.com/channel/*"/videos"* ]]; then
+            video_id="$(yt-dlp --no-warnings --flat-playlist --playlist-end 1 --print '%(id)s' "$source" | head -n 1)"
+            if [[ -z "$video_id" ]]; then
+              echo "Could not resolve the latest channel video from: $source" >&2
+              exit 1
+            fi
+            source="https://www.youtube.com/watch?v=$video_id"
+            echo "Resolved latest channel upload: $source"
+          fi
+          args=(--url "$source" --output-dir output)
           if [[ -n "$EVENT_TITLE" ]]; then args+=(--event "$EVENT_TITLE"); fi
           if [[ -n "$EVENT_DATE" ]]; then args+=(--date "$EVENT_DATE"); fi
-          gitsynonyms-youtube-archive "${args[@]}"
+          gitsynonyms-youtube-srt "${args[@]}"
       - uses: actions/upload-artifact@v4
         with:
           name: youtube-subtitles

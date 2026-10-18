@@ -34,6 +34,21 @@ def test_parse_and_align_srt_entries():
     assert _align_translations(english, chinese) == ["你好"]
 
 
+def test_extract_youtube_url_variants_and_reject_unrelated_host():
+    assert youtube.extract_video_id("https://youtu.be/IySF_8OArvw") == "IySF_8OArvw"
+    assert youtube.extract_video_id("https://www.youtube.com/live/IySF_8OArvw") == "IySF_8OArvw"
+    try:
+        youtube.extract_video_id("https://notyoutube.com/watch?v=IySF_8OArvw")
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("Expected an unrelated host to be rejected")
+
+
+def test_find_track_is_case_insensitive():
+    assert youtube._find_track(["zh-hans"], {"zh-Hans": []}) == "zh-Hans"
+
+
 def test_archive_saves_separate_labeled_files(monkeypatch, tmp_path):
     monkeypatch.setattr(youtube.shutil, "which", lambda _: "yt-dlp.exe")
 
@@ -48,6 +63,9 @@ def test_archive_saves_separate_labeled_files(monkeypatch, tmp_path):
             }
             return subprocess.CompletedProcess([], 0, json.dumps(metadata), "")
         language = arguments[arguments.index("--sub-langs") + 1]
+        assert "--convert-subs" in arguments
+        if language == "zh-Hans":
+            assert arguments[arguments.index("--sleep-subtitles") + 1] == "56"
         template = arguments[arguments.index("-o") + 1]
         file_path = template.replace("%(id)s", "IySF_8OArvw").replace(
             "%(language)s", language
