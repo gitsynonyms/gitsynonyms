@@ -25,6 +25,8 @@ Then pass any two listed codes, for example `ja,en-orig` or `fr,de`. The first c
 
 The script saves three UTF-8-with-BOM `.srt` files below `D:\MyDownload\YYYY-MM-DD_event-video-id\`: one separate file for each requested language (named with its track type and language code) and one time-aligned bilingual file. For the default pair, the archive contains separate Chinese and English subtitles plus the Chinese-above-English bilingual SRT. It prints the paths of all three files. The script derives event date/title from YouTube metadata unless `--date` or `--event` is supplied. It waits 56 seconds before requesting the second track by default (`--sleep-subtitles` changes this). If a track is unavailable or YouTube rate-limits/blocks the request, report that clearly and do not fabricate captions.
 
+The GitHub Actions Windows runner installs Deno 2 and `yt-dlp[default]`, then explicitly enables Deno as yt-dlp's JavaScript runtime for YouTube extraction.
+
 All three outputs are strict plain SRT: sequential cue numbers, `HH:MM:SS,mmm` timing, non-empty text, standard blank-line separation, UTF-8 BOM, and CRLF line endings. It removes caption markup and validates the written files. Do not add color or other player-dependent style tags to strict SRT output.
 
 ## SRT formatting limits
