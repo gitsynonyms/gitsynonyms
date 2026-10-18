@@ -97,6 +97,7 @@ def test_download_track_matches_yt_dlp_extended_language_filename(monkeypatch, t
     monkeypatch.setattr(youtube_srt.shutil, "which", lambda _: "yt-dlp.exe")
 
     def fake_run(_args, **_kwargs):
+        assert _kwargs["capture_output"] is False
         subtitle = tmp_path / "IySF_8OArvw.en.en-orig.srt"
         subtitle.write_text(
             "1\n00:00:01,000 --> 00:00:02,000\nHello\n\n", encoding="utf-8"
@@ -118,7 +119,7 @@ def test_download_track_matches_yt_dlp_extended_language_filename(monkeypatch, t
 def test_main_saves_both_individual_tracks_and_the_bilingual_srt(monkeypatch, tmp_path, capsys):
     downloaded_languages = []
 
-    def fake_run_yt_dlp(arguments):
+    def fake_run_yt_dlp(arguments, **_kwargs):
         if "--dump-single-json" in arguments:
             metadata = {
                 "id": "IySF_8OArvw",
@@ -156,7 +157,9 @@ def test_main_saves_both_individual_tracks_and_the_bilingual_srt(monkeypatch, tm
         ]
     ) == 0
 
-    output_lines = capsys.readouterr().out.splitlines()
+    output_lines = [
+        line for line in capsys.readouterr().out.splitlines() if line.endswith(".srt")
+    ]
     assert len(output_lines) == 3
     chinese = Path(output_lines[0])
     english = Path(output_lines[1])

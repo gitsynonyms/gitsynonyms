@@ -181,7 +181,9 @@ def classify_track(language: str, metadata: dict) -> str:
     return "auto-generated" if source_language and track_language == source_language else "auto-translated"
 
 
-def run_ytdlp(args: Sequence[str]) -> subprocess.CompletedProcess:
+def run_ytdlp(
+    args: Sequence[str], *, show_progress: bool = False
+) -> subprocess.CompletedProcess:
     executable = shutil.which("yt-dlp")
     if not executable:
         raise RuntimeError("yt-dlp is not installed or is not available on PATH.")
@@ -189,19 +191,24 @@ def run_ytdlp(args: Sequence[str]) -> subprocess.CompletedProcess:
         return subprocess.run(
             [executable, *args],
             check=True,
-            capture_output=True,
+            capture_output=not show_progress,
             text=True,
             encoding="utf-8",
             errors="replace",
         )
     except subprocess.CalledProcessError as error:
         details = (error.stderr or error.stdout or str(error)).strip()
-        raise RuntimeError(f"yt-dlp failed: {details}") from error
+        message = f"yt-dlp failed: {details}" if details else f"yt-dlp exited with code {error.returncode}."
+        raise RuntimeError(message) from error
 
 
 def download_track(
     url: str, video_id: str, language: str, track_kind: str, directory: Path, wait: int
 ) -> list[dict]:
+    print(
+        f"  Requesting {language} ({track_kind}); yt-dlp will wait {wait}s before the request.",
+        flush=True,
+    )
     args = [
         "--no-warnings",
         "--skip-download",
@@ -220,7 +227,7 @@ def download_track(
         str(directory / "%(id)s.%(language)s.%(ext)s"),
         url,
     ]
-    run_ytdlp(args)
+    run_ytdlp(args, show_progress=True)
     matches = [
         path
         for path in directory.glob(f"{video_id}.*")
@@ -275,6 +282,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--languages must contain two distinct comma-separated language codes")
 
     try:
+        print("Step 1/5: Inspecting video and available subtitle tracks...", flush=True)
         video_id = video_id_from_url(args.url)
         metadata = json.loads(
             run_ytdlp(["--no-warnings", "--skip-download", "--dump-single-json", args.url]).stdout
@@ -290,6 +298,11 @@ def main(argv: list[str] | None = None) -> int:
             raise RuntimeError(f"YouTube does not list a subtitle track for language {languages[1]!r}.")
         first_kind = classify_track(first_code, metadata)
         second_kind = classify_track(second_code, metadata)
+        print(
+            f"  Video: {metadata.get('title') or video_id}\n"
+            f"  Subtitle order: {first_code} above {second_code}",
+            flush=True,
+        )
 
         title = args.event or str(metadata.get("title") or video_id)
         event_date = args.date or suggested_date(title, str(metadata.get("upload_date", "")))
@@ -302,6 +315,7 @@ def main(argv: list[str] | None = None) -> int:
 
         with tempfile.TemporaryDirectory(prefix="youtube-srt-") as temp:
             temp_path = Path(temp)
+            print(f"Step 2/5: Downloading bottom track ({second_code}) first...", flush=True)
             second = download_track(
                 args.url,
                 video_id,
@@ -310,6 +324,7 @@ def main(argv: list[str] | None = None) -> int:
                 temp_path,
                 args.sleep_subtitles,
             )
+            print(f"Step 3/5: Downloading top track ({first_code})...", flush=True)
             first = download_track(
                 args.url,
                 video_id,
@@ -319,6 +334,7 @@ def main(argv: list[str] | None = None) -> int:
                 args.sleep_subtitles,
             )
 
+        print("Step 4/5: Writing separate and bilingual SRT files...", flush=True)
         first_output = folder / f"{first_kind}_{safe_name(first_code)}.srt"
         second_output = folder / f"{second_kind}_{safe_name(second_code)}.srt"
         write_srt(first_output, serialize_track(first))
@@ -327,6 +343,11 @@ def main(argv: list[str] | None = None) -> int:
         combined_kind = f"{first_kind}+{second_kind}"
         output = folder / f"{combined_kind}_Bilingual_{first_code}-{second_code}.srt"
         write_srt(output, align_and_merge(first, second))
+        print("Step 5/5: Validating generated SRT files...", flush=True)
+        for path in (first_output, second_output, output):
+            cue_count = validate_srt(path.read_text(encoding="utf-8-sig"))
+            print(f"  OK: {path.name} ({cue_count} cues)", flush=True)
+        print("Done. Subtitle files:", flush=True)
         print(first_output.resolve())
         print(second_output.resolve())
         print(output.resolve())
