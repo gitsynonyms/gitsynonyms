@@ -48,24 +48,28 @@ def test_parse_srt_keeps_caption_markup_and_spacing():
     assert parsed[0]["text"] == "  <b>Text</b>  "
 
 
-def test_bilingual_srt_splits_at_source_cue_boundaries():
+def test_bilingual_srt_splits_cues_at_source_boundaries():
     chinese = [{"start": 1, "duration": 2, "text": "中文"}]
     english = [{"start": 2, "duration": 2, "text": "English"}]
     assert _build_synchronized_srt(chinese, english) == (
-        "1\n00:00:02,000 --> 00:00:04,000\n中文\nEnglish\n"
+        "1\n00:00:01,000 --> 00:00:02,000\n中文\n\n"
+        "2\n00:00:02,000 --> 00:00:03,000\n中文\nEnglish\n\n"
+        "3\n00:00:03,000 --> 00:00:04,000\nEnglish\n"
     )
 
 
-def test_bilingual_srt_preserves_english_rolling_cues_as_separate_blocks():
+def test_bilingual_srt_preserves_english_rolling_order_in_one_block():
     chinese = [{"start": 1, "duration": 4, "text": "中文"}]
     english = [
         {"start": 1, "duration": 3, "text": "Earlier caption"},
         {"start": 2, "duration": 3, "text": "Latest caption"},
     ]
     merged = _build_synchronized_srt(chinese, english)
-    assert "00:00:01,000 --> 00:00:04,000\n中文\nEarlier caption" in merged
-    assert "00:00:02,000 --> 00:00:05,000\n中文\nLatest caption" in merged
-    assert merged.index("Earlier caption") < merged.index("Latest caption")
+    assert (
+        "00:00:02,000 --> 00:00:04,000\n"
+        "中文\n"
+        "Earlier caption\nLatest caption"
+    ) in merged
 
 
 def test_extract_youtube_url_variants_and_reject_unrelated_host():

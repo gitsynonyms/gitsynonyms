@@ -32,13 +32,17 @@ def test_merge_preserves_source_caption_text_verbatim():
     )
     merged = youtube_srt.align_and_merge(chinese, english)
     assert merged == (
-        "1\n00:00:01,000 --> 00:00:03,000\n"
+        "1\n00:00:01,000 --> 00:00:01,230\n"
+        " <i>Source &amp; markup</i> \n\n"
+        "2\n00:00:01,230 --> 00:00:02,340\n"
         "  <b>Source &amp; markup</b>  \n"
+        " <i>Source &amp; markup</i> \n\n"
+        "3\n00:00:02,340 --> 00:00:03,000\n"
         " <i>Source &amp; markup</i> \n"
     )
 
 
-def test_merge_keeps_bottom_track_cues_separate_and_uses_only_overlapping_translation():
+def test_merge_aligns_only_overlapping_cues():
     chinese = youtube_srt.parse_srt(
         "1\n00:00:01,000 --> 00:00:03,000\n中文原句\n\n"
     )
@@ -49,12 +53,14 @@ def test_merge_keeps_bottom_track_cues_separate_and_uses_only_overlapping_transl
     merged = youtube_srt.align_and_merge(chinese, english)
 
     assert merged == (
-        "1\n00:00:02,000 --> 00:00:04,000\n中文原句\nEnglish source\n"
+        "1\n00:00:01,000 --> 00:00:02,000\n中文原句\n\n"
+        "2\n00:00:02,000 --> 00:00:03,000\n中文原句\nEnglish source\n\n"
+        "3\n00:00:03,000 --> 00:00:04,000\nEnglish source\n"
     )
-    assert youtube_srt.validate_srt(merged) == 1
+    assert youtube_srt.validate_srt(merged) == 3
 
 
-def test_merge_preserves_overlapping_english_cues_as_distinct_blocks():
+def test_merge_keeps_rolling_cues_in_source_order_in_one_block():
     chinese = youtube_srt.parse_srt(
         "1\n00:00:01,840 --> 00:00:06,840\n介绍\n\n"
         "2\n00:00:03,480 --> 00:00:10,360\n身份\n\n"
@@ -66,10 +72,13 @@ def test_merge_preserves_overlapping_english_cues_as_distinct_blocks():
 
     merged = youtube_srt.align_and_merge(chinese, english)
 
-    assert "00:00:01,840 --> 00:00:06,840\n介绍\nLadies and gentlemen" in merged
-    assert "00:00:03,480 --> 00:00:10,360\n身份\nthe United States" in merged
+    assert (
+        "00:00:03,480 --> 00:00:06,840\n"
+        "介绍\n身份\n"
+        "Ladies and gentlemen\nthe United States"
+    ) in merged
     assert merged.index("Ladies and gentlemen") < merged.index("the United States")
-    assert youtube_srt.validate_srt(merged) == 2
+    assert youtube_srt.validate_srt(merged) == 3
 
 
 def test_language_preference_is_case_insensitive():

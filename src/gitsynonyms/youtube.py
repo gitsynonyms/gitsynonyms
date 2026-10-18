@@ -95,54 +95,36 @@ def _build_synchronized_srt(top_track: Sequence[dict], bottom_track: Sequence[di
 
     top = cues[: len(top_track)]
     bottom = cues[len(top_track) :]
-    unmatched_top = set(range(len(top)))
-    paired = []
-    for bottom_cue in bottom:
-        matches = [
-            (
-                max(
-                    0.0,
-                    min(top_cue["end"], bottom_cue["end"])
-                    - max(top_cue["start"], bottom_cue["start"]),
-                ),
-                index,
+    boundaries = sorted({cue[key] for cue in cues for key in ("start", "end")})
+    segments = []
+    for start, end in zip(boundaries, boundaries[1:]):
+        active_top = sorted(
+            (cue for cue in top if cue["start"] < end and cue["end"] > start),
+            key=lambda cue: cue["start"],
+        )
+        active_bottom = sorted(
+            (cue for cue in bottom if cue["start"] < end and cue["end"] > start),
+            key=lambda cue: cue["start"],
+        )
+        top_text = "\n".join(cue["text"] for cue in active_top)
+        bottom_text = "\n".join(cue["text"] for cue in active_bottom)
+        if not top_text and not bottom_text:
+            continue
+        if segments and segments[-1]["end"] == start and (
+            segments[-1]["top"], segments[-1]["bottom"]
+        ) == (top_text, bottom_text):
+            segments[-1]["end"] = end
+        else:
+            segments.append(
+                {"start": start, "end": end, "top": top_text, "bottom": bottom_text}
             )
-            for index, top_cue in enumerate(top)
-        ]
-        overlap, top_index = max(matches, default=(0.0, -1))
-        top_text = top[top_index]["text"] if overlap > 0 else ""
-        if overlap > 0:
-            unmatched_top.discard(top_index)
-        paired.append(
-            {
-                "start": bottom_cue["start"],
-                "end": bottom_cue["end"],
-                "top": top_text,
-                "bottom": bottom_cue["text"],
-            }
-        )
-    paired.extend(
-        {
-            "start": top[index]["start"],
-            "end": top[index]["end"],
-            "top": top[index]["text"],
-            "bottom": "",
-        }
-        for index in unmatched_top
-        if not any(
-            top[index]["start"] < bottom_cue["end"]
-            and top[index]["end"] > bottom_cue["start"]
-            for bottom_cue in bottom
-        )
-    )
-    paired.sort(key=lambda cue: (cue["start"], cue["end"]))
     lines = []
-    for index, cue in enumerate(paired, 1):
-        text = "\n".join(value for value in (cue["top"], cue["bottom"]) if value)
+    for index, segment in enumerate(segments, 1):
+        text = "\n".join(value for value in (segment["top"], segment["bottom"]) if value)
         lines.extend(
             (
                 str(index),
-                f"{_format_timestamp(cue['start'])} --> {_format_timestamp(cue['end'])}",
+                f"{_format_timestamp(segment['start'])} --> {_format_timestamp(segment['end'])}",
                 text,
                 "",
             )

@@ -96,49 +96,33 @@ def align_and_merge(
     if any(cue["end"] <= cue["start"] or not cue["text"].strip() for cue in cues):
         raise ValueError("Cannot serialize empty or invalid subtitle cues.")
 
-    unmatched_top = set(range(len(first)))
-    paired = []
-    for bottom in second:
-        matches = [
-            (max(0.0, min(top["end"], bottom["end"]) - max(top["start"], bottom["start"])), i)
-            for i, top in enumerate(first)
-        ]
-        overlap, top_index = max(matches, default=(0.0, -1))
-        top_text = first[top_index]["text"] if overlap > 0 else ""
-        if overlap > 0:
-            unmatched_top.discard(top_index)
-        paired.append(
-            {
-                "start": bottom["start"],
-                "end": bottom["end"],
-                "start_timestamp": bottom.get("start_timestamp"),
-                "end_timestamp": bottom.get("end_timestamp"),
-                "top": top_text,
-                "bottom": bottom["text"],
-            }
+    boundaries = sorted({cue[key] for cue in cues for key in ("start", "end")})
+    segments = []
+    for start, end in zip(boundaries, boundaries[1:]):
+        top_cues = sorted(
+            (cue for cue in first if cue["start"] < end and cue["end"] > start),
+            key=lambda cue: cue["start"],
         )
-    paired.extend(
-        {
-            "start": first[i]["start"],
-            "end": first[i]["end"],
-            "start_timestamp": first[i].get("start_timestamp"),
-            "end_timestamp": first[i].get("end_timestamp"),
-            "top": first[i]["text"],
-            "bottom": "",
-        }
-        for i in unmatched_top
-        if not any(
-            first[i]["start"] < bottom["end"] and first[i]["end"] > bottom["start"]
-            for bottom in second
+        bottom_cues = sorted(
+            (cue for cue in second if cue["start"] < end and cue["end"] > start),
+            key=lambda cue: cue["start"],
         )
-    )
-    paired.sort(key=lambda cue: (cue["start"], cue["end"]))
+        top = "\n".join(cue["text"] for cue in top_cues)
+        bottom = "\n".join(cue["text"] for cue in bottom_cues)
+        if not top and not bottom:
+            continue
+        if segments and segments[-1]["end"] == start and (
+            segments[-1]["top"], segments[-1]["bottom"]
+        ) == (top, bottom):
+            segments[-1]["end"] = end
+        else:
+            segments.append({"start": start, "end": end, "top": top, "bottom": bottom})
 
     blocks = []
-    for index, cue in enumerate(paired, 1):
-        start = (cue["start_timestamp"] or format_timestamp(cue["start"])).replace(".", ",")
-        end = (cue["end_timestamp"] or format_timestamp(cue["end"])).replace(".", ",")
-        text = "\n".join(line for line in (cue["top"], cue["bottom"]) if line)
+    for index, segment in enumerate(segments, 1):
+        start = format_timestamp(segment["start"])
+        end = format_timestamp(segment["end"])
+        text = "\n".join(line for line in (segment["top"], segment["bottom"]) if line)
         blocks.append(f"{index}\n{start} --> {end}\n{text}")
     return "\n\n".join(blocks) + "\n"
 
