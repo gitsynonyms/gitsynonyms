@@ -60,19 +60,19 @@ The GitHub Actions workflow defaults to the latest White House channel upload. R
 
 ### Local standalone script (no Python environment changes)
 
-Run from an Anaconda Prompt or an activated Anaconda environment; `python` resolves to the user's active Anaconda installation, with no hard-coded username or install path. The script itself uses only the Python standard library and the `yt-dlp` command already available on `PATH`:
+Run from any Windows PowerShell; the command locates Anaconda under the current user's profile with `$env:USERPROFILE`, without requiring an activated environment or hard-coding a username:
 
 ```powershell
-python .\scripts\download_youtube_bilingual_srt.py "https://www.youtube.com/watch?v=IySF_8OArvw" --languages zh-Hans,en-orig --output-dir "D:\MyDownload"
+& (Join-Path $env:USERPROFILE "anaconda3\python.exe") .\scripts\download_youtube_bilingual_srt.py "https://www.youtube.com/watch?v=IySF_8OArvw" --languages zh-Hans,en-orig --output-dir "D:\MyDownload"
 ```
 
-It downloads two selected caption tracks, waits 56 seconds before requesting the second, and saves each track as its own SRT plus a time-aligned bilingual SRT under `date_event_video-id\`. The first language passed to `--languages` appears above the second in the bilingual file. Use `yt-dlp --list-subs URL` to see the video's language codes; choose any two listed codes. Use `--output-dir`, `--event`, `--date`, and `--sleep-subtitles` to customize it. All three outputs are normalized to sequential cue numbers, `HH:MM:SS,mmm` timestamps, non-empty caption text, blank-line cue separators, UTF-8 BOM, and Windows CRLF; non-standard styling tags are removed/rejected so the result remains plain SRT.
+The script itself uses only the Python standard library and the `yt-dlp` command already available on `PATH`. It downloads two selected caption tracks, waits 56 seconds before requesting the second, and saves each track as its own SRT plus a time-aligned bilingual SRT under `date_event_video-id\`. The first language passed to `--languages` appears above the second in the bilingual file. Use `yt-dlp --list-subs URL` to see the video's language codes; choose any two listed codes. Use `--output-dir`, `--event`, `--date`, and `--sleep-subtitles` to customize it. All three outputs are normalized to sequential cue numbers, `HH:MM:SS,mmm` timestamps, non-empty caption text, blank-line cue separators, UTF-8 BOM, and Windows CRLF; non-standard styling tags are removed/rejected so the result remains plain SRT.
 
 The reusable YouTube subtitle workflow skill is in `.github/skills/youtube-bilingual-srt/SKILL.md`.
 
 ### GitHub Pages subtitle web app
 
-After GitHub Pages is enabled with **GitHub Actions** as the source, the web app is available at `https://gitsynonyms.github.io/gitsynonyms/`. Paste a YouTube link and choose either local Anaconda or a GitHub-hosted runner. Local mode generates a PowerShell command that uses `python` from the user's active Anaconda environment, without hard-coding an installation path. Runner mode generates a `gh workflow run` command; run `gh auth login` first if needed, or open Actions and manually start the workflow. No token is pasted into or stored by the page. Cloud jobs require a GitHub account with permission to run the repository workflow.
+After GitHub Pages is enabled with **GitHub Actions** as the source, the web app is available at `https://gitsynonyms.github.io/gitsynonyms/`. Paste a YouTube link and choose either local Anaconda or a GitHub-hosted runner. Local mode generates a PowerShell command that locates Anaconda under `$env:USERPROFILE\anaconda3`, without requiring environment activation or hard-coding a username. Runner mode generates a `gh workflow run` command; run `gh auth login` first if needed, or open Actions and manually start the workflow. No token is pasted into or stored by the page. Cloud jobs require a GitHub account with permission to run the repository workflow.
 
 ### What can SRT format
 

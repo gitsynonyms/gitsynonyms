@@ -9,10 +9,10 @@ Use the repository's standalone downloader. It runs with the existing Python sta
 
 ## Download and merge
 
-On Windows, run this from an Anaconda Prompt or an activated Anaconda environment so `python` resolves to the user's own Anaconda installation. Do not hard-code a user profile or Anaconda install path:
+On Windows, locate the current user's Anaconda installation through `$env:USERPROFILE`; this does not require activating an environment and does not hard-code the Windows username:
 
 ```powershell
-python .\scripts\download_youtube_bilingual_srt.py "<YouTube URL>" --languages "<top-language>,<bottom-language>" --output-dir "D:\MyDownload"
+& (Join-Path $env:USERPROFILE "anaconda3\python.exe") .\scripts\download_youtube_bilingual_srt.py "<YouTube URL>" --languages "<top-language>,<bottom-language>" --output-dir "D:\MyDownload"
 ```
 
 The default language pair is `zh-Hans,en-orig`, producing Chinese above English. For another pair, inspect available YouTube track codes first:
