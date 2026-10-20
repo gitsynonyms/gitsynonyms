@@ -26,16 +26,24 @@ on:
         required: false
         type: boolean
         default: false
+      style_preset:
+        description: Caption style preset
+        required: false
+        type: choice
+        options:
+          - classic
+          - cinema
+        default: classic
       chinese_font:
-        description: Font family for the top Chinese captions
+        description: Optional font family override for Chinese captions
         required: false
         type: string
-        default: Microsoft YaHei
+        default: ""
       english_font:
-        description: Font family for the bottom English captions
+        description: Optional font family override for English captions
         required: false
         type: string
-        default: Arial
+        default: ""
       english_font_size:
         description: Base English font size (Chinese defaults to 1.2 times this)
         required: false
@@ -47,15 +55,15 @@ on:
         type: number
         default: 1.2
       chinese_color:
-        description: Chinese text color in #RRGGBB format (gold by default)
+        description: Optional Chinese text color override in #RRGGBB format
         required: false
         type: string
-        default: "#FFC928"
+        default: ""
       english_color:
-        description: English text color in #RRGGBB format
+        description: Optional English text color override in #RRGGBB format
         required: false
         type: string
-        default: "#FFFFFF"
+        default: ""
       box_color:
         description: ASS subtitle box color in #RRGGBB format
         required: false
@@ -66,6 +74,26 @@ on:
         required: false
         type: number
         default: 0.6
+      box_x:
+        description: Caption box left coordinate on a 1920x1080 canvas
+        required: false
+        type: number
+        default: 66
+      box_y:
+        description: Caption box top coordinate on a 1920x1080 canvas
+        required: false
+        type: number
+        default: 883
+      box_width:
+        description: Caption box width on a 1920x1080 canvas
+        required: false
+        type: number
+        default: 1786
+      box_height:
+        description: Caption box height on a 1920x1080 canvas
+        required: false
+        type: number
+        default: 139
 
 permissions:
   contents: read
@@ -106,6 +134,11 @@ jobs:
           ENGLISH_COLOR: ${{ inputs.english_color }}
           BOX_COLOR: ${{ inputs.box_color }}
           BOX_OPACITY: ${{ inputs.box_opacity }}
+          STYLE_PRESET: ${{ inputs.style_preset }}
+          BOX_X: ${{ inputs.box_x }}
+          BOX_Y: ${{ inputs.box_y }}
+          BOX_WIDTH: ${{ inputs.box_width }}
+          BOX_HEIGHT: ${{ inputs.box_height }}
         shell: bash
         run: |
           source="$YOUTUBE_SOURCE"
@@ -123,10 +156,12 @@ jobs:
             echo "Resolved latest channel upload: $source"
           fi
           args=("$source" --output-dir output --languages zh-Hans,en-orig)
+          args+=(--style-preset "$STYLE_PRESET")
           args+=(--chinese-font "$CHINESE_FONT" --english-font "$ENGLISH_FONT")
           args+=(--english-font-size "$ENGLISH_FONT_SIZE" --chinese-font-scale "$CHINESE_FONT_SCALE")
           args+=(--chinese-color "$CHINESE_COLOR" --english-color "$ENGLISH_COLOR")
           args+=(--box-color "$BOX_COLOR" --box-opacity "$BOX_OPACITY")
+          args+=(--box-x "$BOX_X" --box-y "$BOX_Y" --box-width "$BOX_WIDTH" --box-height "$BOX_HEIGHT")
           if [[ -n "$EVENT_TITLE" ]]; then args+=(--event "$EVENT_TITLE"); fi
           if [[ -n "$EVENT_DATE" ]]; then args+=(--date "$EVENT_DATE"); fi
           if [[ "$BURN_IN" == "true" ]]; then

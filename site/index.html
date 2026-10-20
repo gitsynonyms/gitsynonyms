@@ -12,7 +12,7 @@
       <header>
         <p class="eyebrow">GITSYNONYMS · CLOUD CAPTIONS</p>
         <h1>YouTube 字幕下载器</h1>
-        <p class="intro">输入视频链接，生成中英单语字幕、双语 SRT 和可自定义字体、颜色、背景框的 ASS；也可在 GitHub 云端将 ASS 硬刻录进视频。</p>
+        <p class="intro">输入视频链接，选择字幕样式并自定义字幕框位置与尺寸，生成中英双语 SRT/ASS；也可在 GitHub 云端将 ASS 硬刻录进视频。</p>
       </header>
 
       <form id="download-form" class="panel">
@@ -30,10 +30,25 @@
           <span>生成硬字幕 MP4（将下载视频并重新编码）</span>
         </label>
 
-        <label for="chinese-font">中文字体（上方）</label>
+        <fieldset class="preset-picker">
+          <legend>选择字幕样式</legend>
+          <label class="preset-card" for="style-classic">
+            <input id="style-classic" name="style-preset" type="radio" value="classic" checked>
+            <span class="preset-preview classic-preview"><b>小学要好好学习。</b><small>Primary school students should study hard.</small></span>
+            <span>金黄中文在上</span>
+          </label>
+          <label class="preset-card" for="style-cinema">
+            <input id="style-cinema" name="style-preset" type="radio" value="cinema">
+            <span class="preset-preview cinema-preview"><b>Primary school students should study hard.</b><small>小学生要好好学习。</small></span>
+            <span>样图电影风格（英文在上）</span>
+          </label>
+        </fieldset>
+        <p class="hint">选中预设后仍可自定义字体、颜色和字号。</p>
+
+        <label for="chinese-font">中文字体</label>
         <input id="chinese-font" name="chinese-font" value="Microsoft YaHei" required>
 
-        <label for="english-font">英文原文字体（下方）</label>
+        <label for="english-font">英文原文字体</label>
         <input id="english-font" name="english-font" value="Arial" required>
         <p class="hint">字体名称写入 ASS；硬刻录时所选字体需要已安装在运行 FFmpeg 的电脑上。</p>
 
@@ -55,6 +70,18 @@
         <label for="box-opacity">ASS 字幕框不透明度（0–1，0.6 = 60% 不透明）</label>
         <input id="box-opacity" name="box-opacity" type="number" min="0" max="1" step="0.05" value="0.6" required>
 
+        <fieldset class="box-position">
+          <legend>字幕框位置与尺寸（1920×1080 基准画布）</legend>
+          <label for="box-x">左边 X</label>
+          <input id="box-x" name="box-x" type="number" min="0" value="66" required>
+          <label for="box-y">顶部 Y</label>
+          <input id="box-y" name="box-y" type="number" min="0" value="883" required>
+          <label for="box-width">宽度</label>
+          <input id="box-width" name="box-width" type="number" min="1" value="1786" required>
+          <label for="box-height">高度</label>
+          <input id="box-height" name="box-height" type="number" min="1" value="139" required>
+        </fieldset>
+
         <button id="submit-button" type="submit">生成运行命令</button>
       </form>
 
@@ -70,9 +97,9 @@
       </section>
 
       <footer>
-        页面不会要求或保存访问令牌。ASS 文件自带字幕背景框、文字颜色和布局；单独播放 ASS 或 FFmpeg 硬刻录都会显示相同背景。本地 QSV 需要兼容的 Intel 硬件和 FFmpeg；云端使用软件编码。YouTube 可能限制字幕或视频访问。
+        页面不会要求或保存访问令牌。ASS 文件自带字幕背景框，字幕框从视频 0 秒持续到视频结束；坐标会按分辨率等比缩放。单独播放 ASS 或 FFmpeg 硬刻录都会显示相同背景。本地 QSV 需要兼容的 Intel 硬件和 FFmpeg；云端使用软件编码。YouTube 可能限制字幕或视频访问。
       </footer>
     </main>
-    <script src="app.js?v=ass-burn-in"></script>
+    <script src="app.js?v=ass-style-presets"></script>
   </body>
 </html>

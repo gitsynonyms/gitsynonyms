@@ -24,6 +24,24 @@ CJK = re.compile(
 CJK_EM, LATIN_EM = 0.85, 0.45
 PLAY_RESOLUTION = (1920, 1080)
 CAPTION_AREA = (66, 883, 1852, 1022)
+STYLE_PRESETS = {
+    "classic": {
+        "first_font": "Microsoft YaHei",
+        "second_font": "Arial",
+        "second_font_size": 48,
+        "first_font_scale": 1.2,
+        "first_color": "#FFC928",
+        "second_color": "#FFFFFF",
+    },
+    "cinema": {
+        "first_font": "SimSun",
+        "second_font": "Georgia",
+        "second_font_size": 48,
+        "first_font_scale": 1.2,
+        "first_color": "#FFF0D0",
+        "second_color": "#FFF0D0",
+    },
+}
 
 
 def video_id_from_url(value: str) -> str:
@@ -242,6 +260,8 @@ def build_ass(
     shadow_color: str = "#000000",
     play_res_x: int = PLAY_RESOLUTION[0],
     play_res_y: int = PLAY_RESOLUTION[1],
+    caption_order: str = "chinese-first",
+    video_duration: float | None = None,
 ) -> str:
     if not first or not second:
         raise ValueError("Both subtitle tracks must contain cues.")
@@ -250,6 +270,12 @@ def build_ass(
             raise ValueError(f"{name} font name must be non-empty and cannot contain commas or braces.")
     if second_font_size < 1 or not 0.5 <= first_font_scale <= 3:
         raise ValueError("Font size must be positive and Chinese font scale must be between 0.5 and 3.")
+    if caption_order not in {"chinese-first", "english-first"}:
+        raise ValueError("Caption order must be 'chinese-first' or 'english-first'.")
+    if video_duration is not None and (
+        not math.isfinite(video_duration) or video_duration < 0
+    ):
+        raise ValueError("Video duration must be a finite, non-negative number.")
     if not math.isfinite(box_opacity) or not 0 <= box_opacity <= 1:
         raise ValueError("Box opacity must be between 0 and 1.")
     if line_gap < 0 or padding_x < 0:
@@ -294,7 +320,22 @@ def build_ass(
         raise ValueError("Cannot serialize empty or invalid subtitle cues.")
 
     boundaries = sorted({cue[key] for cue in cues for key in ("start", "end")})
-    events = []
+    last_caption_time = max(cue["end"] for cue in cues)
+    box_end = max(last_caption_time, video_duration or 0)
+    events = [
+        {
+            "start": 0,
+            "end": box_end,
+            "layer": 0,
+            "style": "CaptionBox",
+            "body": (
+                f"{{\\an7\\pos({area_left},{area_top})\\p1}}"
+                f"m 0 0 l {area_width} 0 {area_width} "
+                f"{area_bottom - area_top} 0 {area_bottom - area_top} 0 0"
+                f"{{\\p0}}"
+            ),
+        }
+    ]
     for start, end in zip(boundaries, boundaries[1:]):
         if end <= start:
             continue
@@ -306,34 +347,28 @@ def build_ass(
         if not chinese and not english:
             continue
 
-        events.append(
-            {
-                "start": start,
-                "end": end,
-                "layer": 0,
-                "style": "CaptionBox",
-                "body": (
-                    f"{{\\an7\\pos({area_left},{area_top})\\p1}}"
-                    f"m 0 0 l {area_width} 0 {area_width} "
-                    f"{area_bottom - area_top} 0 {area_bottom - area_top} 0 0"
-                    f"{{\\p0}}"
-                ),
-            }
-        )
         cn_size = fit_font_size(chinese, first_font_size, available_width) if chinese else 0
         en_size = fit_font_size(english, second_font_size, available_width) if english else 0
+        order = (
+            (("english", english, en_size), ("chinese", chinese, cn_size))
+            if caption_order == "english-first"
+            else (("chinese", chinese, cn_size), ("english", english, en_size))
+        )
+        visible_lines = [line for line in order if line[1]]
+        style = "English" if visible_lines[0][0] == "english" else "Chinese"
         body = ""
-        if chinese:
-            body = "{\\fs" + f"{cn_size:g}" + "}" + ass_escape_text(chinese)
-        if english:
-            if chinese:
+        for line_index, (language, text, size) in enumerate(visible_lines):
+            if line_index:
                 if line_gap:
                     body += r"\N{\fs" + str(line_gap) + r"}\h"
-                body += r"\N{\rEnglish"
+                body += r"\N"
+            if language == "english":
+                body += r"{\rEnglish"
+            elif line_index:
+                body += r"{\rChinese"
             else:
-                body += "{\\rEnglish"
-            body += f"\\fs{en_size:g}" + "}" + ass_escape_text(english)
-        style = "Chinese" if chinese else "English"
+                body += "{"
+            body += f"\\fs{size:g}" + "}" + ass_escape_text(text)
         body = f"{{\\an5\\pos({area_center_x:g},{area_center_y:g})}}" + body
         event = {
             "start": start,
@@ -621,22 +656,26 @@ def main(argv: list[str] | None = None) -> int:
         default=56,
         help="Wait before requesting Chinese subtitles (default: 56 seconds; English is not delayed).",
     )
-    parser.add_argument("--chinese-font", default="Microsoft YaHei", help="ASS font family for the top Chinese line.")
-    parser.add_argument("--english-font", default="Arial", help="ASS font family for the bottom English line.")
+    parser.add_argument(
+        "--style-preset",
+        choices=tuple(STYLE_PRESETS),
+        default="classic",
+        help="ASS style preset: classic Chinese-first or cinema sample-like English-first.",
+    )
+    parser.add_argument("--chinese-font", help="ASS font family for the Chinese line.")
+    parser.add_argument("--english-font", help="ASS font family for the English line.")
     parser.add_argument(
         "--english-font-size",
         type=int,
-        default=48,
         help="English ASS font size; Chinese size is derived from this value and --chinese-font-scale.",
     )
     parser.add_argument(
         "--chinese-font-scale",
         type=float,
-        default=1.2,
         help="Chinese font size as a multiple of the English font size (default: 1.2).",
     )
-    parser.add_argument("--chinese-color", default="#FFC928", help="Chinese ASS text color in #RRGGBB format.")
-    parser.add_argument("--english-color", default="#FFFFFF", help="English ASS text color in #RRGGBB format.")
+    parser.add_argument("--chinese-color", help="Chinese ASS text color in #RRGGBB format.")
+    parser.add_argument("--english-color", help="English ASS text color in #RRGGBB format.")
     parser.add_argument("--box-color", default="#000000", help="ASS subtitle box color in #RRGGBB format.")
     parser.add_argument(
         "--box-opacity",
@@ -644,6 +683,10 @@ def main(argv: list[str] | None = None) -> int:
         default=0.6,
         help="ASS box opacity from 0 (transparent) to 1 (opaque); default: 0.6.",
     )
+    parser.add_argument("--box-x", type=int, default=66, help="Caption-box left coordinate on the 1920x1080 canvas.")
+    parser.add_argument("--box-y", type=int, default=883, help="Caption-box top coordinate on the 1920x1080 canvas.")
+    parser.add_argument("--box-width", type=int, default=1786, help="Caption-box width on the 1920x1080 canvas.")
+    parser.add_argument("--box-height", type=int, default=139, help="Caption-box height on the 1920x1080 canvas.")
     parser.add_argument(
         "--burn-in",
         action="store_true",
@@ -667,6 +710,13 @@ def main(argv: list[str] | None = None) -> int:
     languages = [language.strip() for language in args.languages.split(",")]
     if len(languages) != 2 or not all(languages) or languages[0].lower() == languages[1].lower():
         parser.error("--languages must contain two distinct comma-separated language codes")
+    preset = STYLE_PRESETS[args.style_preset]
+    caption_area = (
+        args.box_x,
+        args.box_y,
+        args.box_x + args.box_width,
+        args.box_y + args.box_height,
+    )
 
     try:
         print("Step 1/5: Inspecting video and available subtitle tracks...", flush=True)
@@ -687,7 +737,8 @@ def main(argv: list[str] | None = None) -> int:
         second_kind = classify_track(second_code, metadata)
         print(
             f"  Video: {metadata.get('title') or video_id}\n"
-            f"  Subtitle order: {first_code} above {second_code}",
+            f"  Source tracks: {first_code} + {second_code}\n"
+            f"  ASS style preset: {args.style_preset}",
             flush=True,
         )
 
@@ -729,14 +780,17 @@ def main(argv: list[str] | None = None) -> int:
             build_ass(
                 first,
                 second,
-                first_font=args.chinese_font,
-                second_font=args.english_font,
-                second_font_size=args.english_font_size,
-                first_font_scale=args.chinese_font_scale,
-                first_color=args.chinese_color,
-                second_color=args.english_color,
+                first_font=args.chinese_font or preset["first_font"],
+                second_font=args.english_font or preset["second_font"],
+                second_font_size=args.english_font_size or preset["second_font_size"],
+                first_font_scale=args.chinese_font_scale or preset["first_font_scale"],
+                first_color=args.chinese_color or preset["first_color"],
+                second_color=args.english_color or preset["second_color"],
                 box_color=args.box_color,
                 box_opacity=args.box_opacity,
+                caption_area=caption_area,
+                caption_order="english-first" if args.style_preset == "cinema" else "chinese-first",
+                video_duration=metadata.get("duration"),
             ),
         )
         print("Step 5/6: Validating generated subtitle files...", flush=True)

@@ -44,7 +44,7 @@ def test_ass_uses_chinese_above_english_with_chinese_1_2x_size():
     assert result.count("Dialogue: ") == 2
     assert "Dialogue: 1,0:00:01.00,0:00:02.00,Chinese" in result
     assert (
-        "Dialogue: 0,0:00:01.00,0:00:02.00,CaptionBox,,0,0,0,,"
+        "Dialogue: 0,0:00:00.00,0:00:02.00,CaptionBox,,0,0,0,,"
         r"{\an7\pos(66,883)\p1}m 0 0 l 1786 0 1786 139 0 139 0 0{\p0}"
     ) in result
     assert (
@@ -68,6 +68,47 @@ def test_ass_caption_area_can_be_scaled_by_the_renderer_on_larger_playres():
     assert "PlayResX: 3840" in result
     assert "PlayResY: 2160" in result
     assert r"\pos(1918,1905)" in result
+
+
+def test_ass_caption_box_covers_video_from_zero_through_duration():
+    cues = youtube_srt.parse_srt("1\n00:00:01,000 --> 00:00:02,000\ncaption\n\n")
+
+    result = youtube_srt.build_ass(cues, cues, video_duration=12.5)
+
+    assert result.count("Style: CaptionBox,") == 1
+    assert (
+        "Dialogue: 0,0:00:00.00,0:00:12.50,CaptionBox,,0,0,0,,"
+    ) in result
+
+
+def test_cinema_preset_places_english_above_chinese_and_supports_custom_box():
+    cues = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:02,000\nPrimary school\n\n"
+    )
+    chinese = youtube_srt.parse_srt("1\n00:00:01,000 --> 00:00:02,000\n小学生\n\n")
+
+    result = youtube_srt.build_ass(
+        cues,
+        chinese,
+        first_font="SimSun",
+        second_font="Georgia",
+        first_color="#FFF0D0",
+        second_color="#FFF0D0",
+        caption_area=(100, 800, 1800, 1000),
+        caption_order="english-first",
+        video_duration=8,
+    )
+
+    assert "Style: Chinese,SimSun,57.6,&H00D0F0FF," in result
+    assert "Style: English,Georgia,48,&H00D0F0FF," in result
+    assert (
+        "Dialogue: 0,0:00:00.00,0:00:08.00,CaptionBox,,0,0,0,,"
+        r"{\an7\pos(100,800)\p1}m 0 0 l 1700 0 1700 200 0 200 0 0{\p0}"
+    ) in result
+    assert (
+        r"{\an5\pos(950,900)}{\rEnglish\fs48}Primary school"
+        r"\N{\fs10}\h\N{\rChinese\fs57.6}小学生"
+    ) in result
 
 
 def test_ass_styles_support_custom_text_colors():
