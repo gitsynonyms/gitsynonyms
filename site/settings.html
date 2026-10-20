@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#0b1020">
     <title>字幕设置 · GitSynonyms</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=caption-preview-v4">
   </head>
   <body>
     <main class="settings-shell">
@@ -90,6 +90,11 @@
                 <span class="background-swatch blue-box-preview">总统蓝 · #0F1647</span>
                 <span class="choice-description">深海军蓝纯色背景，颜色可继续自定义。</span>
               </label>
+              <label class="choice-card" for="box-style-solid">
+                <input id="box-style-solid" name="box-style" type="radio" value="solid-color">
+                <span class="background-swatch solid-box-preview">纯色自定义背景</span>
+                <span class="choice-description">适用于日间、夜间、纸感和鎏金配色。</span>
+              </label>
             </div>
             <p class="hint">配色参考：<a href="https://www.flagcolorcodes.com/president-of-the-united-states-of-america-usa-1959-1994" target="_blank" rel="noopener noreferrer">美国总统旗帜（1959–1994）蓝色 #0F1647</a>。</p>
             <div class="form-grid">
@@ -130,8 +135,15 @@
                 <span class="choice-description">暖米色底 · 深蓝灰字<br>#F4ECD8 / #1C2A38</span>
                 <span class="contrast-ratio" data-contrast="#F4ECD8,#1C2A38">WCAG 对比度 12.41:1</span>
               </label>
+              <label class="choice-card palette-card" for="palette-plaque">
+                <input id="palette-plaque" name="comfort-palette" type="radio" value="plaque">
+                <span class="choice-title palette-title">典礼鎏金</span>
+                <span class="palette-swatch palette-plaque"><span>中 / EN</span></span>
+                <span class="choice-description">暖棕底 · 柔金字幕<br>#493016 / #FFE4A3</span>
+                <span class="contrast-ratio" data-contrast="#493016,#FFE4A3">WCAG 对比度 9.83:1</span>
+              </label>
             </div>
-            <p class="hint palette-note">选择预设会将背景设为纯色，并同时应用于中文和英文文字；之后仍可在下方逐项调整。</p>
+            <p class="hint palette-note">选择预设会应用纯色背景和双语文字颜色；之后仍可在下方逐项调整。典礼鎏金借鉴了示例中的暖棕底与金色文字，不包含纹理或徽章。</p>
             <div class="form-grid two-columns">
               <div>
                 <label for="chinese-font">中文字体</label>
@@ -195,6 +207,7 @@
       </div>
       <footer>设置仅保存在当前浏览器的本地存储中；本页面不会收集或上传你的偏好设置。</footer>
     </main>
-    <script src="settings.js?v=comfort-palettes-v1"></script>
+    <script src="caption-settings.js?v=caption-settings-single-source-v2"></script>
+    <script src="settings.js?v=caption-settings-single-source-v2"></script>
   </body>
 </html>

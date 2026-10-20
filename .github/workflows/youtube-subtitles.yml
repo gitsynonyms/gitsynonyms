@@ -49,6 +49,7 @@ on:
         options:
           - glass-diamond
           - presidential-blue
+          - solid-color
         default: glass-diamond
       chinese_font:
         description: Optional font family override for Chinese captions

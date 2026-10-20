@@ -7,22 +7,6 @@ const urlInput = document.querySelector("#video-url");
 const runLocation = document.querySelector("#run-location");
 const burnInInput = document.querySelector("#burn-in");
 const burnInLabel = document.querySelector("#burn-in-label span");
-const chineseFontInput = document.querySelector("#chinese-font");
-const englishFontInput = document.querySelector("#english-font");
-const englishFontSizeInput = document.querySelector("#english-font-size");
-const chineseFontScaleInput = document.querySelector("#chinese-font-scale");
-const chineseColorInput = document.querySelector("#chinese-color");
-const englishColorInput = document.querySelector("#english-color");
-const boxColorInput = document.querySelector("#box-color");
-const boxColorHexInput = document.querySelector("#box-color-hex");
-const boxOpacityInput = document.querySelector("#box-opacity");
-const boxXInput = document.querySelector("#box-x");
-const boxYInput = document.querySelector("#box-y");
-const boxWidthInput = document.querySelector("#box-width");
-const boxHeightInput = document.querySelector("#box-height");
-const styleInputs = [...document.querySelectorAll('input[name="style-preset"]')];
-const boxDisplayInputs = [...document.querySelectorAll('input[name="box-display"]')];
-const boxStyleInputs = [...document.querySelectorAll('input[name="box-style"]')];
 const instructions = document.querySelector("#run-instructions");
 const instructionsTitle = document.querySelector("#instructions-title");
 const instructionsCopy = document.querySelector("#instructions-copy");
@@ -30,151 +14,38 @@ const commandOutput = document.querySelector("#run-command");
 const copyButton = document.querySelector("#copy-command");
 const workflowLink = document.querySelector("#workflow-link");
 const statusRegion = document.querySelector("#status");
-const SETTINGS_STORAGE_KEY = "gitsynonyms.captionSettings.v1";
+const settingsSummary = document.querySelector("#caption-settings-summary");
 
 function quotePowerShell(value) {
   return `'${value.replaceAll("'", "''")}'`;
 }
 
-function selectedValue(name, fallback) {
-  return form.querySelector(`input[name="${name}"]:checked`)?.value ?? fallback;
-}
-
-function getCaptionSettings() {
-  return {
-    stylePreset: selectedValue("style-preset", "classic"),
-    boxDisplay: selectedValue("box-display", "always"),
-    boxStyle: selectedValue("box-style", "glass-diamond"),
-    chineseFont: chineseFontInput.value,
-    englishFont: englishFontInput.value,
-    englishFontSize: englishFontSizeInput.value,
-    chineseFontScale: chineseFontScaleInput.value,
-    chineseColor: chineseColorInput.value,
-    englishColor: englishColorInput.value,
-    boxColor: /^#[0-9a-fA-F]{6}$/.test(boxColorHexInput.value)
-      ? boxColorHexInput.value
-      : boxColorInput.value,
-    boxOpacity: boxOpacityInput.value,
-    boxX: boxXInput.value,
-    boxY: boxYInput.value,
-    boxWidth: boxWidthInput.value,
-    boxHeight: boxHeightInput.value,
-  };
-}
-
-function persistCaptionSettings() {
+function readCaptionSettings() {
   try {
-    window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(getCaptionSettings()));
-  } catch (error) {
-    statusRegion.hidden = false;
-    statusRegion.classList.add("error");
-    statusRegion.textContent = `无法在此浏览器保存字幕设置：${error.message}`;
-  }
-}
-
-function applySavedCaptionSettings() {
-  let saved;
-  try {
-    saved = JSON.parse(window.localStorage.getItem(SETTINGS_STORAGE_KEY) ?? "null");
+    return window.CaptionSettings.read();
   } catch (error) {
     statusRegion.hidden = false;
     statusRegion.classList.add("error");
     statusRegion.textContent = `读取字幕设置失败：${error.message}`;
-    return;
-  }
-  if (!saved || typeof saved !== "object") return;
-  if (saved.boxStyle === "presidential-blue" && typeof saved.boxColor === "string" && saved.boxColor.toLowerCase() === "#0d132d") {
-    saved.boxColor = "#0f1647";
-  }
-
-  const radios = {
-    "style-preset": saved.stylePreset,
-    "box-display": saved.boxDisplay,
-    "box-style": saved.boxStyle,
-  };
-  Object.entries(radios).forEach(([name, value]) => {
-    const radio = form.querySelector(`input[name="${name}"][value="${value}"]`);
-    if (radio) radio.checked = true;
-  });
-  const controls = {
-    "chinese-font": saved.chineseFont,
-    "english-font": saved.englishFont,
-    "english-font-size": saved.englishFontSize,
-    "chinese-font-scale": saved.chineseFontScale,
-    "chinese-color": saved.chineseColor,
-    "english-color": saved.englishColor,
-    "box-opacity": saved.boxOpacity,
-    "box-x": saved.boxX,
-    "box-y": saved.boxY,
-    "box-width": saved.boxWidth,
-    "box-height": saved.boxHeight,
-  };
-  Object.entries(controls).forEach(([id, value]) => {
-    if (value !== undefined && value !== null) document.getElementById(id).value = value;
-  });
-  if (/^#[0-9a-fA-F]{6}$/.test(saved.boxColor ?? "")) {
-    boxColorInput.value = saved.boxColor;
-    boxColorHexInput.value = saved.boxColor;
+    throw error;
   }
 }
 
-const stylePresets = {
-  classic: {
-    chineseFont: "Microsoft YaHei",
-    englishFont: "Arial",
-    englishFontSize: "48",
-    chineseFontScale: "1.2",
-    chineseColor: "#ffc928",
-    englishColor: "#ffffff",
-  },
-  cinema: {
-    chineseFont: "SimSun",
-    englishFont: "Georgia",
-    englishFontSize: "48",
-    chineseFontScale: "1.2",
-    chineseColor: "#fff0d0",
-    englishColor: "#fff0d0",
-  },
-};
-const boxStyles = {
-  "glass-diamond": { color: "#708496", opacity: "0.68" },
-  "presidential-blue": { color: "#0f1647", opacity: "0.9" },
-};
-
-function applyStylePreset(presetName) {
-  const preset = stylePresets[presetName];
-  if (!preset) return;
-  chineseFontInput.value = preset.chineseFont;
-  englishFontInput.value = preset.englishFont;
-  englishFontSizeInput.value = preset.englishFontSize;
-  chineseFontScaleInput.value = preset.chineseFontScale;
-  chineseColorInput.value = preset.chineseColor;
-  englishColorInput.value = preset.englishColor;
-}
-
-styleInputs.forEach((input) => {
-  input.addEventListener("change", () => applyStylePreset(input.value));
-});
-
-boxStyleInputs.forEach((input) => {
-  input.addEventListener("change", () => {
-    const preset = boxStyles[input.value];
-    if (!preset) return;
-    boxColorInput.value = preset.color;
-    boxColorHexInput.value = preset.color;
-    boxOpacityInput.value = preset.opacity;
-  });
-});
-
-boxColorInput.addEventListener("input", () => {
-  boxColorHexInput.value = boxColorInput.value.toUpperCase();
-});
-boxColorHexInput.addEventListener("input", () => {
-  const color = boxColorHexInput.value.trim();
-  if (/^#[0-9a-fA-F]{6}$/.test(color)) {
-    boxColorInput.value = color;
+function renderCaptionSettingsSummary() {
+  try {
+    const settings = readCaptionSettings();
+    const style = settings.stylePreset === "cinema" ? "电影风格 · 英文在上" : "经典风格 · 中文在上";
+    const background = settings.boxStyle === "presidential-blue"
+      ? `总统蓝 ${settings.boxColor.toUpperCase()}`
+      : settings.boxStyle === "solid-color"
+        ? `纯色 ${settings.boxColor.toUpperCase()}`
+        : "磨砂玻璃 · 钻石切面";
+    const display = settings.boxDisplay === "always" ? "背景全程显示" : "背景随字幕显示";
+    settingsSummary.textContent = `${style} · ${background} · ${display}`;
+  } catch {
+    settingsSummary.textContent = "无法读取字幕设置，请前往设置页检查浏览器本地存储。";
   }
-});
+}
 
 function makeCommand(videoUrl, location, options) {
   const quotedUrl = quotePowerShell(videoUrl);
@@ -220,41 +91,34 @@ function syncBurnInRunnerRequirement() {
 burnInInput.addEventListener("change", syncBurnInRunnerRequirement);
 runLocation.addEventListener("change", syncBurnInRunnerRequirement);
 syncBurnInRunnerRequirement();
-applySavedCaptionSettings();
-form.addEventListener("input", persistCaptionSettings);
-form.addEventListener("change", persistCaptionSettings);
+renderCaptionSettingsSummary();
+window.addEventListener("storage", (event) => {
+  if (event.key === window.CaptionSettings.storageKey) renderCaptionSettingsSummary();
+});
+window.addEventListener("pageshow", renderCaptionSettingsSummary);
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();
   const videoUrl = urlInput.value.trim();
   const location = runLocation.value;
   if (!videoUrl) return;
-  const stylePreset = styleInputs.find((input) => input.checked)?.value ?? "classic";
-  const boxDisplay = boxDisplayInputs.find((input) => input.checked)?.value ?? "always";
-  const boxStyle = boxStyleInputs.find((input) => input.checked)?.value ?? "glass-diamond";
-  const displayDescription = boxDisplay === "always"
+  let settings;
+  try {
+    settings = readCaptionSettings();
+  } catch {
+    return;
+  }
+  const displayDescription = settings.boxDisplay === "always"
     ? "字幕背景框会从视频开始持续到结束，适合遮挡原片横幅"
     : "字幕背景框只在字幕出现时显示";
-  const boxStyleDescription = boxStyle === "presidential-blue"
+  const boxStyleDescription = settings.boxStyle === "presidential-blue"
     ? "总统蓝背景框"
+    : settings.boxStyle === "solid-color"
+      ? "纯色自定义背景框"
     : "磨砂玻璃钻石质感背景框";
   const options = {
     burnIn: burnInInput.checked,
-    stylePreset,
-    boxDisplay,
-    boxStyle,
-    chineseFont: chineseFontInput.value.trim(),
-    englishFont: englishFontInput.value.trim(),
-    englishFontSize: englishFontSizeInput.value,
-    chineseFontScale: chineseFontScaleInput.value,
-    chineseColor: chineseColorInput.value,
-    englishColor: englishColorInput.value,
-    boxColor: boxColorInput.value,
-    boxOpacity: boxOpacityInput.value,
-    boxX: boxXInput.value,
-    boxY: boxYInput.value,
-    boxWidth: boxWidthInput.value,
-    boxHeight: boxHeightInput.value,
+    ...settings,
   };
 
   instructions.hidden = false;

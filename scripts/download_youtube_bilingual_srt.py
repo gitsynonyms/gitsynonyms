@@ -45,6 +45,7 @@ STYLE_PRESETS = {
 BOX_STYLES = {
     "glass-diamond": {"color": "#708496", "opacity": 0.68, "edge": "#E4F2FF"},
     "presidential-blue": {"color": "#0F1647", "opacity": 0.9, "edge": "#D9E7F5"},
+    "solid-color": {"color": "#708496", "opacity": 1, "edge": "#D9E7F5"},
 }
 
 
@@ -118,38 +119,116 @@ def parse_srt(content: str) -> list[dict]:
     return result
 
 
+def _without_rolling_cues(cues: Sequence[dict]) -> list[dict]:
+    ordered = sorted(cues, key=lambda cue: cue["start"])
+    result = []
+    for index, cue in enumerate(ordered):
+        end = min(
+            cue["end"],
+            ordered[index + 1]["start"] if index + 1 < len(ordered) else cue["end"],
+        )
+        if end > cue["start"]:
+            result.append({**cue, "end": end})
+    return result
+
+
+def _single_caption_line(text: str) -> str:
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    if len(lines) < 2:
+        return text
+    contains_cjk = any(
+        CJK.search(html.unescape(re.sub(r"<[^>]*>", "", line)))
+        for line in lines
+    )
+    separator = "" if contains_cjk else " "
+    return separator.join(lines)
+
+
+def _pair_same_end_cues(
+    first: Sequence[dict], second: Sequence[dict]
+) -> tuple[list[tuple[dict, dict]], list[dict], list[dict]]:
+    second_by_end: dict[int, list[tuple[int, dict]]] = {}
+    for index, cue in enumerate(second):
+        end_ms = round(cue["end"] * 1000)
+        second_by_end.setdefault(end_ms, []).append((index, cue))
+
+    pairs = []
+    paired_first = set()
+    paired_second = set()
+    for first_index, cue in enumerate(first):
+        candidates = second_by_end.get(round(cue["end"] * 1000), [])
+        candidates = [item for item in candidates if item[0] not in paired_second]
+        if candidates:
+            second_index, match = min(
+                candidates, key=lambda item: abs(item[1]["start"] - cue["start"])
+            )
+            pairs.append((cue, match))
+            paired_first.add(first_index)
+            paired_second.add(second_index)
+
+    return (
+        pairs,
+        [cue for index, cue in enumerate(first) if index not in paired_first],
+        [cue for index, cue in enumerate(second) if index not in paired_second],
+    )
+
+
 def align_and_merge(
     first: Sequence[dict],
     second: Sequence[dict],
 ) -> str:
     if not first or not second:
         raise ValueError("Both subtitle tracks must contain cues.")
+    first = _without_rolling_cues(first)
+    second = _without_rolling_cues(second)
+    pairs, unmatched_first, unmatched_second = _pair_same_end_cues(first, second)
     cues = [*first, *second]
     if any(cue["end"] <= cue["start"] or not cue["text"].strip() for cue in cues):
         raise ValueError("Cannot serialize empty or invalid subtitle cues.")
 
-    boundaries = sorted({cue[key] for cue in cues for key in ("start", "end")})
-    segments = []
+    boundaries = sorted({
+        cue[key]
+        for cue in (*unmatched_first, *unmatched_second)
+        for key in ("start", "end")
+    })
+    segments = [
+        {
+            "start": min(first_cue["start"], second_cue["start"]),
+            "end": first_cue["end"],
+            "top": _single_caption_line(first_cue["text"]),
+            "bottom": _single_caption_line(second_cue["text"]),
+        }
+        for first_cue, second_cue in pairs
+    ]
+    timeline_segments = []
     for start, end in zip(boundaries, boundaries[1:]):
         top_cues = sorted(
-            (cue for cue in first if cue["start"] < end and cue["end"] > start),
+            (
+                cue
+                for cue in unmatched_first
+                if cue["start"] < end and cue["end"] > start
+            ),
             key=lambda cue: cue["start"],
         )
         bottom_cues = sorted(
-            (cue for cue in second if cue["start"] < end and cue["end"] > start),
+            (cue for cue in unmatched_second if cue["start"] < end and cue["end"] > start),
             key=lambda cue: cue["start"],
         )
-        top = "\n".join(cue["text"] for cue in top_cues)
-        bottom = "\n".join(cue["text"] for cue in bottom_cues)
+        top = _single_caption_line("\n".join(cue["text"] for cue in top_cues))
+        bottom = _single_caption_line("\n".join(cue["text"] for cue in bottom_cues))
         if not top and not bottom:
             continue
-        if segments and segments[-1]["end"] == start and (
-            segments[-1]["top"], segments[-1]["bottom"]
+        if timeline_segments and timeline_segments[-1]["end"] == start and (
+            timeline_segments[-1]["top"], timeline_segments[-1]["bottom"]
         ) == (top, bottom):
-            segments[-1]["end"] = end
+            timeline_segments[-1]["end"] = end
         else:
-            segments.append({"start": start, "end": end, "top": top, "bottom": bottom})
+            timeline_segments.append(
+                {"start": start, "end": end, "top": top, "bottom": bottom}
+            )
 
+    segments.extend(timeline_segments)
+    segments.sort(key=lambda segment: (segment["start"], segment["end"]))
     blocks = []
     for index, segment in enumerate(segments, 1):
         start = format_timestamp(segment["start"])
@@ -232,18 +311,210 @@ def fit_font_size(value: str, font_size: float, available_width: int) -> float:
 def classify_caption_lines(
     cues: Sequence[dict],
 ) -> tuple[str, str]:
-    chinese_lines = []
-    english_lines = []
+    entries: dict[str, list[tuple[dict, str]]] = {"chinese": [], "english": []}
     for cue in cues:
         for line in cue["text"].splitlines():
             line = line.strip()
             if not line:
                 continue
-            if CJK.search(html.unescape(re.sub(r"<[^>]*>", "", line))):
-                chinese_lines.append(line)
-            else:
-                english_lines.append(line)
-    return "".join(chinese_lines), " ".join(english_lines)
+            language = (
+                "chinese"
+                if CJK.search(html.unescape(re.sub(r"<[^>]*>", "", line)))
+                else "english"
+            )
+            entries[language].append((cue, line))
+    chinese = _combine_caption_entries(entries["chinese"], separator="")
+    english = _combine_caption_entries(entries["english"], separator=" ")
+    return chinese, english
+
+
+def _remove_rolling_prefix(previous: str, current: str) -> str:
+    if not previous or not current or "<" in previous or "<" in current:
+        return current
+    previous = re.sub(r"\s+", " ", html.unescape(previous)).strip()
+    current = re.sub(r"\s+", " ", html.unescape(current)).strip()
+    if CJK.search(previous + current):
+        max_overlap = min(len(previous), len(current))
+        for length in range(max_overlap, 1, -1):
+            if previous[-length:] == current[:length]:
+                return current[length:].lstrip()
+        return current
+
+    previous_words = list(re.finditer(r"[\w’'-]+", previous))
+    current_words = list(re.finditer(r"[\w’'-]+", current))
+    max_words = min(len(previous_words), len(current_words))
+    for count in range(max_words, 1, -1):
+        previous_suffix = [word.group().casefold() for word in previous_words[-count:]]
+        current_prefix = [word.group().casefold() for word in current_words[:count]]
+        if previous_suffix == current_prefix:
+            return current[current_words[count - 1].end():].lstrip(" \t,.;:!?-")
+    return current
+
+
+def _append_rolling_text(previous: str, current: str, *, separator: str) -> str:
+    if not previous:
+        return current
+    previous_plain = re.sub(r"\s+", " ", html.unescape(previous)).strip()
+    current_plain = re.sub(r"\s+", " ", html.unescape(current)).strip()
+    if not previous_plain or not current_plain:
+        return current if current_plain else previous
+    previous_folded = previous_plain.casefold()
+    current_folded = current_plain.casefold()
+    if current_folded.startswith(previous_folded):
+        return current
+    if previous_folded.startswith(current_folded):
+        return previous
+    remainder = _remove_rolling_prefix(previous, current)
+    if remainder != current:
+        return previous + (separator if separator and remainder else "") + remainder
+    return previous + separator + current
+
+
+def _combine_caption_entries(
+    entries: Sequence[tuple[dict, str]], *, separator: str
+) -> str:
+    value = ""
+    for _, text in entries:
+        value = _append_rolling_text(value, text, separator=separator)
+    return value
+
+
+def _rolling_word_spans(text: str) -> list[re.Match[str]]:
+    plain_text = html.unescape(re.sub(r"<[^>]*>", "", text))
+    if CJK.search(plain_text):
+        return list(re.finditer(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]", plain_text))
+    return list(
+        re.finditer(
+            r"(?:[A-Z]\.){2,}|[\w]+(?:[’'-][\w]+)*(?:\s+[A-Z]\.)*",
+            plain_text,
+        )
+    )
+
+
+def _serialize_same_end_cues(cues: Sequence[dict]) -> list[dict]:
+    ordered = sorted(cues, key=lambda cue: (cue["start"], cue["end"]))
+    groups: dict[int, list[dict]] = {}
+    for cue in ordered:
+        groups.setdefault(round(cue["end"] * 1000), []).append(cue)
+
+    rolling_groups = [
+        sorted(group, key=lambda cue: cue["start"])
+        for group in groups.values()
+        if len(group) > 1 and len({round(cue["start"] * 1000) for cue in group}) > 1
+    ]
+    grouped_ids = {id(cue) for group in rolling_groups for cue in group}
+    consumed: set[int] = set()
+    serialized = []
+    for group in rolling_groups:
+        first_start_ms = round(group[0]["start"] * 1000)
+        common_end_ms = round(group[0]["end"] * 1000)
+        duration_ms = common_end_ms - first_start_ms
+        if duration_ms <= 0:
+            continue
+
+        sample = _single_caption_line(group[0]["text"])
+        separator = "" if CJK.search(html.unescape(re.sub(r"<[^>]*>", "", sample))) else " "
+        full_text = _combine_caption_entries(
+            [
+                (
+                    cue,
+                    html.unescape(
+                        re.sub(r"<[^>]*>", "", _single_caption_line(cue["text"]))
+                    ),
+                )
+                for cue in group
+            ],
+            separator=separator,
+        )
+        words = _rolling_word_spans(full_text)
+        if not words:
+            continue
+
+        split_points_ms = [
+            round(cue["start"] * 1000)
+            for cue in group[1:]
+            if first_start_ms < round(cue["start"] * 1000) < common_end_ms
+        ]
+        segment_boundaries_ms = split_points_ms + [common_end_ms]
+        cuts = []
+        for boundary_ms in split_points_ms:
+            elapsed_ms = boundary_ms - first_start_ms
+            cuts.append(
+                max(
+                    0,
+                    min(
+                        len(words),
+                        (2 * elapsed_ms * len(words) + duration_ms)
+                        // (2 * duration_ms),
+                    ),
+                )
+            )
+        cuts.append(len(words))
+
+        preceding_at_boundary: dict[int, list[dict]] = {}
+        for boundary_ms in split_points_ms:
+            predecessors = [
+                cue
+                for cue in ordered
+                if id(cue) not in grouped_ids
+                and id(cue) not in consumed
+                and round(cue["end"] * 1000) == boundary_ms
+                and round(cue["start"] * 1000) < first_start_ms
+            ]
+            if predecessors:
+                preceding_at_boundary[boundary_ms] = predecessors
+                consumed.update(id(cue) for cue in predecessors)
+
+        previous_cut = 0
+        segment_start_ms = first_start_ms
+        for boundary_ms, cut in zip(segment_boundaries_ms, cuts):
+            start_offset = 0 if previous_cut == 0 else words[previous_cut - 1].end()
+            end_offset = (
+                len(full_text)
+                if cut == len(words)
+                else words[cut - 1].end() if cut > previous_cut else start_offset
+            )
+            segment_text = full_text[start_offset:end_offset].strip()
+            predecessors = preceding_at_boundary.get(boundary_ms, [])
+            if predecessors:
+                prefix = _combine_caption_entries(
+                    [
+                        (
+                            cue,
+                            html.unescape(
+                                re.sub(
+                                    r"<[^>]*>",
+                                    "",
+                                    _single_caption_line(cue["text"]),
+                                )
+                            ),
+                        )
+                        for cue in sorted(predecessors, key=lambda cue: cue["start"])
+                    ],
+                    separator=separator,
+                )
+                segment_text = _append_rolling_text(
+                    prefix, segment_text, separator=separator
+                )
+                if previous_cut == 0:
+                    segment_start_ms = min(
+                        segment_start_ms,
+                        *(round(cue["start"] * 1000) for cue in predecessors),
+                    )
+            segment_end_ms = boundary_ms
+            if segment_text and segment_end_ms > segment_start_ms:
+                serialized.append({
+                    **group[0],
+                    "start": segment_start_ms / 1000,
+                    "end": segment_end_ms / 1000,
+                    "text": segment_text,
+                })
+            previous_cut = cut
+            segment_start_ms = boundary_ms
+        consumed.update(id(cue) for cue in group)
+
+    serialized.extend(cue for cue in ordered if id(cue) not in consumed)
+    return sorted(serialized, key=lambda cue: (cue["start"], cue["end"]))
 
 
 def build_ass(
@@ -329,6 +600,8 @@ def build_ass(
         f"Style: CaptionFacet,Arial,1,{facet_color},&H000000FF,"
         f"&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1",
     )
+    first = _serialize_same_end_cues(first)
+    second = _serialize_same_end_cues(second)
     cues = [*first, *second]
     if any(cue["end"] <= cue["start"] or not cue["text"].strip() for cue in cues):
         raise ValueError("Cannot serialize empty or invalid subtitle cues.")

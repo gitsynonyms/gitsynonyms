@@ -118,24 +118,97 @@ def build_srt(entries: Sequence[dict], *, chinese: Sequence[str] | None = None) 
     return "\n".join(lines).strip() + "\n"
 
 
+def _without_rolling_cues(track: Sequence[dict]) -> list[dict]:
+    ordered = sorted(track, key=lambda cue: float(cue["start"]))
+    result = []
+    for index, cue in enumerate(ordered):
+        start = float(cue["start"])
+        end = start + float(cue["duration"])
+        if index + 1 < len(ordered):
+            end = min(end, float(ordered[index + 1]["start"]))
+        if end > start:
+            result.append({**cue, "duration": end - start})
+    return result
+
+
+def _single_caption_line(text: str) -> str:
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    if len(lines) < 2:
+        return text
+    separator = "" if re.search(r"[\u2e80-\u9fff]", "".join(lines)) else " "
+    return separator.join(lines)
+
+
+def _pair_same_end_cues(
+    top_track: Sequence[dict], bottom_track: Sequence[dict]
+) -> tuple[list[tuple[dict, dict]], list[dict], list[dict]]:
+    bottom_by_end: dict[int, list[tuple[int, dict]]] = {}
+    for index, cue in enumerate(bottom_track):
+        end = round((float(cue["start"]) + float(cue["duration"])) * 1000)
+        bottom_by_end.setdefault(end, []).append((index, cue))
+
+    pairs = []
+    paired_top = set()
+    paired_bottom = set()
+    for top_index, cue in enumerate(top_track):
+        end = round((float(cue["start"]) + float(cue["duration"])) * 1000)
+        candidates = [
+            item for item in bottom_by_end.get(end, []) if item[0] not in paired_bottom
+        ]
+        if candidates:
+            bottom_index, match = min(
+                candidates,
+                key=lambda item: abs(float(item[1]["start"]) - float(cue["start"])),
+            )
+            pairs.append((cue, match))
+            paired_top.add(top_index)
+            paired_bottom.add(bottom_index)
+
+    return (
+        pairs,
+        [cue for index, cue in enumerate(top_track) if index not in paired_top],
+        [cue for index, cue in enumerate(bottom_track) if index not in paired_bottom],
+    )
+
+
 def _build_synchronized_srt(top_track: Sequence[dict], bottom_track: Sequence[dict]) -> str:
     if not top_track or not bottom_track:
         raise ValueError("Both subtitle tracks must contain cues.")
-    cues = [
-        {
-            "start": float(cue["start"]),
-            "end": float(cue["start"]) + float(cue["duration"]),
-            "text": str(cue["text"]),
-        }
-        for cue in (*top_track, *bottom_track)
-    ]
-    if any(cue["end"] <= cue["start"] or not cue["text"].strip() for cue in cues):
+    top_track = _without_rolling_cues(top_track)
+    bottom_track = _without_rolling_cues(bottom_track)
+    pairs, unmatched_top, unmatched_bottom = _pair_same_end_cues(
+        top_track, bottom_track
+    )
+
+    def as_cues(track: Sequence[dict]) -> list[dict]:
+        return [
+            {
+                "start": float(cue["start"]),
+                "end": float(cue["start"]) + float(cue["duration"]),
+                "text": str(cue["text"]),
+            }
+            for cue in track
+        ]
+
+    top = as_cues(unmatched_top)
+    bottom = as_cues(unmatched_bottom)
+    all_cues = as_cues((*top_track, *bottom_track))
+    if any(cue["end"] <= cue["start"] or not cue["text"].strip() for cue in all_cues):
         raise ValueError("Cannot serialize empty or invalid subtitle cues.")
 
-    top = cues[: len(top_track)]
-    bottom = cues[len(top_track) :]
-    boundaries = sorted({cue[key] for cue in cues for key in ("start", "end")})
-    segments = []
+    boundaries = sorted(
+        {cue[key] for cue in (*top, *bottom) for key in ("start", "end")}
+    )
+    segments = [
+        {
+            "start": min(float(top_cue["start"]), float(bottom_cue["start"])),
+            "end": float(top_cue["start"]) + float(top_cue["duration"]),
+            "top": _single_caption_line(str(top_cue["text"])),
+            "bottom": _single_caption_line(str(bottom_cue["text"])),
+        }
+        for top_cue, bottom_cue in pairs
+    ]
+    timeline_segments = []
     for start, end in zip(boundaries, boundaries[1:]):
         active_top = sorted(
             (cue for cue in top if cue["start"] < end and cue["end"] > start),
@@ -145,18 +218,22 @@ def _build_synchronized_srt(top_track: Sequence[dict], bottom_track: Sequence[di
             (cue for cue in bottom if cue["start"] < end and cue["end"] > start),
             key=lambda cue: cue["start"],
         )
-        top_text = "\n".join(cue["text"] for cue in active_top)
-        bottom_text = "\n".join(cue["text"] for cue in active_bottom)
+        top_text = _single_caption_line("\n".join(cue["text"] for cue in active_top))
+        bottom_text = _single_caption_line(
+            "\n".join(cue["text"] for cue in active_bottom)
+        )
         if not top_text and not bottom_text:
             continue
-        if segments and segments[-1]["end"] == start and (
-            segments[-1]["top"], segments[-1]["bottom"]
+        if timeline_segments and timeline_segments[-1]["end"] == start and (
+            timeline_segments[-1]["top"], timeline_segments[-1]["bottom"]
         ) == (top_text, bottom_text):
-            segments[-1]["end"] = end
+            timeline_segments[-1]["end"] = end
         else:
-            segments.append(
+            timeline_segments.append(
                 {"start": start, "end": end, "top": top_text, "bottom": bottom_text}
             )
+    segments.extend(timeline_segments)
+    segments.sort(key=lambda segment: (segment["start"], segment["end"]))
     lines = []
     for index, segment in enumerate(segments, 1):
         text = "\n".join(value for value in (segment["top"], segment["bottom"]) if value)

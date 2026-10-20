@@ -118,11 +118,20 @@ def test_box_styles_apply_default_colors_and_opacity():
         box_color=youtube_srt.BOX_STYLES["presidential-blue"]["color"],
         box_opacity=youtube_srt.BOX_STYLES["presidential-blue"]["opacity"],
     )
+    solid = youtube_srt.build_ass(
+        cues,
+        cues,
+        box_style="solid-color",
+        box_color="#F8F9FA",
+        box_opacity=1,
+    )
 
     assert "Style: CaptionBox,Arial,1,&H52968470," in glass
     assert "Style: CaptionFacet,Arial,1,&HD9FFFFFF," in glass
     assert "Style: CaptionBox,Arial,1,&H1A47160F," in blue
     assert ",CaptionFacet,," not in blue
+    assert "Style: CaptionBox,Arial,1,&H00FAF9F8," in solid
+    assert ",CaptionFacet,," not in solid
 
 
 def test_cinema_preset_places_english_above_chinese_and_supports_custom_box():
@@ -181,6 +190,96 @@ def test_ass_classifies_mixed_lines_and_centers_each_language():
     assert "你好世界こんにちは" in result
     assert r"\N{\fs10}\h\N{\rEnglish\fs48}Hello there Good morning" in result
     assert result.count("Dialogue: ") == 3
+
+
+def test_ass_flattens_source_wrapped_lines_into_one_line_per_language():
+    chinese = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:03,000\n小学生要好好\n学习\n\n"
+    )
+    english = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:03,000\nPrimary school students\n"
+        "should study hard.\n\n"
+    )
+
+    result = youtube_srt.build_ass(chinese, english)
+
+    assert "小学生要好好学习" in result
+    assert "Primary school students should study hard." in result
+    assert "小学生要好好\\N学习" not in result
+
+
+def test_ass_reconstructs_overlapping_rolling_captions_as_single_lines():
+    chinese = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:04,000\n今天下午，工作组\n\n"
+        "2\n00:00:02,000 --> 00:00:05,000\n今天下午，工作组将召开会议\n\n"
+    )
+    english = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:04,000\nThis afternoon, the task force\n\n"
+        "2\n00:00:02,000 --> 00:00:05,000\nThis afternoon, the task force will meet\n\n"
+    )
+
+    result = youtube_srt.build_ass(chinese, english)
+
+    assert "今天下午，工作组" in result
+    assert "This afternoon, the task force" in result
+    assert "今天下午，工作组将召开会议" in result
+    assert "This afternoon, the task force will meet" in result
+    assert "Dialogue: 1,0:00:02.00,0:00:05.00" in result
+
+
+def test_ass_rolls_overlapping_youtube_caption_window_into_one_line():
+    chinese = youtube_srt.parse_srt(
+        "1\n00:00:04,160 --> 00:00:08,720\n女士们先生们，美国总统\n\n"
+        "2\n00:00:06,160 --> 00:00:13,000\n唐纳德·特朗普和\n\n"
+        "3\n00:00:08,720 --> 00:00:13,000\n第一夫人梅拉尼娅·特朗普\n\n"
+    )
+    english = youtube_srt.parse_srt(
+        "1\n00:00:04,160 --> 00:00:08,720\nLadies and gentlemen, the President of\n\n"
+        "2\n00:00:06,160 --> 00:00:13,000\nthe United States, Donald J. Trump, and\n\n"
+        "3\n00:00:08,720 --> 00:00:13,000\nFirst Lady Melania Trump.\n\n"
+    )
+
+    result = youtube_srt.build_ass(chinese, english)
+
+    events = {
+        line.split(",", 3)[1]: line
+        for line in result.splitlines()
+        if line.startswith("Dialogue: 1,")
+    }
+    assert "0:00:04.16" in events
+    assert "0:00:06.16" not in events
+    assert "0:00:08.72" in events
+    assert "Dialogue: 1,0:00:04.16,0:00:08.72" in events["0:00:04.16"]
+    assert "Ladies and gentlemen, the President of the United States, Donald J." in events["0:00:04.16"]
+    assert "Dialogue: 1,0:00:08.72,0:00:13.00" in events["0:00:08.72"]
+    assert "Ladies and gentlemen" not in events["0:00:08.72"]
+    assert "Trump, and First Lady Melania Trump." in events["0:00:08.72"]
+    assert "the United States, Donald J." not in events["0:00:08.72"]
+
+
+def test_ass_serializes_three_same_end_cues_without_gaps_or_overlap():
+    cues = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:05,000\nWe\n\n"
+        "2\n00:00:02,000 --> 00:00:05,000\nare making\n\n"
+        "3\n00:00:03,000 --> 00:00:05,000\nsteady progress now\n\n"
+    )
+
+    serialized = youtube_srt._serialize_same_end_cues(cues)
+
+    assert [(cue["start"], cue["end"]) for cue in serialized] == [
+        (1.0, 2.0),
+        (2.0, 3.0),
+        (3.0, 5.0),
+    ]
+    assert " ".join(cue["text"] for cue in serialized) == (
+        "We are making steady progress now"
+    )
+
+
+def test_ass_word_rate_counts_name_initials_as_one_word():
+    text = "the United States, Donald J. Trump, and First Lady Melania Trump."
+
+    assert len(youtube_srt._rolling_word_spans(text)) == 10
 
 
 def test_long_ass_lines_shrink_to_fit_caption_box():
@@ -340,7 +439,7 @@ def test_merge_aligns_only_overlapping_cues():
     assert youtube_srt.validate_srt(merged) == 3
 
 
-def test_merge_keeps_rolling_cues_in_source_order_in_one_block():
+def test_merge_uses_one_latest_caption_per_language_without_rolling():
     chinese = youtube_srt.parse_srt(
         "1\n00:00:01,840 --> 00:00:06,840\n介绍\n\n"
         "2\n00:00:03,480 --> 00:00:10,360\n身份\n\n"
@@ -352,13 +451,36 @@ def test_merge_keeps_rolling_cues_in_source_order_in_one_block():
 
     merged = youtube_srt.align_and_merge(chinese, english)
 
-    assert (
-        "00:00:03,480 --> 00:00:06,840\n"
-        "介绍\n身份\n"
-        "Ladies and gentlemen\nthe United States"
-    ) in merged
-    assert merged.index("Ladies and gentlemen") < merged.index("the United States")
-    assert youtube_srt.validate_srt(merged) == 3
+    assert merged == (
+        "1\n00:00:01,840 --> 00:00:03,480\n"
+        "介绍\nLadies and gentlemen\n\n"
+        "2\n00:00:03,480 --> 00:00:10,360\n"
+        "身份\nthe United States\n"
+    )
+    assert "介绍" not in merged.split("2\n", 1)[1]
+    assert youtube_srt.validate_srt(merged) == 2
+
+    ass = youtube_srt.build_ass(chinese, english)
+    assert "介绍" in ass
+    assert "身份" in ass
+    assert r"介绍\N身份" not in ass
+    assert r"Ladies and gentlemen the United States" in ass
+
+
+def test_merge_pairs_cues_with_the_same_end_time_into_two_lines():
+    chinese = youtube_srt.parse_srt(
+        "1\n00:01:18,000 --> 00:01:25,320\n支持\n这一重要\n\n"
+    )
+    english = youtube_srt.parse_srt(
+        "1\n00:01:20,560 --> 00:01:25,320\nsupports\nthis key\n\n"
+    )
+
+    merged = youtube_srt.align_and_merge(chinese, english)
+
+    assert merged == (
+        "1\n00:01:18,000 --> 00:01:25,320\n"
+        "支持这一重要\nsupports this key\n"
+    )
 
 
 def test_language_preference_is_case_insensitive():

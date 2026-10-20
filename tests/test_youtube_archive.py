@@ -158,7 +158,7 @@ def test_bilingual_srt_splits_cues_at_source_boundaries():
     )
 
 
-def test_bilingual_srt_preserves_english_rolling_order_in_one_block():
+def test_bilingual_srt_keeps_only_latest_cue_per_language():
     chinese = [{"start": 1, "duration": 4, "text": "中文"}]
     english = [
         {"start": 1, "duration": 3, "text": "Earlier caption"},
@@ -166,10 +166,11 @@ def test_bilingual_srt_preserves_english_rolling_order_in_one_block():
     ]
     merged = _build_synchronized_srt(chinese, english)
     assert (
-        "00:00:02,000 --> 00:00:04,000\n"
+        "00:00:01,000 --> 00:00:05,000\n"
         "中文\n"
-        "Earlier caption\nLatest caption"
+        "Latest caption"
     ) in merged
+    assert "Earlier caption\nLatest caption" not in merged
 
 
 def test_extract_youtube_url_variants_and_reject_unrelated_host():

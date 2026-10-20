@@ -5,19 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#0b1020">
     <title>YouTube 字幕下载器</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=caption-preview-v4">
   </head>
   <body>
     <main class="shell">
       <header>
         <p class="eyebrow">GITSYNONYMS · CLOUD CAPTIONS</p>
         <h1>YouTube 字幕下载器</h1>
-        <p class="intro">输入视频链接，选择字幕样式并自定义字幕框位置与尺寸，生成中英双语 SRT/ASS；也可在 GitHub 云端将 ASS 硬刻录进视频。</p>
+        <p class="intro">输入视频链接，生成中英双语 SRT/ASS；也可在 GitHub 云端将 ASS 硬刻录进视频。</p>
         <nav class="page-nav" aria-label="主导航">
           <a class="active" href="./">字幕生成</a>
           <a href="settings.html">字幕设置 <span aria-hidden="true">↗</span></a>
         </nav>
       </header>
+
+      <section class="settings-summary panel" aria-labelledby="settings-summary-title">
+        <div>
+          <h2 id="settings-summary-title">字幕样式设置</h2>
+          <p id="caption-settings-summary" class="hint">从字幕设置页读取当前样式。</p>
+        </div>
+        <a class="secondary-button" href="settings.html">管理字幕设置</a>
+      </section>
 
       <form id="download-form" class="panel">
         <label for="video-url">YouTube 视频链接</label>
@@ -33,85 +41,6 @@
           <input id="burn-in" name="burn-in" type="checkbox">
           <span>生成硬字幕 MP4（将下载视频并重新编码）</span>
         </label>
-
-        <fieldset class="preset-picker">
-          <legend>选择字幕样式</legend>
-          <label class="preset-card" for="style-classic">
-            <input id="style-classic" name="style-preset" type="radio" value="classic" checked>
-            <span class="preset-preview classic-preview"><b>小学要好好学习。</b><small>Primary school students should study hard.</small></span>
-            <span>金黄中文在上</span>
-          </label>
-          <label class="preset-card" for="style-cinema">
-            <input id="style-cinema" name="style-preset" type="radio" value="cinema">
-            <span class="preset-preview cinema-preview"><b>Primary school students should study hard.</b><small>小学生要好好学习。</small></span>
-            <span>样图电影风格（英文在上）</span>
-          </label>
-        </fieldset>
-        <p class="hint">选中预设后仍可自定义字体、颜色和字号。</p>
-
-        <fieldset class="preset-picker">
-          <legend>背景框显示时机</legend>
-          <label class="preset-card" for="box-display-always">
-            <input id="box-display-always" name="box-display" type="radio" value="always" checked>
-            <span>全程常驻</span>
-            <span class="hint">适合原视频底部自带横幅、需要持续遮挡的情况。</span>
-          </label>
-          <label class="preset-card" for="box-display-caption">
-            <input id="box-display-caption" name="box-display" type="radio" value="with-captions">
-            <span>仅字幕期间显示</span>
-            <span class="hint">适合无底部横幅的视频；无字幕时不显示背景框。</span>
-          </label>
-        </fieldset>
-
-        <fieldset class="preset-picker">
-          <legend>字幕区背景</legend>
-          <label class="preset-card" for="box-style-glass">
-            <input id="box-style-glass" name="box-style" type="radio" value="glass-diamond" checked>
-            <span class="box-preview glass-box-preview">磨砂玻璃 · 钻石切面</span>
-          </label>
-          <label class="preset-card" for="box-style-blue">
-            <input id="box-style-blue" name="box-style" type="radio" value="presidential-blue">
-            <span class="box-preview blue-box-preview">总统蓝 · #0F1647</span>
-          </label>
-        </fieldset>
-
-        <label for="chinese-font">中文字体</label>
-        <input id="chinese-font" name="chinese-font" value="Microsoft YaHei" required>
-
-        <label for="english-font">英文原文字体</label>
-        <input id="english-font" name="english-font" value="Arial" required>
-        <p class="hint">字体名称写入 ASS；硬刻录时所选字体需要已安装在运行 FFmpeg 的电脑上。</p>
-
-        <label for="english-font-size">英文字号（中文默认 1.2 倍）</label>
-        <input id="english-font-size" name="english-font-size" type="number" min="1" value="48" required>
-
-        <label for="chinese-font-scale">中文相对英文字号倍率</label>
-        <input id="chinese-font-scale" name="chinese-font-scale" type="number" min="0.5" max="3" step="0.1" value="1.2" required>
-
-        <label for="chinese-color">中文文字颜色（金黄）</label>
-        <input id="chinese-color" name="chinese-color" type="color" value="#ffc928">
-
-        <label for="english-color">英文文字颜色</label>
-        <input id="english-color" name="english-color" type="color" value="#ffffff">
-
-        <label for="box-color-hex">自定义背景框颜色（HEX，可输入 RGB）</label>
-        <input id="box-color" name="box-color" type="color" value="#708496">
-        <input id="box-color-hex" name="box-color-hex" type="text" value="#708496" pattern="#[0-9A-Fa-f]{6}" aria-label="背景框颜色 HEX 值，例如 #0F1647" required>
-
-        <label for="box-opacity">背景框不透明度（0–1）</label>
-        <input id="box-opacity" name="box-opacity" type="number" min="0" max="1" step="0.05" value="0.68" required>
-
-        <fieldset class="box-position">
-          <legend>字幕框位置与尺寸（1920×1080 基准画布）</legend>
-          <label for="box-x">左边 X</label>
-          <input id="box-x" name="box-x" type="number" min="0" value="66" required>
-          <label for="box-y">顶部 Y</label>
-          <input id="box-y" name="box-y" type="number" min="0" value="883" required>
-          <label for="box-width">宽度</label>
-          <input id="box-width" name="box-width" type="number" min="1" value="1786" required>
-          <label for="box-height">高度</label>
-          <input id="box-height" name="box-height" type="number" min="1" value="139" required>
-        </fieldset>
 
         <button id="submit-button" type="submit">生成运行命令</button>
       </form>
@@ -131,6 +60,7 @@
         页面不会要求或保存访问令牌。ASS 文件自带所选背景框、样式和显示时机；坐标会按分辨率等比缩放。玻璃风格为播放器兼容的半透明质感模拟，不会模糊底层视频。单独播放 ASS 或 FFmpeg 硬刻录都会显示相同背景。本地 QSV 需要兼容的 Intel 硬件和 FFmpeg；云端使用软件编码。YouTube 可能限制字幕或视频访问。
       </footer>
     </main>
-    <script src="app.js?v=caption-settings-page"></script>
+    <script src="caption-settings.js?v=caption-settings-single-source-v2"></script>
+    <script src="app.js?v=caption-settings-single-source-v2"></script>
   </body>
 </html>

@@ -1,4 +1,6 @@
-const STORAGE_KEY = "gitsynonyms.captionSettings.v1";
+const sharedSettings = window.CaptionSettings;
+const defaults = sharedSettings.defaults;
+const STORAGE_KEY = sharedSettings.storageKey;
 const form = document.querySelector("#settings-form");
 const colorInput = document.querySelector("#box-color");
 const colorHexInput = document.querySelector("#box-color-hex");
@@ -14,24 +16,7 @@ const comfortPalettes = {
   day: { background: "#F8F9FA", text: "#2B2D42" },
   night: { background: "#1A1A1A", text: "#D4D4D4" },
   paper: { background: "#F4ECD8", text: "#1C2A38" },
-};
-
-const defaults = {
-  stylePreset: "classic",
-  boxDisplay: "always",
-  boxStyle: "glass-diamond",
-  chineseFont: "Microsoft YaHei",
-  englishFont: "Arial",
-  englishFontSize: "48",
-  chineseFontScale: "1.2",
-  chineseColor: "#ffc928",
-  englishColor: "#ffffff",
-  boxColor: "#708496",
-  boxOpacity: "0.68",
-  boxX: "66",
-  boxY: "883",
-  boxWidth: "1786",
-  boxHeight: "139",
+  plaque: { background: "#493016", text: "#FFE4A3" },
 };
 
 const presetValues = {
@@ -56,15 +41,11 @@ const presetValues = {
 const backgroundValues = {
   "glass-diamond": { boxColor: "#708496", boxOpacity: "0.68" },
   "presidential-blue": { boxColor: "#0f1647", boxOpacity: "0.9" },
+  "solid-color": { boxColor: "#708496", boxOpacity: "1" },
 };
 
 function readSettings() {
-  const saved = window.localStorage.getItem(STORAGE_KEY);
-  const settings = saved ? { ...defaults, ...JSON.parse(saved) } : { ...defaults };
-  if (settings.boxStyle === "presidential-blue" && typeof settings.boxColor === "string" && settings.boxColor.toLowerCase() === "#0d132d") {
-    settings.boxColor = "#0f1647";
-  }
-  return settings;
+  return sharedSettings.read();
 }
 
 function getFormSettings() {
@@ -157,10 +138,23 @@ function updatePaletteContrast() {
   });
 }
 
+function updatePaletteSelection(settings = getFormSettings()) {
+  const selected = Object.entries(comfortPalettes).find(([, palette]) =>
+    settings.boxStyle === "solid-color" &&
+    settings.boxOpacity === "1" &&
+    settings.boxColor.toLowerCase() === palette.background.toLowerCase() &&
+    settings.chineseColor.toLowerCase() === palette.text.toLowerCase() &&
+    settings.englishColor.toLowerCase() === palette.text.toLowerCase()
+  )?.[0];
+  form.querySelectorAll('input[name="comfort-palette"]').forEach((input) => {
+    input.checked = input.value === selected;
+  });
+}
+
 function applyComfortPalette(name) {
   const palette = comfortPalettes[name];
   if (!palette) return;
-  form.querySelector('#box-style-blue').checked = true;
+  form.querySelector('#box-style-solid').checked = true;
   colorInput.value = palette.background.toLowerCase();
   colorHexInput.value = palette.background;
   opacityInput.value = "1";
@@ -171,11 +165,25 @@ function applyComfortPalette(name) {
 
 function updatePreview() {
   const settings = getFormSettings();
+  const previewBounds = previewBox.parentElement.getBoundingClientRect();
+  const previewWidth = previewBounds.width;
+  const scale = previewWidth > 0 ? previewWidth / 1920 : 0.5;
+  const previewHeight = Math.max(1, previewBounds.height);
+  const minimumHeight = Math.min(48, previewHeight);
+  const heightPercent = Math.max(
+    Number(settings.boxHeight) / 10.8,
+    minimumHeight / previewHeight * 100
+  );
+  const topPercent = Math.min(
+    Number(settings.boxY) / 10.8,
+    100 - heightPercent
+  );
   const order = settings.stylePreset === "cinema"
     ? ["english", "chinese"]
     : ["chinese", "english"];
   previewBox.classList.toggle("blue-preview", settings.boxStyle === "presidential-blue");
   previewBox.classList.toggle("glass-preview", settings.boxStyle === "glass-diamond");
+  previewBox.classList.toggle("solid-preview", settings.boxStyle === "solid-color");
   previewBox.classList.toggle("caption-only-preview", settings.boxDisplay === "with-captions");
   previewBox.style.setProperty("--preview-color", settings.boxColor);
   previewBox.style.setProperty("--preview-opacity", settings.boxOpacity);
@@ -183,34 +191,37 @@ function updatePreview() {
   previewBox.style.setProperty("--preview-english-color", settings.englishColor);
   previewBox.style.setProperty("--preview-chinese-font", `"${settings.chineseFont}", sans-serif`);
   previewBox.style.setProperty("--preview-english-font", `"${settings.englishFont}", sans-serif`);
-  previewBox.style.setProperty("--preview-chinese-size", `${Math.min(Number(settings.chineseFontScale) * 18, 36)}px`);
-  previewBox.style.setProperty("--preview-english-size", `${Math.min(Number(settings.englishFontSize) * 0.375, 28)}px`);
-  previewBox.style.setProperty("--preview-width", `${Math.min(Number(settings.boxWidth) / 19.2, 100)}%`);
-  previewBox.style.setProperty("--preview-height", `${Math.min(Number(settings.boxHeight) / 2.4, 100)}%`);
+  previewBox.style.setProperty("--preview-chinese-size", `${Math.max(8, Number(settings.englishFontSize) * Number(settings.chineseFontScale) * scale)}px`);
+  previewBox.style.setProperty("--preview-english-size", `${Math.max(8, Number(settings.englishFontSize) * scale)}px`);
+  previewBox.style.setProperty("--preview-left", `${Number(settings.boxX) / 19.2}%`);
+  previewBox.style.setProperty("--preview-top", `${topPercent}%`);
+  previewBox.style.setProperty("--preview-width", `${Number(settings.boxWidth) / 19.2}%`);
+  previewBox.style.setProperty("--preview-height", `${heightPercent}%`);
   previewBox.replaceChildren(...order.map((language) => {
     const text = language === "english" ? previewEnglish : previewChinese;
     return text;
   }));
   opacityValue.value = settings.boxOpacity;
   opacityValue.textContent = settings.boxOpacity;
+  updatePaletteSelection(settings);
   previewSummary.textContent =
     `${settings.boxDisplay === "always" ? "全程显示" : "仅字幕期间显示"} · ` +
-    `${settings.boxStyle === "presidential-blue" ? "总统蓝" : "磨砂玻璃钻石"} · ` +
+    `${settings.boxStyle === "presidential-blue" ? "总统蓝" : settings.boxStyle === "solid-color" ? "纯色背景" : "磨砂玻璃钻石"} · ` +
     `${settings.boxX}, ${settings.boxY} · ${settings.boxWidth} × ${settings.boxHeight}`;
+}
+
+function persistSettings(message = "已自动保存，字幕生成页会同步使用。") {
+  try {
+    sharedSettings.write(getFormSettings());
+    saveStatus.textContent = message;
+  } catch (error) {
+    saveStatus.textContent = `保存失败：${error.message}`;
+  }
 }
 
 function saveSettings(event) {
   event.preventDefault();
-  if (!form.reportValidity()) return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(getFormSettings()));
-    saveStatus.textContent = "设置已保存，并会应用到字幕生成页面。";
-    window.setTimeout(() => {
-      saveStatus.textContent = "";
-    }, 3500);
-  } catch (error) {
-    saveStatus.textContent = `保存失败：${error.message}`;
-  }
+  if (form.reportValidity()) persistSettings("设置已保存，并与字幕生成页面同步。");
 }
 
 try {
@@ -235,14 +246,16 @@ form.addEventListener("change", (event) => {
     }
   }
   updatePreview();
+  persistSettings();
 });
 form.addEventListener("input", (event) => {
-  if (["box-color-hex", "box-color", "chinese-color", "english-color"].includes(event.target.id)) {
+  if (["box-color-hex", "box-color", "box-opacity", "chinese-color", "english-color"].includes(event.target.id)) {
     form.querySelectorAll('input[name="comfort-palette"]').forEach((input) => {
       input.checked = false;
     });
   }
   updatePreview();
+  persistSettings();
 });
 colorInput.addEventListener("input", () => {
   colorHexInput.value = colorInput.value.toUpperCase();
@@ -254,3 +267,13 @@ colorHexInput.addEventListener("input", () => {
   }
 });
 form.addEventListener("submit", saveSettings);
+window.addEventListener("resize", updatePreview);
+window.addEventListener("storage", (event) => {
+  if (event.key !== STORAGE_KEY || !event.newValue) return;
+  try {
+    applySettings(sharedSettings.read());
+    saveStatus.textContent = "已从另一个页面同步字幕设置。";
+  } catch (error) {
+    saveStatus.textContent = `同步字幕设置失败：${error.message}`;
+  }
+});
