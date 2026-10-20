@@ -55,7 +55,7 @@ const stylePresets = {
 };
 const boxStyles = {
   "glass-diamond": { color: "#708496", opacity: "0.68" },
-  "deep-blue": { color: "#0a3161", opacity: "0.9" },
+  "presidential-blue": { color: "#0d132d", opacity: "0.9" },
 };
 
 function applyStylePreset(presetName) {
@@ -149,8 +149,8 @@ form.addEventListener("submit", (event) => {
   const displayDescription = boxDisplay === "always"
     ? "字幕背景框会从视频开始持续到结束，适合遮挡原片横幅"
     : "字幕背景框只在字幕出现时显示";
-  const boxStyleDescription = boxStyle === "deep-blue"
-    ? "深蓝背景框"
+  const boxStyleDescription = boxStyle === "presidential-blue"
+    ? "总统蓝背景框"
     : "磨砂玻璃钻石质感背景框";
   const options = {
     burnIn: burnInInput.checked,
