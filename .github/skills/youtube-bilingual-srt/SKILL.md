@@ -3,7 +3,7 @@ name: youtube-bilingual-srt
 description: Download two YouTube caption tracks in any available languages and merge them into one time-aligned bilingual SRT. Use when the user asks for YouTube subtitles, translation captions, multilingual subtitles, or an SRT file.
 ---
 
-# YouTube bilingual SRT
+# YouTube bilingual subtitles
 
 Use the repository's standalone downloader. It runs with the existing Python standard library and `yt-dlp`; do not create a virtual environment or install Python packages for this task.
 
@@ -14,6 +14,16 @@ On Windows, locate the current user's Anaconda installation through `$env:USERPR
 ```powershell
 & (Join-Path $env:USERPROFILE "anaconda3\python.exe") .\scripts\download_youtube_bilingual_srt.py "<YouTube URL>" --languages "<top-language>,<bottom-language>" --output-dir "D:\MyDownload"
 ```
+
+The script creates the two unchanged single-language SRT tracks, a time-aligned bilingual SRT, and a styled ASS file. ASS generation classifies CJK text above Latin text regardless of the source track, combines rolling lines by language, centers the bilingual lines inside the caption area, and shrinks text that would exceed the available width. The 1920×1080 area `(66,883)`–`(1852,1022)` is rendered by FFmpeg `drawbox` and its expression scales proportionally with the video frame. Chinese appears above English in warm straw yellow, is 1.2 times the English font size, and both lines use a subtle text shadow; English is white. The default drawbox is black at 0.6 opacity. Fonts, sizes, text colors, box color, and opacity are configurable through the `--chinese-font`, `--english-font`, `--english-font-size`, `--chinese-font-scale`, `--chinese-color`, `--english-color`, `--box-color`, and `--box-opacity` options.
+
+To also download and retain the video and render an MP4 with hard-burned subtitles, add `--burn-in`. On a local Windows computer with Intel Quick Sync and FFmpeg built with `h264_qsv`, use `--video-encoder h264_qsv --global-quality 1`. The equivalent one-line FFmpeg operation is:
+
+```powershell
+ffmpeg -i "a.mp4" -vf "subtitles='transcript.ass'" -c:v h264_qsv -global_quality 1 -c:a copy "output_with_subtitle.mp4"
+```
+
+The ASS file owns text layout and styling; FFmpeg draws the scaled background box, then renders ASS text over it. The GitHub Actions workflow uses software H.264 encoding because hosted runners do not provide Intel Quick Sync hardware.
 
 The default language pair is `zh-Hans,en-orig`, producing Chinese above English. For another pair, inspect available YouTube track codes first:
 
@@ -27,7 +37,7 @@ The script prints numbered processing steps and streams yt-dlp's wait and downlo
 
 The GitHub Actions Windows runner installs Deno 2 and `yt-dlp[default]`, then explicitly enables Deno as yt-dlp's JavaScript runtime for YouTube extraction.
 
-The original language files are retained byte-for-byte as yt-dlp downloads them. The bilingual SRT uses sequential block numbers and standard blank-line separation while preserving each bottom-track cue's source timing; styling markup already present in source captions is not stripped. SRT styling support varies between players, so do not add new player-dependent styling.
+The original language files are retained byte-for-byte as yt-dlp downloads them. The bilingual SRT uses sequential block numbers and standard blank-line separation while preserving each bottom-track cue's source timing; styling markup already present in source captions is not stripped. SRT styling support varies between players; use the generated ASS for consistent font, color, position, and background-box styling.
 
 ## SRT formatting limits
 

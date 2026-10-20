@@ -12,7 +12,7 @@
       <header>
         <p class="eyebrow">GITSYNONYMS · CLOUD CAPTIONS</p>
         <h1>YouTube 字幕下载器</h1>
-        <p class="intro">输入视频链接，选择由 GitHub 云端 runner 或本机生成中文、英文单语字幕和中英双语 SRT。</p>
+        <p class="intro">输入视频链接，生成中英单语字幕、双语 SRT 和可自定义字体、颜色、背景框的 ASS；也可在 GitHub 云端将 ASS 硬刻录进视频。</p>
       </header>
 
       <form id="download-form" class="panel">
@@ -24,6 +24,36 @@
           <option value="runner">GitHub 云端 runner</option>
           <option value="local">本地 Anaconda</option>
         </select>
+
+        <label id="burn-in-label" class="check-row" for="burn-in">
+          <input id="burn-in" name="burn-in" type="checkbox">
+          <span>生成硬字幕 MP4（将下载视频并重新编码）</span>
+        </label>
+
+        <label for="chinese-font">中文字体（上方）</label>
+        <input id="chinese-font" name="chinese-font" value="Microsoft YaHei" required>
+
+        <label for="english-font">英文原文字体（下方）</label>
+        <input id="english-font" name="english-font" value="Arial" required>
+        <p class="hint">字体名称写入 ASS；硬刻录时所选字体需要已安装在运行 FFmpeg 的电脑上。</p>
+
+        <label for="english-font-size">英文字号（中文默认 1.2 倍）</label>
+        <input id="english-font-size" name="english-font-size" type="number" min="1" value="48" required>
+
+        <label for="chinese-font-scale">中文相对英文字号倍率</label>
+        <input id="chinese-font-scale" name="chinese-font-scale" type="number" min="0.5" max="3" step="0.1" value="1.2" required>
+
+        <label for="chinese-color">中文文字颜色（浅麦秆暖黄）</label>
+        <input id="chinese-color" name="chinese-color" type="color" value="#ffec99">
+
+        <label for="english-color">英文文字颜色</label>
+        <input id="english-color" name="english-color" type="color" value="#ffffff">
+
+        <label for="box-color">自适应字幕黑框颜色</label>
+        <input id="box-color" name="box-color" type="color" value="#000000">
+
+        <label for="box-opacity">字幕黑框不透明度（0–1，0.6 = 60% 不透明）</label>
+        <input id="box-opacity" name="box-opacity" type="number" min="0" max="1" step="0.05" value="0.6" required>
 
         <button id="submit-button" type="submit">生成运行命令</button>
       </form>
@@ -40,9 +70,9 @@
       </section>
 
       <footer>
-        页面不会要求或保存访问令牌。本地模式仅下载字幕；云端模式使用 GitHub 登录会话或 GitHub CLI 授权启动 Actions。YouTube 可能限制 runner 访问字幕。
+        页面不会要求或保存访问令牌。本地模式生成字幕文件；ASS 样式写入字幕文件本身。硬刻录必须使用 GitHub 云端 runner，YouTube 可能限制 runner 访问字幕或视频。
       </footer>
     </main>
-    <script src="app.js?v=userprofile-python"></script>
+    <script src="app.js?v=ass-burn-in"></script>
   </body>
 </html>

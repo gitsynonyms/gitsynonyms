@@ -48,6 +48,106 @@ def test_parse_srt_keeps_caption_markup_and_spacing():
     assert parsed[0]["text"] == "  <b>Text</b>  "
 
 
+def test_fetch_transcript_defaults_to_yt_dlp_original_english_track(monkeypatch):
+    metadata = {
+        "subtitles": {"en-orig": [], "en": []},
+        "automatic_captions": {"en": [], "en-orig": []},
+    }
+    downloaded = []
+    expected = [
+        {"start": 1.0, "duration": 2.0, "text": "A phrase shown in the live captions."}
+    ]
+    monkeypatch.setattr(
+        youtube,
+        "_run_yt_dlp",
+        lambda _args: subprocess.CompletedProcess([], 0, json.dumps(metadata), ""),
+    )
+
+    def fake_download(url, video_id, language, kind, directory, sleep_seconds=56):
+        downloaded.append((url, video_id, language, kind, sleep_seconds, directory))
+        return directory / "source.srt", expected
+
+    monkeypatch.setattr(youtube, "_download_yt_dlp_track", fake_download)
+    result = youtube.fetch_transcript("https://youtu.be/IySF_8OArvw")
+
+    assert result == expected
+    assert downloaded[0][:5] == (
+        "https://youtu.be/IySF_8OArvw",
+        "IySF_8OArvw",
+        "en-orig",
+        "auto-generated",
+        0,
+    )
+
+
+def test_fetch_transcript_uses_manual_track_only_when_no_automatic_track(monkeypatch):
+    metadata = {
+        "subtitles": {"en-orig": [], "en": []},
+        "automatic_captions": {},
+    }
+    downloaded = []
+    monkeypatch.setattr(
+        youtube,
+        "_run_yt_dlp",
+        lambda _args: subprocess.CompletedProcess([], 0, json.dumps(metadata), ""),
+    )
+
+    def fake_download(_url, _video_id, language, kind, _directory, sleep_seconds=56):
+        downloaded.append((language, kind, sleep_seconds))
+        return Path("manual.srt"), [
+            {"start": 0.0, "duration": 1.0, "text": "Manual fallback"}
+        ]
+
+    monkeypatch.setattr(youtube, "_download_yt_dlp_track", fake_download)
+    entries = youtube.fetch_transcript("IySF_8OArvw")
+
+    assert entries[0]["text"] == "Manual fallback"
+    assert downloaded == [("en-orig", "manual", 0)]
+
+
+def test_fetch_transcript_can_explicitly_use_transcript_api(monkeypatch):
+    expected = [{"start": 1.0, "duration": 2.0, "text": "Transcript API text"}]
+
+    class FakeApi:
+        def fetch(self, video_id, *, languages):
+            assert video_id == "IySF_8OArvw"
+            assert languages == ["en"]
+            return [type("Entry", (), expected[0])()]
+
+    monkeypatch.setattr(youtube, "YouTubeTranscriptApi", FakeApi)
+    assert youtube.fetch_transcript(
+        "https://youtu.be/IySF_8OArvw", source="transcript-api"
+    ) == expected
+
+
+def test_fetch_transcript_does_not_silently_fallback_when_track_missing(monkeypatch):
+    metadata = {"subtitles": {}, "automatic_captions": {"fr": []}}
+    monkeypatch.setattr(
+        youtube,
+        "_run_yt_dlp",
+        lambda _args: subprocess.CompletedProcess([], 0, json.dumps(metadata), ""),
+    )
+    try:
+        youtube.fetch_transcript("IySF_8OArvw")
+    except youtube.SubtitleTranslationError as error:
+        assert "en-orig, en" in str(error)
+    else:
+        raise AssertionError("Expected a missing English source track to be reported")
+
+
+def test_translate_text_reports_failure_instead_of_returning_source_text():
+    class BrokenTranslator:
+        def translate(self, _text):
+            raise RuntimeError("service unavailable")
+
+    try:
+        youtube.translate_text("Original words", translator=BrokenTranslator())
+    except youtube.SubtitleTranslationError as error:
+        assert "service unavailable" in str(error)
+    else:
+        raise AssertionError("Expected translation failure to be visible")
+
+
 def test_bilingual_srt_splits_cues_at_source_boundaries():
     chinese = [{"start": 1, "duration": 2, "text": "中文"}]
     english = [{"start": 2, "duration": 2, "text": "English"}]

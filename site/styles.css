@@ -83,6 +83,23 @@ summary:focus-visible {
   outline-offset: 2px;
 }
 
+input[type="color"] {
+  padding: 5px;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.check-row input {
+  width: 18px;
+  min-height: 18px;
+  margin: 0;
+  accent-color: #7779ff;
+}
+
 .hint {
   margin: -4px 0 8px;
   color: #aab5cb;

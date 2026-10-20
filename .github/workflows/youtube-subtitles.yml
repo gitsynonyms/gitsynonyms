@@ -21,6 +21,51 @@ on:
         description: Correlation ID used by the subtitle webpage
         required: false
         type: string
+      burn_in:
+        description: Download the video and create an MP4 with the ASS subtitles burned in
+        required: false
+        type: boolean
+        default: false
+      chinese_font:
+        description: Font family for the top Chinese captions
+        required: false
+        type: string
+        default: Microsoft YaHei
+      english_font:
+        description: Font family for the bottom English captions
+        required: false
+        type: string
+        default: Arial
+      english_font_size:
+        description: Base English font size (Chinese defaults to 1.2 times this)
+        required: false
+        type: number
+        default: 48
+      chinese_font_scale:
+        description: Chinese font size as a multiple of English size
+        required: false
+        type: number
+        default: 1.2
+      chinese_color:
+        description: Chinese text color in #RRGGBB format (warm straw yellow by default)
+        required: false
+        type: string
+        default: "#FFEC99"
+      english_color:
+        description: English text color in #RRGGBB format
+        required: false
+        type: string
+        default: "#FFFFFF"
+      box_color:
+        description: Adaptive drawbox color in #RRGGBB format
+        required: false
+        type: string
+        default: "#000000"
+      box_opacity:
+        description: Drawbox opacity from 0 (transparent) to 1 (opaque)
+        required: false
+        type: number
+        default: 0.6
 
 permissions:
   contents: read
@@ -28,7 +73,7 @@ permissions:
 jobs:
   subtitles:
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -42,12 +87,25 @@ jobs:
           python -m pip install "yt-dlp[default]"
           deno --version
           yt-dlp --js-runtimes deno --version
+      - name: Install FFmpeg for video burn-in
+        if: ${{ inputs.burn_in }}
+        shell: pwsh
+        run: choco install ffmpeg --yes --no-progress
       - name: Download and organize subtitle tracks
         env:
           YOUTUBE_SOURCE: ${{ inputs.source }}
           EVENT_TITLE: ${{ inputs.event }}
           EVENT_DATE: ${{ inputs.date }}
           REQUEST_ID: ${{ inputs.request_id }}
+          BURN_IN: ${{ inputs.burn_in }}
+          CHINESE_FONT: ${{ inputs.chinese_font }}
+          ENGLISH_FONT: ${{ inputs.english_font }}
+          ENGLISH_FONT_SIZE: ${{ inputs.english_font_size }}
+          CHINESE_FONT_SCALE: ${{ inputs.chinese_font_scale }}
+          CHINESE_COLOR: ${{ inputs.chinese_color }}
+          ENGLISH_COLOR: ${{ inputs.english_color }}
+          BOX_COLOR: ${{ inputs.box_color }}
+          BOX_OPACITY: ${{ inputs.box_opacity }}
         shell: bash
         run: |
           source="$YOUTUBE_SOURCE"
@@ -65,8 +123,15 @@ jobs:
             echo "Resolved latest channel upload: $source"
           fi
           args=("$source" --output-dir output --languages zh-Hans,en-orig)
+          args+=(--chinese-font "$CHINESE_FONT" --english-font "$ENGLISH_FONT")
+          args+=(--english-font-size "$ENGLISH_FONT_SIZE" --chinese-font-scale "$CHINESE_FONT_SCALE")
+          args+=(--chinese-color "$CHINESE_COLOR" --english-color "$ENGLISH_COLOR")
+          args+=(--box-color "$BOX_COLOR" --box-opacity "$BOX_OPACITY")
           if [[ -n "$EVENT_TITLE" ]]; then args+=(--event "$EVENT_TITLE"); fi
           if [[ -n "$EVENT_DATE" ]]; then args+=(--date "$EVENT_DATE"); fi
+          if [[ "$BURN_IN" == "true" ]]; then
+            args+=(--burn-in --video-encoder libx264 --global-quality 18)
+          fi
           python scripts/download_youtube_bilingual_srt.py "${args[@]}"
       - uses: actions/upload-artifact@v4
         with:

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import math
 import re
@@ -14,6 +15,15 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Sequence
 from urllib.parse import parse_qs, urlparse
+
+CJK = re.compile(
+    r"[\u2e80-\u2fff\u3000-\u30ff\u3100-\u312f\u3130-\u318f"
+    r"\u31a0-\u31bf\u31f0-\u31ff\u3400-\u4dbf\u4e00-\u9fff"
+    r"\ua960-\ua97f\uac00-\ud7ff\uf900-\ufaff\ufe30-\ufe4f\uff00-\uffef]"
+)
+CJK_EM, LATIN_EM = 0.85, 0.45
+PLAY_RESOLUTION = (1920, 1080)
+CAPTION_AREA = (66, 883, 1852, 1022)
 
 
 def video_id_from_url(value: str) -> str:
@@ -127,6 +137,232 @@ def align_and_merge(
     return "\n\n".join(blocks) + "\n"
 
 
+def ass_escape_text(value: str) -> str:
+    tag_pattern = re.compile(
+        r"<(?P<simple>/)?(?P<tag>b|i|u|s)>"
+        r"|<font\s+color=[\"']?#(?P<color>[0-9a-f]{6})[\"']?>"
+        r"|</font>|<br\s*/?>|<[^>]+>",
+        re.IGNORECASE,
+    )
+    style_tags = {"b": "b", "i": "i", "u": "u", "s": "s"}
+    parts = []
+
+    def escape_text(text: str) -> str:
+        decoded = html.unescape(text)
+        return (
+            decoded.replace("\\", r"\\")
+            .replace("{", r"\{")
+            .replace("}", r"\}")
+            .replace("\r\n", "\n")
+            .replace("\r", "\n")
+            .replace("\n", r"\N")
+        )
+
+    cursor = 0
+    for match in tag_pattern.finditer(value):
+        parts.append(escape_text(value[cursor : match.start()]))
+        tag = match.group("tag")
+        color = match.group("color")
+        if tag:
+            command = style_tags[tag.lower()]
+            parts.append("{\\" + command + ("0}" if match.group("simple") else "1}"))
+        elif color:
+            red, green, blue = color[0:2], color[2:4], color[4:6]
+            parts.append(r"{\c&H" + blue + green + red + "&}")
+        elif match.group(0).lower() == "</font>":
+            parts.append(r"{\c}")
+        elif match.group(0).lower().startswith("<br"):
+            parts.append(r"\N")
+        cursor = match.end()
+    parts.append(escape_text(value[cursor:]))
+    return "".join(parts)
+
+
+def ass_timestamp(seconds: float) -> str:
+    total_centiseconds = round(seconds * 100)
+    hours, remainder = divmod(total_centiseconds, 360_000)
+    minutes, remainder = divmod(remainder, 6_000)
+    whole_seconds, centiseconds = divmod(remainder, 100)
+    return f"{hours}:{minutes:02d}:{whole_seconds:02d}.{centiseconds:02d}"
+
+
+def ass_color(value: str, *, opacity: int = 100) -> str:
+    match = re.fullmatch(r"#?([0-9a-fA-F]{6})", value.strip())
+    if not match:
+        raise ValueError(f"ASS color must be a six-digit RGB value such as #FFFFFF: {value!r}")
+    if not 0 <= opacity <= 100:
+        raise ValueError("ASS opacity must be between 0 and 100.")
+    red, green, blue = match.group(1)[0:2], match.group(1)[2:4], match.group(1)[4:6]
+    alpha = round(255 * (100 - opacity) / 100)
+    return f"&H{alpha:02X}{blue.upper()}{green.upper()}{red.upper()}"
+
+
+def text_width_units(value: str) -> float:
+    plain_text = html.unescape(re.sub(r"<[^>]*>", "", value))
+    return sum(CJK_EM if CJK.search(char) else LATIN_EM for char in plain_text)
+
+
+def fit_font_size(value: str, font_size: float, available_width: int) -> float:
+    width = text_width_units(value) * font_size
+    return font_size if width <= available_width or width == 0 else round(font_size * available_width / width, 1)
+
+
+def classify_caption_lines(
+    cues: Sequence[dict],
+) -> tuple[str, str]:
+    chinese_lines = []
+    english_lines = []
+    for cue in cues:
+        for line in cue["text"].splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            if CJK.search(html.unescape(re.sub(r"<[^>]*>", "", line))):
+                chinese_lines.append(line)
+            else:
+                english_lines.append(line)
+    return "".join(chinese_lines), " ".join(english_lines)
+
+
+def build_ass(
+    first: Sequence[dict],
+    second: Sequence[dict],
+    *,
+    first_font: str = "Microsoft YaHei",
+    second_font: str = "Arial",
+    second_font_size: int = 48,
+    first_font_scale: float = 1.2,
+    caption_area: tuple[int, int, int, int] = CAPTION_AREA,
+    first_color: str = "#FFEC99",
+    second_color: str = "#FFFFFF",
+    line_gap: int = 10,
+    padding_x: int = 24,
+    shadow_color: str = "#000000",
+    play_res_x: int = PLAY_RESOLUTION[0],
+    play_res_y: int = PLAY_RESOLUTION[1],
+) -> str:
+    if not first or not second:
+        raise ValueError("Both subtitle tracks must contain cues.")
+    for name, font in (("Chinese", first_font), ("English", second_font)):
+        if not font.strip() or any(char in font for char in ",\r\n{}"):
+            raise ValueError(f"{name} font name must be non-empty and cannot contain commas or braces.")
+    if second_font_size < 1 or not 0.5 <= first_font_scale <= 3:
+        raise ValueError("Font size must be positive and Chinese font scale must be between 0.5 and 3.")
+    if line_gap < 0 or padding_x < 0:
+        raise ValueError("Line gap and horizontal padding must not be negative.")
+    if play_res_x < 1 or play_res_y < 1:
+        raise ValueError("ASS play resolution must be positive.")
+    if len(caption_area) != 4:
+        raise ValueError("Caption area must contain left, top, right, and bottom coordinates.")
+    area_left, area_top, area_right, area_bottom = caption_area
+    if not (
+        0 <= area_left < area_right <= play_res_x
+        and 0 <= area_top < area_bottom <= play_res_y
+    ):
+        raise ValueError("Caption area must be a positive rectangle inside the ASS play resolution.")
+
+    first_ass_color = ass_color(first_color)
+    second_ass_color = ass_color(second_color)
+    shadow_ass_color = ass_color(shadow_color, opacity=35)
+    first_font_size = max(1, round(second_font_size * first_font_scale, 1))
+    area_width = area_right - area_left
+    area_center_x = (area_left + area_right) // 2
+    area_center_y = (area_top + area_bottom) / 2
+    available_width = area_width - 2 * padding_x
+    if available_width <= 0:
+        raise ValueError("Horizontal padding leaves no room for subtitle text.")
+    style_format = (
+        "Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, "
+        "BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, "
+        "Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding"
+    )
+    styles = (
+        f"Style: Chinese,{first_font},{first_font_size:g},{first_ass_color},&H000000FF,"
+        f"&H80000000,{shadow_ass_color},-1,0,0,0,100,100,0,0,1,1,1,5,0,0,0,1",
+        f"Style: English,{second_font},{second_font_size},{second_ass_color},&H000000FF,"
+        f"&H80000000,{shadow_ass_color},0,0,0,0,100,100,0,0,1,1,1,5,0,0,0,1",
+    )
+    cues = [*first, *second]
+    if any(cue["end"] <= cue["start"] or not cue["text"].strip() for cue in cues):
+        raise ValueError("Cannot serialize empty or invalid subtitle cues.")
+
+    boundaries = sorted({cue[key] for cue in cues for key in ("start", "end")})
+    events = []
+    for start, end in zip(boundaries, boundaries[1:]):
+        if end <= start:
+            continue
+        active = sorted(
+            (cue for cue in cues if cue["start"] < end and cue["end"] > start),
+            key=lambda cue: cue["start"],
+        )
+        chinese, english = classify_caption_lines(active)
+        if not chinese and not english:
+            continue
+
+        cn_size = fit_font_size(chinese, first_font_size, available_width) if chinese else 0
+        en_size = fit_font_size(english, second_font_size, available_width) if english else 0
+        body = ""
+        if chinese:
+            body = "{\\fs" + f"{cn_size:g}" + "}" + ass_escape_text(chinese)
+        if english:
+            if chinese:
+                if line_gap:
+                    body += r"\N{\fs" + str(line_gap) + r"}\h"
+                body += r"\N{\rEnglish"
+            else:
+                body += "{\\rEnglish"
+            body += f"\\fs{en_size:g}" + "}" + ass_escape_text(english)
+        style = "Chinese" if chinese else "English"
+        body = f"{{\\an5\\pos({area_center_x:g},{area_center_y:g})}}" + body
+        event = {
+            "start": start,
+            "end": end,
+            "style": style,
+            "body": body,
+        }
+        if (
+            events
+            and events[-1]["end"] == start
+            and events[-1]["style"] == style
+            and events[-1]["body"] == body
+        ):
+            events[-1]["end"] = end
+        else:
+            events.append(event)
+
+    return "\n".join(
+        [
+            "[Script Info]",
+            "ScriptType: v4.00+",
+            f"PlayResX: {play_res_x}",
+            f"PlayResY: {play_res_y}",
+            "ScaledBorderAndShadow: yes",
+            "WrapStyle: 2",
+            "",
+            "[V4+ Styles]",
+            f"Format: {style_format}",
+            *styles,
+            "",
+            "[Events]",
+            "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
+            *[
+                f"Dialogue: 0,{ass_timestamp(event['start'])},{ass_timestamp(event['end'])},"
+                f"{event['style']},,0,0,0,,{event['body']}"
+                for event in events
+            ],
+            "",
+        ]
+    )
+
+
+def write_ass(path: Path, content: str) -> None:
+    if "[V4+ Styles]" not in content or "[Events]" not in content:
+        raise ValueError("Generated ASS is missing styles or events.")
+    if not re.search(r"(?m)^Dialogue: ", content):
+        raise ValueError("Generated ASS contains no subtitle events.")
+    path.write_text(content, encoding="utf-8-sig", newline="")
+
+
 def format_timestamp(seconds: float) -> str:
     if not math.isfinite(seconds) or seconds < 0:
         raise ValueError(f"Invalid subtitle time: {seconds!r}")
@@ -187,9 +423,10 @@ def run_ytdlp(
     executable = shutil.which("yt-dlp")
     if not executable:
         raise RuntimeError("yt-dlp is not installed or is not available on PATH.")
+    javascript_runtime = ["--js-runtimes", "deno"] if shutil.which("deno") else []
     try:
         return subprocess.run(
-            [executable, *args],
+            [executable, *javascript_runtime, *args],
             check=True,
             capture_output=not show_progress,
             text=True,
@@ -242,6 +479,104 @@ def download_track(
     return source_path, parse_srt(source_path.read_text(encoding="utf-8-sig"))
 
 
+def download_video(url: str, video_id: str, directory: Path) -> Path:
+    print("  Downloading source video on the GitHub runner for subtitle burn-in...", flush=True)
+    run_ytdlp(
+        [
+            "--no-warnings",
+            "--retries",
+            "5",
+            "--merge-output-format",
+            "mp4",
+            "-f",
+            "bv*+ba/b",
+            "-o",
+            str(directory / f"{video_id}.source.%(ext)s"),
+            url,
+        ],
+        show_progress=True,
+    )
+    matches = [
+        path
+        for path in directory.glob(f"{video_id}.source.*")
+        if path.is_file() and not path.name.endswith((".part", ".ytdl"))
+    ]
+    if len(matches) != 1:
+        raise RuntimeError(f"yt-dlp did not produce exactly one source video for {video_id}.")
+    return matches[0]
+
+
+def burn_ass_into_video(
+    video: Path,
+    ass_path: Path,
+    output_path: Path,
+    *,
+    video_encoder: str = "libx264",
+    global_quality: int = 18,
+    box_color: str = "#000000",
+    box_opacity: float = 0.6,
+) -> None:
+    executable = shutil.which("ffmpeg")
+    if not executable:
+        raise RuntimeError("ffmpeg is required for burn-in but is not available on PATH.")
+    if video_encoder not in {"h264_qsv", "libx264"}:
+        raise ValueError("Video encoder must be 'h264_qsv' or 'libx264'.")
+    if global_quality < 1 or global_quality > 51:
+        raise ValueError("Global quality must be between 1 and 51.")
+    color_match = re.fullmatch(r"#?([0-9a-fA-F]{6})", box_color.strip())
+    if not color_match:
+        raise ValueError(f"Box color must be a six-digit RGB value such as #000000: {box_color!r}")
+    if not math.isfinite(box_opacity) or not 0 <= box_opacity <= 1:
+        raise ValueError("Box opacity must be between 0 and 1.")
+    filter_path = str(ass_path.resolve()).replace("\\", "/")
+    filter_path = (
+        filter_path.replace(":", r"\:")
+        .replace("'", r"\'")
+        .replace(",", r"\,")
+        .replace("[", r"\[")
+        .replace("]", r"\]")
+    )
+    x0, y0, x1, y1 = CAPTION_AREA
+    width, height = PLAY_RESOLUTION
+    rgb = color_match.group(1).upper()
+    box_filter = (
+        f"drawbox=x=iw*{x0}/{width}:y=ih*{y0}/{height}:"
+        f"w=iw*{x1 - x0}/{width}:h=ih*{y1 - y0}/{height}:"
+        f"color=0x{rgb}@{box_opacity:g}:t=fill"
+    )
+    quality_option = "-global_quality" if video_encoder == "h264_qsv" else "-crf"
+    command = [
+        executable,
+        "-y",
+        "-i",
+        str(video),
+        "-vf",
+        f"{box_filter},subtitles=filename='{filter_path}'",
+        "-c:v",
+        video_encoder,
+        quality_option,
+        str(global_quality),
+        "-c:a",
+        "copy",
+        str(output_path),
+    ]
+    print("  Rendering the video with permanently burned-in ASS subtitles...", flush=True)
+    try:
+        subprocess.run(
+            command,
+            check=True,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+    except FileNotFoundError as error:
+        raise RuntimeError("ffmpeg is required for burn-in but is not available on PATH.") from error
+    except subprocess.CalledProcessError as error:
+        details = (error.stderr or error.stdout or str(error)).strip()
+        raise RuntimeError(f"ffmpeg failed to burn in subtitles: {details}") from error
+
+
 def safe_name(value: str) -> str:
     return re.sub(r"[^a-zA-Z0-9_-]+", "-", value).strip("-_")[:90] or "youtube-video"
 
@@ -277,6 +612,46 @@ def main(argv: list[str] | None = None) -> int:
         type=int,
         default=56,
         help="Wait before requesting Chinese subtitles (default: 56 seconds; English is not delayed).",
+    )
+    parser.add_argument("--chinese-font", default="Microsoft YaHei", help="ASS font family for the top Chinese line.")
+    parser.add_argument("--english-font", default="Arial", help="ASS font family for the bottom English line.")
+    parser.add_argument(
+        "--english-font-size",
+        type=int,
+        default=48,
+        help="English ASS font size; Chinese size is derived from this value and --chinese-font-scale.",
+    )
+    parser.add_argument(
+        "--chinese-font-scale",
+        type=float,
+        default=1.2,
+        help="Chinese font size as a multiple of the English font size (default: 1.2).",
+    )
+    parser.add_argument("--chinese-color", default="#FFEC99", help="Chinese ASS text color in #RRGGBB format.")
+    parser.add_argument("--english-color", default="#FFFFFF", help="English ASS text color in #RRGGBB format.")
+    parser.add_argument("--box-color", default="#000000", help="FFmpeg drawbox color in #RRGGBB format.")
+    parser.add_argument(
+        "--box-opacity",
+        type=float,
+        default=0.6,
+        help="Drawbox opacity from 0 (transparent) to 1 (opaque); default: 0.6.",
+    )
+    parser.add_argument(
+        "--burn-in",
+        action="store_true",
+        help="Download and keep the source video, then create an MP4 with the ASS subtitles burned in.",
+    )
+    parser.add_argument(
+        "--video-encoder",
+        choices=("h264_qsv", "libx264"),
+        default="libx264",
+        help="FFmpeg H.264 encoder for burn-in (default: libx264; use h264_qsv for Intel Quick Sync).",
+    )
+    parser.add_argument(
+        "--global-quality",
+        type=int,
+        default=18,
+        help="FFmpeg quality value (1-51); with h264_qsv this is passed as -global_quality.",
     )
     args = parser.parse_args(argv)
     if args.sleep_subtitles < 0:
@@ -340,14 +715,48 @@ def main(argv: list[str] | None = None) -> int:
         combined_kind = f"{first_kind}+{second_kind}"
         output = folder / f"{combined_kind}_Bilingual_{first_code}-{second_code}.srt"
         write_srt(output, align_and_merge(first, second))
-        print("Step 5/5: Validating generated SRT files...", flush=True)
+        ass_output = folder / f"{combined_kind}_Bilingual_{first_code}-{second_code}.ass"
+        write_ass(
+            ass_output,
+            build_ass(
+                first,
+                second,
+                first_font=args.chinese_font,
+                second_font=args.english_font,
+                second_font_size=args.english_font_size,
+                first_font_scale=args.chinese_font_scale,
+                first_color=args.chinese_color,
+                second_color=args.english_color,
+            ),
+        )
+        print("Step 5/6: Validating generated subtitle files...", flush=True)
         cue_count = validate_srt(output.read_text(encoding="utf-8-sig"))
         print(f"  OK: {output.name} ({cue_count} cues)", flush=True)
+        print(f"  OK: {ass_output.name} (ASS styles: Chinese above English)", flush=True)
+        if args.burn_in:
+            print("Step 6/6: Downloading the video and burning in the ASS subtitles...", flush=True)
+            source_video = download_video(args.url, video_id, folder)
+            burned_output = folder / f"Burned_Bilingual_{video_id}.mp4"
+            burn_ass_into_video(
+                source_video,
+                ass_output,
+                burned_output,
+                video_encoder=args.video_encoder,
+                global_quality=args.global_quality,
+                box_color=args.box_color,
+                box_opacity=args.box_opacity,
+            )
+            print(f"  OK: {burned_output.name}", flush=True)
+        else:
+            print("Step 6/6: Video burn-in skipped; pass --burn-in to render a subtitled MP4.", flush=True)
         print("Original downloaded subtitles were left untouched:", flush=True)
         print(first_path.resolve())
         print(second_path.resolve())
         print("Done. Subtitle files:", flush=True)
         print(output.resolve())
+        print(ass_output.resolve())
+        if args.burn_in:
+            print(burned_output.resolve())
         return 0
     except (OSError, ValueError, RuntimeError) as error:
         print(f"Error: {error}", file=sys.stderr)

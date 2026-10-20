@@ -23,6 +23,199 @@ def test_parse_and_merge_srt_chinese_above_english():
     assert youtube_srt.validate_srt(result) == 1
 
 
+def test_ass_uses_chinese_above_english_with_chinese_1_2x_size():
+    chinese = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:02,000\n你好\n\n"
+    )
+    english = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:02,000\nHello\n\n"
+    )
+
+    result = youtube_srt.build_ass(chinese, english)
+
+    assert "PlayResX: 1920" in result
+    assert "PlayResY: 1080" in result
+    assert "Style: Chinese,Microsoft YaHei,57.6," in result
+    assert "Style: English,Arial,48," in result
+    assert "BorderStyle, Outline, Shadow" in result
+    assert "Style: Chinese,Microsoft YaHei,57.6,&H0099ECFF," in result
+    assert ",1,1,1,5,0,0,0,1" in result
+    assert result.count("Dialogue: ") == 1
+    assert "Dialogue: 0,0:00:01.00,0:00:02.00,Chinese" in result
+    assert (
+        r"{\an5\pos(959,952.5)}{\fs57.6}你好\N{\fs10}\h\N"
+        r"{\rEnglish\fs48}Hello"
+    ) in result
+    assert result.count("MarginV") == 2
+
+
+def test_ass_caption_area_can_be_scaled_by_the_renderer_on_larger_playres():
+    cues = youtube_srt.parse_srt("1\n00:00:01,000 --> 00:00:02,000\ntext\n\n")
+
+    result = youtube_srt.build_ass(
+        cues,
+        cues,
+        caption_area=(132, 1766, 3704, 2044),
+        play_res_x=3840,
+        play_res_y=2160,
+    )
+
+    assert "PlayResX: 3840" in result
+    assert "PlayResY: 2160" in result
+    assert r"\pos(1918,1905)" in result
+
+
+def test_ass_styles_support_custom_text_colors():
+    cues = youtube_srt.parse_srt("1\n00:00:01,000 --> 00:00:02,000\ncaption\n\n")
+    result = youtube_srt.build_ass(
+        cues,
+        cues,
+        first_color="#FF0000",
+        second_color="#0000FF",
+    )
+
+    assert "Style: Chinese,Microsoft YaHei,57.6,&H000000FF," in result
+    assert "Style: English,Arial,48,&H00FF0000," in result
+
+
+def test_ass_classifies_mixed_lines_and_centers_each_language():
+    top = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:03,000\nHello there\n你好\n世界\n\n"
+    )
+    bottom = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:03,000\nGood morning\nこんにちは\n\n"
+    )
+
+    result = youtube_srt.build_ass(top, bottom)
+
+    assert "你好世界こんにちは" in result
+    assert r"\N{\fs10}\h\N{\rEnglish\fs48}Hello there Good morning" in result
+    assert result.count("Dialogue: ") == 1
+
+
+def test_long_ass_lines_shrink_to_fit_caption_box():
+    english_text = "A long English caption " * 100
+    chinese = youtube_srt.parse_srt("1\n00:00:01,000 --> 00:00:02,000\n你好\n\n")
+    english = youtube_srt.parse_srt(
+        f"1\n00:00:01,000 --> 00:00:02,000\n{english_text}\n\n"
+    )
+
+    result = youtube_srt.build_ass(chinese, english)
+
+    english_style = result.split(r"\rEnglish", 1)[1].split("}", 1)[0]
+    assert english_style.startswith(r"\fs")
+    assert english_style != r"\fs48"
+
+
+def test_ass_converts_caption_markup_and_escapes_literal_override_braces():
+    chinese = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:02,000\n<b>你好</b> {\\pos(1,2)}\n\n"
+    )
+    english = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:02,000\n<i>Hello &amp; bye</i>\n\n"
+    )
+
+    result = youtube_srt.build_ass(chinese, english)
+
+    assert r"{\b1}你好{\b0}" in result
+    assert r"\{\\pos(1,2)\}" in result
+    assert r"{\i1}Hello & bye{\i0}" in result
+
+
+def test_ass_rejects_invalid_font_parameters():
+    cues = youtube_srt.parse_srt("1\n00:00:01,000 --> 00:00:02,000\ntext\n\n")
+    try:
+        youtube_srt.build_ass(cues, cues, first_font="font,override")
+    except ValueError as error:
+        assert "font name" in str(error)
+    else:
+        raise AssertionError("Expected an invalid ASS font name to fail")
+
+
+def test_burn_in_uses_ass_filter_and_copies_audio(monkeypatch, tmp_path):
+    calls = []
+    video = tmp_path / "source.mp4"
+    ass = tmp_path / "captions.ass"
+    output = tmp_path / "burned.mp4"
+    video.touch()
+    ass.touch()
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda _: "ffmpeg.exe")
+    monkeypatch.setattr(
+        youtube_srt.subprocess,
+        "run",
+        lambda command, **kwargs: calls.append((command, kwargs)),
+    )
+
+    youtube_srt.burn_ass_into_video(video, ass, output)
+
+    command, options = calls[0]
+    escaped_ass = ass.as_posix().replace(":", r"\:")
+    vf = command[command.index("-vf") + 1]
+    assert vf.startswith("drawbox=x=iw*66/1920:y=ih*883/1080:w=iw*1786/1920:h=ih*139/1080:")
+    assert vf.endswith(f",subtitles=filename='{escaped_ass}'")
+    assert command[command.index("-c:a") + 1] == "copy"
+    assert command[command.index("-c:v") + 1] == "libx264"
+    assert command[command.index("-crf") + 1] == "18"
+    assert "-map" not in command
+    assert options["check"] is True
+
+
+def test_qsv_burn_in_uses_requested_one_line_ffmpeg_quality_options(monkeypatch, tmp_path):
+    calls = []
+    video, ass, output = (tmp_path / name for name in ("source.mp4", "captions.ass", "burned.mp4"))
+    video.touch()
+    ass.touch()
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda _: "ffmpeg.exe")
+    monkeypatch.setattr(
+        youtube_srt.subprocess,
+        "run",
+        lambda command, **kwargs: calls.append(command),
+    )
+
+    youtube_srt.burn_ass_into_video(
+        video, ass, output, video_encoder="h264_qsv", global_quality=1
+    )
+
+    command = calls[0]
+    assert command[command.index("-c:v") + 1] == "h264_qsv"
+    assert command[command.index("-global_quality") + 1] == "1"
+    assert command[command.index("-c:a") + 1] == "copy"
+    assert "color=0x000000@0.6:t=fill" in command[command.index("-vf") + 1]
+
+
+def test_drawbox_opacity_and_color_are_validated(monkeypatch, tmp_path):
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda _: "ffmpeg.exe")
+    video, ass, output = (tmp_path / name for name in ("source.mp4", "captions.ass", "burned.mp4"))
+    video.touch()
+    ass.touch()
+    for options in ({"box_opacity": 1.1}, {"box_color": "not-a-color"}):
+        try:
+            youtube_srt.burn_ass_into_video(video, ass, output, **options)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("Expected invalid drawbox configuration to fail")
+
+
+def test_ytdlp_uses_deno_runtime_when_available(monkeypatch):
+    captured = []
+
+    def fake_which(name):
+        return f"{name}.exe"
+
+    monkeypatch.setattr(youtube_srt.shutil, "which", fake_which)
+    monkeypatch.setattr(
+        youtube_srt.subprocess,
+        "run",
+        lambda command, **kwargs: captured.append((command, kwargs))
+        or subprocess.CompletedProcess(command, 0, "{}", ""),
+    )
+
+    youtube_srt.run_ytdlp(["--dump-single-json", "https://youtu.be/IySF_8OArvw"])
+
+    assert captured[0][0][:3] == ["yt-dlp.exe", "--js-runtimes", "deno"]
+
+
 def test_merge_preserves_source_caption_text_verbatim():
     chinese = youtube_srt.parse_srt(
         "4\n00:00:01,230 --> 00:00:02,340\n  <b>Source &amp; markup</b>  \n\n"
@@ -231,10 +424,16 @@ def test_main_preserves_raw_tracks_and_merges_original_caption_content(monkeypat
     bilingual_paths = [
         Path(line)
         for line in output_lines
-        if line.startswith(str(tmp_path)) and "_Bilingual_" in line
+        if line.startswith(str(tmp_path)) and "_Bilingual_" in line and line.endswith(".srt")
+    ]
+    ass_paths = [
+        Path(line)
+        for line in output_lines
+        if line.startswith(str(tmp_path)) and "_Bilingual_" in line and line.endswith(".ass")
     ]
     assert len(source_paths) == 2
     assert len(bilingual_paths) == 1
+    assert len(ass_paths) == 1
     raw_files = {path.name.split(".")[-2]: path for path in source_paths}
     assert raw_files["en-orig"].read_bytes() == original_bytes["en-orig"]
     assert raw_files["zh-Hans"].read_bytes() == original_bytes["zh-Hans"]
@@ -243,3 +442,4 @@ def test_main_preserves_raw_tracks_and_merges_original_caption_content(monkeypat
     assert "&amp;" in bilingual
     assert "<i>" in bilingual
     assert downloaded_languages == [("en-orig", "0"), ("zh-Hans", "56")]
+    assert "Style: Chinese,Microsoft YaHei,57.6," in ass_paths[0].read_text(encoding="utf-8-sig")

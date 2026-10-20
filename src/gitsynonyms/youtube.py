@@ -48,10 +48,49 @@ def extract_video_id(url: str) -> str:
     raise ValueError(f"Unsupported YouTube URL or ID: {url!r}")
 
 
-def fetch_transcript(video_url: str, language: str = "en") -> List[dict]:
+def fetch_transcript(
+    video_url: str,
+    language: str = "en",
+    *,
+    source: str = "yt-dlp",
+) -> List[dict]:
     video_id = extract_video_id(video_url)
-    transcript = YouTubeTranscriptApi().fetch(video_id, languages=[language])
-    return [{"start": item.start, "duration": item.duration, "text": item.text} for item in transcript]
+    if source == "transcript-api":
+        transcript = YouTubeTranscriptApi().fetch(video_id, languages=[language])
+        return [
+            {"start": item.start, "duration": item.duration, "text": item.text}
+            for item in transcript
+        ]
+    if source != "yt-dlp":
+        raise ValueError("Transcript source must be 'yt-dlp' or 'transcript-api'.")
+
+    metadata = json.loads(
+        _run_yt_dlp(
+            ["--no-warnings", "--skip-download", "--dump-single-json", video_url]
+        ).stdout
+    )
+    manual = metadata.get("subtitles", {})
+    automatic = metadata.get("automatic_captions", {})
+    preferences = (
+        ("en-orig", "en")
+        if language.lower() == "en"
+        else (language,)
+    )
+    track = _find_track(preferences, automatic)
+    track_kind = "auto-generated"
+    if track is None:
+        track = _find_track(preferences, manual)
+        track_kind = "manual"
+    if track is None:
+        raise SubtitleTranslationError(
+            f"YouTube has no subtitle track matching {', '.join(preferences)}."
+        )
+
+    with TemporaryDirectory(prefix="youtube-transcript-") as temp:
+        _, entries = _download_yt_dlp_track(
+            video_url, video_id, track, track_kind, Path(temp), sleep_seconds=0
+        )
+    return entries
 
 
 def _format_timestamp(seconds: float) -> str:
@@ -391,14 +430,18 @@ def translate_text(text: str, *, target_lang: str = "zh-CN", translator=None) ->
             if translator is None:
                 translator = GoogleTranslator(source="en", target=target_lang)
             return str(translator.translate(text))
-        except TooManyRequests:
+        except TooManyRequests as error:
             if attempt < 2:
                 time.sleep(1 + attempt)
                 continue
-            return text
-        except Exception:
-            return text
-    return text
+            raise SubtitleTranslationError(
+                "Translation service rate-limited the request after 3 attempts."
+            ) from error
+        except Exception as error:
+            raise SubtitleTranslationError(
+                f"Translation service failed: {error}"
+            ) from error
+    raise SubtitleTranslationError("Translation failed after repeated attempts.")
 
 
 def build_bilingual_srt(entries: Sequence[dict], *, target_lang: str = "zh-CN", translator=None) -> str:
@@ -416,8 +459,14 @@ def build_bilingual_srt(entries: Sequence[dict], *, target_lang: str = "zh-CN", 
     return "\n".join(lines).strip() + "\n"
 
 
-def save_bilingual_srt(video_url: str, output_path: str | Path, *, target_lang: str = "zh-CN") -> str:
-    entries = fetch_transcript(video_url)
+def save_bilingual_srt(
+    video_url: str,
+    output_path: str | Path,
+    *,
+    target_lang: str = "zh-CN",
+    source: str = "yt-dlp",
+) -> str:
+    entries = fetch_transcript(video_url, source=source)
     srt = build_bilingual_srt(entries, target_lang=target_lang)
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -430,8 +479,22 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--url", required=True, help="YouTube watch URL or video ID.")
     parser.add_argument("--output", default="bilingual.srt", help="Output SRT path.")
     parser.add_argument("--lang", default="zh-CN", help="Target translation language for the Chinese line, e.g. zh-CN.")
+    parser.add_argument(
+        "--source",
+        choices=("yt-dlp", "transcript-api"),
+        default="yt-dlp",
+        help=(
+            "Transcript source: YouTube auto-generated subtitle track via yt-dlp "
+            "(default), or youtube-transcript-api."
+        ),
+    )
     args = parser.parse_args(argv)
-    path = save_bilingual_srt(args.url, args.output, target_lang=args.lang)
+    try:
+        path = save_bilingual_srt(
+            args.url, args.output, target_lang=args.lang, source=args.source
+        )
+    except (SubtitleTranslationError, RuntimeError) as error:
+        parser.exit(1, f"Error: {error}\n")
     print(path)
     return 0
 
