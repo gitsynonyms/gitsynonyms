@@ -41,8 +41,10 @@ def test_ass_uses_chinese_above_english_with_chinese_1_2x_size():
     assert "Style: Chinese,Microsoft YaHei,57.6,&H0028C9FF," in result
     assert "Style: CaptionBox,Arial,1,&H66000000," in result
     assert ",1,2,1,5,0,0,0,1" in result
-    assert result.count("Dialogue: ") == 2
+    assert result.count("Dialogue: ") == 3
     assert "Dialogue: 1,0:00:01.00,0:00:02.00,Chinese" in result
+    assert "Style: CaptionFacet,Arial,1,&HD9FFFFFF," in result
+    assert "Dialogue: 0,0:00:00.00,0:00:02.00,CaptionFacet" in result
     assert (
         "Dialogue: 0,0:00:00.00,0:00:02.00,CaptionBox,,0,0,0,,"
         r"{\an7\pos(66,883)\p1}m 0 0 l 1786 0 1786 139 0 139 0 0{\p0}"
@@ -79,6 +81,48 @@ def test_ass_caption_box_covers_video_from_zero_through_duration():
     assert (
         "Dialogue: 0,0:00:00.00,0:00:12.50,CaptionBox,,0,0,0,,"
     ) in result
+
+
+def test_box_can_appear_only_during_caption_intervals():
+    top = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:02,000\nFirst\n\n"
+        "2\n00:00:04,000 --> 00:00:05,000\nSecond\n\n"
+    )
+    bottom = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:02,000\n第一\n\n"
+        "2\n00:00:04,000 --> 00:00:05,000\n第二\n\n"
+    )
+
+    result = youtube_srt.build_ass(top, bottom, box_display="with-captions")
+
+    assert "Dialogue: 0,0:00:00.00," not in result
+    box_lines = [line for line in result.splitlines() if ",CaptionBox,," in line]
+    assert len(box_lines) == 2
+    assert "Dialogue: 0,0:00:01.00,0:00:02.00,CaptionBox" in box_lines[0]
+    assert "Dialogue: 0,0:00:04.00,0:00:05.00,CaptionBox" in box_lines[1]
+
+
+def test_box_styles_apply_default_colors_and_opacity():
+    cues = youtube_srt.parse_srt("1\n00:00:01,000 --> 00:00:02,000\ntext\n\n")
+    glass = youtube_srt.build_ass(
+        cues,
+        cues,
+        box_style="glass-diamond",
+        box_color=youtube_srt.BOX_STYLES["glass-diamond"]["color"],
+        box_opacity=youtube_srt.BOX_STYLES["glass-diamond"]["opacity"],
+    )
+    blue = youtube_srt.build_ass(
+        cues,
+        cues,
+        box_style="presidential-blue",
+        box_color=youtube_srt.BOX_STYLES["presidential-blue"]["color"],
+        box_opacity=youtube_srt.BOX_STYLES["presidential-blue"]["opacity"],
+    )
+
+    assert "Style: CaptionBox,Arial,1,&H52968470," in glass
+    assert "Style: CaptionFacet,Arial,1,&HD9FFFFFF," in glass
+    assert "Style: CaptionBox,Arial,1,&H1A61310A," in blue
+    assert ",CaptionFacet,," not in blue
 
 
 def test_cinema_preset_places_english_above_chinese_and_supports_custom_box():
@@ -136,7 +180,7 @@ def test_ass_classifies_mixed_lines_and_centers_each_language():
 
     assert "你好世界こんにちは" in result
     assert r"\N{\fs10}\h\N{\rEnglish\fs48}Hello there Good morning" in result
-    assert result.count("Dialogue: ") == 2
+    assert result.count("Dialogue: ") == 3
 
 
 def test_long_ass_lines_shrink_to_fit_caption_box():

@@ -42,6 +42,10 @@ STYLE_PRESETS = {
         "second_color": "#FFF0D0",
     },
 }
+BOX_STYLES = {
+    "glass-diamond": {"color": "#708496", "opacity": 0.68, "edge": "#E4F2FF"},
+    "presidential-blue": {"color": "#0A3161", "opacity": 0.9, "edge": "#D9E7F5"},
+}
 
 
 def video_id_from_url(value: str) -> str:
@@ -262,6 +266,8 @@ def build_ass(
     play_res_y: int = PLAY_RESOLUTION[1],
     caption_order: str = "chinese-first",
     video_duration: float | None = None,
+    box_display: str = "always",
+    box_style: str = "glass-diamond",
 ) -> str:
     if not first or not second:
         raise ValueError("Both subtitle tracks must contain cues.")
@@ -272,6 +278,10 @@ def build_ass(
         raise ValueError("Font size must be positive and Chinese font scale must be between 0.5 and 3.")
     if caption_order not in {"chinese-first", "english-first"}:
         raise ValueError("Caption order must be 'chinese-first' or 'english-first'.")
+    if box_display not in {"always", "with-captions"}:
+        raise ValueError("Box display must be 'always' or 'with-captions'.")
+    if box_style not in BOX_STYLES:
+        raise ValueError(f"Unsupported subtitle box style: {box_style!r}")
     if video_duration is not None and (
         not math.isfinite(video_duration) or video_duration < 0
     ):
@@ -295,6 +305,8 @@ def build_ass(
     second_ass_color = ass_color(second_color)
     shadow_ass_color = ass_color(shadow_color, opacity=35)
     box_ass_color = ass_color(box_color, opacity=round(box_opacity * 100))
+    box_edge_color = ass_color(BOX_STYLES[box_style]["edge"], opacity=24)
+    facet_color = ass_color("#FFFFFF", opacity=15)
     first_font_size = max(1, round(second_font_size * first_font_scale, 1))
     area_width = area_right - area_left
     area_center_x = (area_left + area_right) // 2
@@ -313,6 +325,8 @@ def build_ass(
         f"Style: English,{second_font},{second_font_size},{second_ass_color},&H000000FF,"
         f"&H80000000,{shadow_ass_color},0,0,0,0,100,100,0,0,1,2,1,5,0,0,0,1",
         f"Style: CaptionBox,Arial,1,{box_ass_color},&H000000FF,"
+        f"&H00000000,{box_edge_color},0,0,0,0,100,100,0,0,1,1,0,7,0,0,0,1",
+        f"Style: CaptionFacet,Arial,1,{facet_color},&H000000FF,"
         f"&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1",
     )
     cues = [*first, *second]
@@ -322,20 +336,40 @@ def build_ass(
     boundaries = sorted({cue[key] for cue in cues for key in ("start", "end")})
     last_caption_time = max(cue["end"] for cue in cues)
     box_end = max(last_caption_time, video_duration or 0)
-    events = [
-        {
-            "start": 0,
-            "end": box_end,
-            "layer": 0,
-            "style": "CaptionBox",
-            "body": (
-                f"{{\\an7\\pos({area_left},{area_top})\\p1}}"
-                f"m 0 0 l {area_width} 0 {area_width} "
-                f"{area_bottom - area_top} 0 {area_bottom - area_top} 0 0"
-                f"{{\\p0}}"
-            ),
-        }
-    ]
+    events = []
+
+    def append_box_events(start: float, end: float) -> None:
+        events.append(
+            {
+                "start": start,
+                "end": end,
+                "layer": 0,
+                "style": "CaptionBox",
+                "body": (
+                    f"{{\\an7\\pos({area_left},{area_top})\\p1}}"
+                    f"m 0 0 l {area_width} 0 {area_width} "
+                    f"{area_bottom - area_top} 0 {area_bottom - area_top} 0 0"
+                    f"{{\\p0}}"
+                ),
+            }
+        )
+        if box_style == "glass-diamond":
+            facet_width = max(1, round(area_width * 0.28))
+            facet_height = max(1, round((area_bottom - area_top) * 0.42))
+            events.append({
+                "start": start,
+                "end": end,
+                "layer": 0,
+                "style": "CaptionFacet",
+                "body": (
+                    f"{{\\an7\\pos({area_left},{area_top})\\p1}}"
+                    f"m 0 0 l {facet_width} 0 l {round(facet_width * 0.78)} "
+                    f"{facet_height} l 0 {facet_height} 0 0{{\\p0}}"
+                ),
+            })
+
+    if box_display == "always":
+        append_box_events(0, box_end)
     for start, end in zip(boundaries, boundaries[1:]):
         if end <= start:
             continue
@@ -346,6 +380,8 @@ def build_ass(
         chinese, english = classify_caption_lines(active)
         if not chinese and not english:
             continue
+        if box_display == "with-captions":
+            append_box_events(start, end)
 
         cn_size = fit_font_size(chinese, first_font_size, available_width) if chinese else 0
         en_size = fit_font_size(english, second_font_size, available_width) if english else 0
@@ -387,6 +423,7 @@ def build_ass(
         else:
             events.append(event)
 
+    events.sort(key=lambda event: (event["start"], event["layer"]))
     return "\n".join(
         [
             "[Script Info]",
@@ -676,12 +713,23 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--chinese-color", help="Chinese ASS text color in #RRGGBB format.")
     parser.add_argument("--english-color", help="English ASS text color in #RRGGBB format.")
-    parser.add_argument("--box-color", default="#000000", help="ASS subtitle box color in #RRGGBB format.")
+    parser.add_argument(
+        "--box-display",
+        choices=("always", "with-captions"),
+        default="always",
+        help="Show the box throughout the video or only while subtitle text is active.",
+    )
+    parser.add_argument(
+        "--box-style",
+        choices=tuple(BOX_STYLES),
+        default="glass-diamond",
+        help="Background appearance: translucent glass-diamond or presidential blue.",
+    )
+    parser.add_argument("--box-color", help="Override the selected ASS box color in #RRGGBB format.")
     parser.add_argument(
         "--box-opacity",
         type=float,
-        default=0.6,
-        help="ASS box opacity from 0 (transparent) to 1 (opaque); default: 0.6.",
+        help="Override box opacity from 0 (transparent) to 1 (opaque).",
     )
     parser.add_argument("--box-x", type=int, default=66, help="Caption-box left coordinate on the 1920x1080 canvas.")
     parser.add_argument("--box-y", type=int, default=883, help="Caption-box top coordinate on the 1920x1080 canvas.")
@@ -786,11 +834,17 @@ def main(argv: list[str] | None = None) -> int:
                 first_font_scale=args.chinese_font_scale or preset["first_font_scale"],
                 first_color=args.chinese_color or preset["first_color"],
                 second_color=args.english_color or preset["second_color"],
-                box_color=args.box_color,
-                box_opacity=args.box_opacity,
+                box_color=args.box_color or BOX_STYLES[args.box_style]["color"],
+                box_opacity=(
+                    BOX_STYLES[args.box_style]["opacity"]
+                    if args.box_opacity is None
+                    else args.box_opacity
+                ),
                 caption_area=caption_area,
                 caption_order="english-first" if args.style_preset == "cinema" else "chinese-first",
                 video_duration=metadata.get("duration"),
+                box_display=args.box_display,
+                box_style=args.box_style,
             ),
         )
         print("Step 5/6: Validating generated subtitle files...", flush=True)

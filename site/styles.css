@@ -176,6 +176,29 @@ input[type="color"] {
   color: #fff0d0;
 }
 
+.box-preview {
+  display: grid;
+  min-height: 54px;
+  place-items: center;
+  border: 1px solid rgb(228 242 255 / 24%);
+  border-radius: 8px;
+  color: #f5f7fa;
+  font-size: 13px;
+  font-weight: 700;
+  text-shadow: 0 1px 3px #000;
+}
+
+.glass-box-preview {
+  background:
+    linear-gradient(130deg, rgb(255 255 255 / 18%) 0 24%, transparent 24% 100%),
+    linear-gradient(310deg, rgb(255 255 255 / 10%) 0 20%, transparent 20% 100%),
+    rgb(112 132 150 / 68%);
+}
+
+.blue-box-preview {
+  background: rgb(10 49 97 / 90%);
+}
+
 .box-position {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }

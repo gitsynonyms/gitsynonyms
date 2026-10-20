@@ -45,6 +45,32 @@
         </fieldset>
         <p class="hint">选中预设后仍可自定义字体、颜色和字号。</p>
 
+        <fieldset class="preset-picker">
+          <legend>背景框显示时机</legend>
+          <label class="preset-card" for="box-display-always">
+            <input id="box-display-always" name="box-display" type="radio" value="always" checked>
+            <span>全程常驻</span>
+            <span class="hint">适合原视频底部自带横幅、需要持续遮挡的情况。</span>
+          </label>
+          <label class="preset-card" for="box-display-caption">
+            <input id="box-display-caption" name="box-display" type="radio" value="with-captions">
+            <span>仅字幕期间显示</span>
+            <span class="hint">适合无底部横幅的视频；无字幕时不显示背景框。</span>
+          </label>
+        </fieldset>
+
+        <fieldset class="preset-picker">
+          <legend>字幕区背景</legend>
+          <label class="preset-card" for="box-style-glass">
+            <input id="box-style-glass" name="box-style" type="radio" value="glass-diamond" checked>
+            <span class="box-preview glass-box-preview">磨砂玻璃 · 钻石切面</span>
+          </label>
+          <label class="preset-card" for="box-style-blue">
+            <input id="box-style-blue" name="box-style" type="radio" value="presidential-blue">
+            <span class="box-preview blue-box-preview">总统蓝</span>
+          </label>
+        </fieldset>
+
         <label for="chinese-font">中文字体</label>
         <input id="chinese-font" name="chinese-font" value="Microsoft YaHei" required>
 
@@ -64,11 +90,11 @@
         <label for="english-color">英文文字颜色</label>
         <input id="english-color" name="english-color" type="color" value="#ffffff">
 
-        <label for="box-color">自适应字幕黑框颜色</label>
-        <input id="box-color" name="box-color" type="color" value="#000000">
+        <label for="box-color">自定义背景框颜色（可选）</label>
+        <input id="box-color" name="box-color" type="color" value="#708496">
 
-        <label for="box-opacity">ASS 字幕框不透明度（0–1，0.6 = 60% 不透明）</label>
-        <input id="box-opacity" name="box-opacity" type="number" min="0" max="1" step="0.05" value="0.6" required>
+        <label for="box-opacity">背景框不透明度（0–1）</label>
+        <input id="box-opacity" name="box-opacity" type="number" min="0" max="1" step="0.05" value="0.68" required>
 
         <fieldset class="box-position">
           <legend>字幕框位置与尺寸（1920×1080 基准画布）</legend>
@@ -97,9 +123,9 @@
       </section>
 
       <footer>
-        页面不会要求或保存访问令牌。ASS 文件自带字幕背景框，字幕框从视频 0 秒持续到视频结束；坐标会按分辨率等比缩放。单独播放 ASS 或 FFmpeg 硬刻录都会显示相同背景。本地 QSV 需要兼容的 Intel 硬件和 FFmpeg；云端使用软件编码。YouTube 可能限制字幕或视频访问。
+        页面不会要求或保存访问令牌。ASS 文件自带所选背景框、样式和显示时机；坐标会按分辨率等比缩放。玻璃风格为播放器兼容的半透明质感模拟，不会模糊底层视频。单独播放 ASS 或 FFmpeg 硬刻录都会显示相同背景。本地 QSV 需要兼容的 Intel 硬件和 FFmpeg；云端使用软件编码。YouTube 可能限制字幕或视频访问。
       </footer>
     </main>
-    <script src="app.js?v=ass-style-presets"></script>
+    <script src="app.js?v=ass-box-modes"></script>
   </body>
 </html>

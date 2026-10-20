@@ -34,6 +34,22 @@ on:
           - classic
           - cinema
         default: classic
+      box_display:
+        description: Subtitle background-box display timing
+        required: false
+        type: choice
+        options:
+          - always
+          - with-captions
+        default: always
+      box_style:
+        description: Subtitle background appearance
+        required: false
+        type: choice
+        options:
+          - glass-diamond
+          - presidential-blue
+        default: glass-diamond
       chinese_font:
         description: Optional font family override for Chinese captions
         required: false
@@ -65,15 +81,15 @@ on:
         type: string
         default: ""
       box_color:
-        description: ASS subtitle box color in #RRGGBB format
+        description: Optional override for the selected background color
         required: false
         type: string
-        default: "#000000"
+        default: ""
       box_opacity:
-        description: ASS subtitle box opacity from 0 (transparent) to 1 (opaque)
+        description: Optional box opacity override from 0 (transparent) to 1 (opaque)
         required: false
-        type: number
-        default: 0.6
+        type: string
+        default: ""
       box_x:
         description: Caption box left coordinate on a 1920x1080 canvas
         required: false
@@ -134,6 +150,8 @@ jobs:
           ENGLISH_COLOR: ${{ inputs.english_color }}
           BOX_COLOR: ${{ inputs.box_color }}
           BOX_OPACITY: ${{ inputs.box_opacity }}
+          BOX_DISPLAY: ${{ inputs.box_display }}
+          BOX_STYLE: ${{ inputs.box_style }}
           STYLE_PRESET: ${{ inputs.style_preset }}
           BOX_X: ${{ inputs.box_x }}
           BOX_Y: ${{ inputs.box_y }}
@@ -157,10 +175,12 @@ jobs:
           fi
           args=("$source" --output-dir output --languages zh-Hans,en-orig)
           args+=(--style-preset "$STYLE_PRESET")
+          args+=(--box-display "$BOX_DISPLAY" --box-style "$BOX_STYLE")
           args+=(--chinese-font "$CHINESE_FONT" --english-font "$ENGLISH_FONT")
           args+=(--english-font-size "$ENGLISH_FONT_SIZE" --chinese-font-scale "$CHINESE_FONT_SCALE")
           args+=(--chinese-color "$CHINESE_COLOR" --english-color "$ENGLISH_COLOR")
-          args+=(--box-color "$BOX_COLOR" --box-opacity "$BOX_OPACITY")
+          if [[ -n "$BOX_COLOR" ]]; then args+=(--box-color "$BOX_COLOR"); fi
+          if [[ -n "$BOX_OPACITY" ]]; then args+=(--box-opacity "$BOX_OPACITY"); fi
           args+=(--box-x "$BOX_X" --box-y "$BOX_Y" --box-width "$BOX_WIDTH" --box-height "$BOX_HEIGHT")
           if [[ -n "$EVENT_TITLE" ]]; then args+=(--event "$EVENT_TITLE"); fi
           if [[ -n "$EVENT_DATE" ]]; then args+=(--date "$EVENT_DATE"); fi

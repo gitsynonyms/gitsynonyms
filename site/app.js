@@ -20,6 +20,8 @@ const boxYInput = document.querySelector("#box-y");
 const boxWidthInput = document.querySelector("#box-width");
 const boxHeightInput = document.querySelector("#box-height");
 const styleInputs = [...document.querySelectorAll('input[name="style-preset"]')];
+const boxDisplayInputs = [...document.querySelectorAll('input[name="box-display"]')];
+const boxStyleInputs = [...document.querySelectorAll('input[name="box-style"]')];
 const instructions = document.querySelector("#run-instructions");
 const instructionsTitle = document.querySelector("#instructions-title");
 const instructionsCopy = document.querySelector("#instructions-copy");
@@ -50,6 +52,10 @@ const stylePresets = {
     englishColor: "#fff0d0",
   },
 };
+const boxStyles = {
+  "glass-diamond": { color: "#708496", opacity: "0.68" },
+  "presidential-blue": { color: "#0a3161", opacity: "0.9" },
+};
 
 function applyStylePreset(presetName) {
   const preset = stylePresets[presetName];
@@ -66,6 +72,15 @@ styleInputs.forEach((input) => {
   input.addEventListener("change", () => applyStylePreset(input.value));
 });
 
+boxStyleInputs.forEach((input) => {
+  input.addEventListener("change", () => {
+    const preset = boxStyles[input.value];
+    if (!preset) return;
+    boxColorInput.value = preset.color;
+    boxOpacityInput.value = preset.opacity;
+  });
+});
+
 function makeCommand(videoUrl, location, options) {
   const quotedUrl = quotePowerShell(videoUrl);
   if (location === "local") {
@@ -75,13 +90,15 @@ function makeCommand(videoUrl, location, options) {
     return [
       `$script = Join-Path $PWD 'download_youtube_bilingual_srt.py'`,
       `Invoke-WebRequest -Uri '${SCRIPT_URL}' -OutFile $script`,
-      `& (Join-Path $env:USERPROFILE 'anaconda3\\python.exe') $script ${quotedUrl} --languages zh-Hans,en-orig --output-dir 'D:\\MyDownload' --style-preset ${options.stylePreset} --chinese-font ${quotePowerShell(options.chineseFont)} --english-font ${quotePowerShell(options.englishFont)} --english-font-size ${options.englishFontSize} --chinese-font-scale ${options.chineseFontScale} --chinese-color ${quotePowerShell(options.chineseColor)} --english-color ${quotePowerShell(options.englishColor)} --box-color ${quotePowerShell(options.boxColor)} --box-opacity ${options.boxOpacity} --box-x ${options.boxX} --box-y ${options.boxY} --box-width ${options.boxWidth} --box-height ${options.boxHeight}${burnArgs}`,
+      `& (Join-Path $env:USERPROFILE 'anaconda3\\python.exe') $script ${quotedUrl} --languages zh-Hans,en-orig --output-dir 'D:\\MyDownload' --style-preset ${options.stylePreset} --box-display ${options.boxDisplay} --box-style ${options.boxStyle} --chinese-font ${quotePowerShell(options.chineseFont)} --english-font ${quotePowerShell(options.englishFont)} --english-font-size ${options.englishFontSize} --chinese-font-scale ${options.chineseFontScale} --chinese-color ${quotePowerShell(options.chineseColor)} --english-color ${quotePowerShell(options.englishColor)} --box-color ${quotePowerShell(options.boxColor)} --box-opacity ${options.boxOpacity} --box-x ${options.boxX} --box-y ${options.boxY} --box-width ${options.boxWidth} --box-height ${options.boxHeight}${burnArgs}`,
     ].join("; ");
   }
   const workflowInputs = [
     ["source", quotedUrl],
     ["burn_in", String(options.burnIn)],
     ["style_preset", options.stylePreset],
+    ["box_display", options.boxDisplay],
+    ["box_style", options.boxStyle],
     ["chinese_font", quotePowerShell(options.chineseFont)],
     ["english_font", quotePowerShell(options.englishFont)],
     ["english_font_size", String(options.englishFontSize)],
@@ -115,9 +132,19 @@ form.addEventListener("submit", (event) => {
   const location = runLocation.value;
   if (!videoUrl) return;
   const stylePreset = styleInputs.find((input) => input.checked)?.value ?? "classic";
+  const boxDisplay = boxDisplayInputs.find((input) => input.checked)?.value ?? "always";
+  const boxStyle = boxStyleInputs.find((input) => input.checked)?.value ?? "glass-diamond";
+  const displayDescription = boxDisplay === "always"
+    ? "字幕背景框会从视频开始持续到结束，适合遮挡原片横幅"
+    : "字幕背景框只在字幕出现时显示";
+  const boxStyleDescription = boxStyle === "presidential-blue"
+    ? "总统蓝背景框"
+    : "磨砂玻璃钻石质感背景框";
   const options = {
     burnIn: burnInInput.checked,
     stylePreset,
+    boxDisplay,
+    boxStyle,
     chineseFont: chineseFontInput.value.trim(),
     englishFont: englishFontInput.value.trim(),
     englishFontSize: englishFontSizeInput.value,
@@ -141,14 +168,14 @@ form.addEventListener("submit", (event) => {
   if (location === "local") {
     instructionsTitle.textContent = "本地 Anaconda 运行";
     instructionsCopy.textContent = options.burnIn
-      ? "点击复制后，在 Windows PowerShell 中粘贴运行；命令通过 $env:USERPROFILE 定位 Anaconda。本机会用 yt-dlp 下载视频和原始字幕，生成字幕框贯穿视频全程的双语 SRT/ASS，再以 h264_qsv / -global_quality 1 硬刻录。需要 yt-dlp、FFmpeg（含 h264_qsv）和 Intel Quick Sync。"
-      : "点击复制后，在 Windows PowerShell 中粘贴运行；命令通过 $env:USERPROFILE 定位 Anaconda。会生成原始单语字幕、双语 SRT 和字幕框贯穿全程的 ASS；本地需要 yt-dlp。";
+      ? `点击复制后，在 Windows PowerShell 中粘贴运行；命令通过 $env:USERPROFILE 定位 Anaconda。本机会下载视频和原始字幕，生成${boxStyleDescription}、${displayDescription}的双语 ASS，再以 h264_qsv / -global_quality 1 硬刻录。需要 yt-dlp、FFmpeg（含 h264_qsv）和 Intel Quick Sync。`
+      : `点击复制后，在 Windows PowerShell 中粘贴运行；会生成原始单语字幕、双语 SRT 和${boxStyleDescription}，${displayDescription}的 ASS。`;
   } else {
     instructionsTitle.textContent = "GitHub 云端 runner 运行";
     instructionsCopy.textContent =
       options.burnIn
-        ? "复制命令后，在已登录且有仓库 Actions 写权限的终端执行；云端会下载字幕和视频，生成背景框贯穿视频全程的双语 SRT/ASS 并硬刻录 MP4，到 Actions artifact 下载。"
-        : "复制命令后，在已登录且有仓库 Actions 写权限的终端执行；云端会生成单语字幕、双语 SRT 和背景框贯穿全程的 ASS，到 Actions artifact 下载。也可打开 Actions 页面手动启动 workflow。";
+        ? `复制命令后，在已登录且有仓库 Actions 写权限的终端执行；云端会下载字幕和视频，生成${boxStyleDescription}、${displayDescription}的双语 SRT/ASS 并硬刻录 MP4，到 Actions artifact 下载。`
+        : `复制命令后，在已登录且有仓库 Actions 写权限的终端执行；云端会生成单语字幕、双语 SRT 和${boxStyleDescription}、${displayDescription}的 ASS，到 Actions artifact 下载。也可打开 Actions 页面手动启动 workflow。`;
   }
 });
 
