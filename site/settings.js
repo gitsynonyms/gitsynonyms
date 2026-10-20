@@ -10,6 +10,12 @@ const previewChinese = document.querySelector("#preview-chinese");
 const previewSummary = document.querySelector("#preview-summary");
 const saveStatus = document.querySelector("#save-status");
 
+const comfortPalettes = {
+  day: { background: "#F8F9FA", text: "#2B2D42" },
+  night: { background: "#1A1A1A", text: "#D4D4D4" },
+  paper: { background: "#F4ECD8", text: "#1C2A38" },
+};
+
 const defaults = {
   stylePreset: "classic",
   boxDisplay: "always",
@@ -131,6 +137,38 @@ function applyTextPreset(name) {
   document.querySelector("#english-color").value = preset.englishColor;
 }
 
+function relativeLuminance(hexColor) {
+  const channels = hexColor.slice(1).match(/.{2}/g).map((channel) => {
+    const value = Number.parseInt(channel, 16) / 255;
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+}
+
+function contrastRatio(background, text) {
+  const luminance = [relativeLuminance(background), relativeLuminance(text)].sort((a, b) => b - a);
+  return (luminance[0] + 0.05) / (luminance[1] + 0.05);
+}
+
+function updatePaletteContrast() {
+  document.querySelectorAll("[data-contrast]").forEach((element) => {
+    const [background, text] = element.dataset.contrast.split(",");
+    element.textContent = `WCAG 对比度 ${contrastRatio(background, text).toFixed(2)}:1`;
+  });
+}
+
+function applyComfortPalette(name) {
+  const palette = comfortPalettes[name];
+  if (!palette) return;
+  form.querySelector('#box-style-blue').checked = true;
+  colorInput.value = palette.background.toLowerCase();
+  colorHexInput.value = palette.background;
+  opacityInput.value = "1";
+  document.querySelector("#chinese-color").value = palette.text.toLowerCase();
+  document.querySelector("#english-color").value = palette.text.toLowerCase();
+  updatePreview();
+}
+
 function updatePreview() {
   const settings = getFormSettings();
   const order = settings.stylePreset === "cinema"
@@ -177,6 +215,7 @@ function saveSettings(event) {
 
 try {
   applySettings(readSettings());
+  updatePaletteContrast();
 } catch (error) {
   saveStatus.textContent = `读取已保存设置失败：${error.message}`;
   applySettings(defaults);
@@ -185,6 +224,8 @@ try {
 form.addEventListener("change", (event) => {
   if (event.target.name === "style-preset") {
     applyTextPreset(event.target.value);
+  } else if (event.target.name === "comfort-palette") {
+    applyComfortPalette(event.target.value);
   } else if (event.target.name === "box-style") {
     const preset = backgroundValues[event.target.value];
     if (preset) {
@@ -195,7 +236,14 @@ form.addEventListener("change", (event) => {
   }
   updatePreview();
 });
-form.addEventListener("input", updatePreview);
+form.addEventListener("input", (event) => {
+  if (["box-color-hex", "box-color", "chinese-color", "english-color"].includes(event.target.id)) {
+    form.querySelectorAll('input[name="comfort-palette"]').forEach((input) => {
+      input.checked = false;
+    });
+  }
+  updatePreview();
+});
 colorInput.addEventListener("input", () => {
   colorHexInput.value = colorInput.value.toUpperCase();
 });
