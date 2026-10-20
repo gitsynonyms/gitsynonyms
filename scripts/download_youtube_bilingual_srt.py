@@ -233,8 +233,10 @@ def build_ass(
     second_font_size: int = 48,
     first_font_scale: float = 1.2,
     caption_area: tuple[int, int, int, int] = CAPTION_AREA,
-    first_color: str = "#FFEC99",
+    first_color: str = "#FFC928",
     second_color: str = "#FFFFFF",
+    box_color: str = "#000000",
+    box_opacity: float = 0.6,
     line_gap: int = 10,
     padding_x: int = 24,
     shadow_color: str = "#000000",
@@ -248,6 +250,8 @@ def build_ass(
             raise ValueError(f"{name} font name must be non-empty and cannot contain commas or braces.")
     if second_font_size < 1 or not 0.5 <= first_font_scale <= 3:
         raise ValueError("Font size must be positive and Chinese font scale must be between 0.5 and 3.")
+    if not math.isfinite(box_opacity) or not 0 <= box_opacity <= 1:
+        raise ValueError("Box opacity must be between 0 and 1.")
     if line_gap < 0 or padding_x < 0:
         raise ValueError("Line gap and horizontal padding must not be negative.")
     if play_res_x < 1 or play_res_y < 1:
@@ -264,6 +268,7 @@ def build_ass(
     first_ass_color = ass_color(first_color)
     second_ass_color = ass_color(second_color)
     shadow_ass_color = ass_color(shadow_color, opacity=35)
+    box_ass_color = ass_color(box_color, opacity=round(box_opacity * 100))
     first_font_size = max(1, round(second_font_size * first_font_scale, 1))
     area_width = area_right - area_left
     area_center_x = (area_left + area_right) // 2
@@ -278,9 +283,11 @@ def build_ass(
     )
     styles = (
         f"Style: Chinese,{first_font},{first_font_size:g},{first_ass_color},&H000000FF,"
-        f"&H80000000,{shadow_ass_color},-1,0,0,0,100,100,0,0,1,1,1,5,0,0,0,1",
+        f"&H80000000,{shadow_ass_color},-1,0,0,0,100,100,0,0,1,2,1,5,0,0,0,1",
         f"Style: English,{second_font},{second_font_size},{second_ass_color},&H000000FF,"
-        f"&H80000000,{shadow_ass_color},0,0,0,0,100,100,0,0,1,1,1,5,0,0,0,1",
+        f"&H80000000,{shadow_ass_color},0,0,0,0,100,100,0,0,1,2,1,5,0,0,0,1",
+        f"Style: CaptionBox,Arial,1,{box_ass_color},&H000000FF,"
+        f"&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1",
     )
     cues = [*first, *second]
     if any(cue["end"] <= cue["start"] or not cue["text"].strip() for cue in cues):
@@ -299,6 +306,20 @@ def build_ass(
         if not chinese and not english:
             continue
 
+        events.append(
+            {
+                "start": start,
+                "end": end,
+                "layer": 0,
+                "style": "CaptionBox",
+                "body": (
+                    f"{{\\an7\\pos({area_left},{area_top})\\p1}}"
+                    f"m 0 0 l {area_width} 0 {area_width} "
+                    f"{area_bottom - area_top} 0 {area_bottom - area_top} 0 0"
+                    f"{{\\p0}}"
+                ),
+            }
+        )
         cn_size = fit_font_size(chinese, first_font_size, available_width) if chinese else 0
         en_size = fit_font_size(english, second_font_size, available_width) if english else 0
         body = ""
@@ -317,6 +338,7 @@ def build_ass(
         event = {
             "start": start,
             "end": end,
+            "layer": 1,
             "style": style,
             "body": body,
         }
@@ -346,7 +368,8 @@ def build_ass(
             "[Events]",
             "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
             *[
-                f"Dialogue: 0,{ass_timestamp(event['start'])},{ass_timestamp(event['end'])},"
+                f"Dialogue: {event['layer']},{ass_timestamp(event['start'])},"
+                f"{ass_timestamp(event['end'])},"
                 f"{event['style']},,0,0,0,,{event['body']}"
                 for event in events
             ],
@@ -513,8 +536,6 @@ def burn_ass_into_video(
     *,
     video_encoder: str = "libx264",
     global_quality: int = 18,
-    box_color: str = "#000000",
-    box_opacity: float = 0.6,
 ) -> None:
     executable = shutil.which("ffmpeg")
     if not executable:
@@ -523,11 +544,6 @@ def burn_ass_into_video(
         raise ValueError("Video encoder must be 'h264_qsv' or 'libx264'.")
     if global_quality < 1 or global_quality > 51:
         raise ValueError("Global quality must be between 1 and 51.")
-    color_match = re.fullmatch(r"#?([0-9a-fA-F]{6})", box_color.strip())
-    if not color_match:
-        raise ValueError(f"Box color must be a six-digit RGB value such as #000000: {box_color!r}")
-    if not math.isfinite(box_opacity) or not 0 <= box_opacity <= 1:
-        raise ValueError("Box opacity must be between 0 and 1.")
     filter_path = str(ass_path.resolve()).replace("\\", "/")
     filter_path = (
         filter_path.replace(":", r"\:")
@@ -536,14 +552,6 @@ def burn_ass_into_video(
         .replace("[", r"\[")
         .replace("]", r"\]")
     )
-    x0, y0, x1, y1 = CAPTION_AREA
-    width, height = PLAY_RESOLUTION
-    rgb = color_match.group(1).upper()
-    box_filter = (
-        f"drawbox=x=iw*{x0}/{width}:y=ih*{y0}/{height}:"
-        f"w=iw*{x1 - x0}/{width}:h=ih*{y1 - y0}/{height}:"
-        f"color=0x{rgb}@{box_opacity:g}:t=fill"
-    )
     quality_option = "-global_quality" if video_encoder == "h264_qsv" else "-crf"
     command = [
         executable,
@@ -551,7 +559,7 @@ def burn_ass_into_video(
         "-i",
         str(video),
         "-vf",
-        f"{box_filter},subtitles=filename='{filter_path}'",
+        f"subtitles=filename='{filter_path}'",
         "-c:v",
         video_encoder,
         quality_option,
@@ -627,14 +635,14 @@ def main(argv: list[str] | None = None) -> int:
         default=1.2,
         help="Chinese font size as a multiple of the English font size (default: 1.2).",
     )
-    parser.add_argument("--chinese-color", default="#FFEC99", help="Chinese ASS text color in #RRGGBB format.")
+    parser.add_argument("--chinese-color", default="#FFC928", help="Chinese ASS text color in #RRGGBB format.")
     parser.add_argument("--english-color", default="#FFFFFF", help="English ASS text color in #RRGGBB format.")
-    parser.add_argument("--box-color", default="#000000", help="FFmpeg drawbox color in #RRGGBB format.")
+    parser.add_argument("--box-color", default="#000000", help="ASS subtitle box color in #RRGGBB format.")
     parser.add_argument(
         "--box-opacity",
         type=float,
         default=0.6,
-        help="Drawbox opacity from 0 (transparent) to 1 (opaque); default: 0.6.",
+        help="ASS box opacity from 0 (transparent) to 1 (opaque); default: 0.6.",
     )
     parser.add_argument(
         "--burn-in",
@@ -727,6 +735,8 @@ def main(argv: list[str] | None = None) -> int:
                 first_font_scale=args.chinese_font_scale,
                 first_color=args.chinese_color,
                 second_color=args.english_color,
+                box_color=args.box_color,
+                box_opacity=args.box_opacity,
             ),
         )
         print("Step 5/6: Validating generated subtitle files...", flush=True)
@@ -743,8 +753,6 @@ def main(argv: list[str] | None = None) -> int:
                 burned_output,
                 video_encoder=args.video_encoder,
                 global_quality=args.global_quality,
-                box_color=args.box_color,
-                box_opacity=args.box_opacity,
             )
             print(f"  OK: {burned_output.name}", flush=True)
         else:

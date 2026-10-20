@@ -15,7 +15,7 @@ On Windows, locate the current user's Anaconda installation through `$env:USERPR
 & (Join-Path $env:USERPROFILE "anaconda3\python.exe") .\scripts\download_youtube_bilingual_srt.py "<YouTube URL>" --languages "<top-language>,<bottom-language>" --output-dir "D:\MyDownload"
 ```
 
-The script creates the two unchanged single-language SRT tracks, a time-aligned bilingual SRT, and a styled ASS file. ASS generation classifies CJK text above Latin text regardless of the source track, combines rolling lines by language, centers the bilingual lines inside the caption area, and shrinks text that would exceed the available width. The 1920×1080 area `(66,883)`–`(1852,1022)` is rendered by FFmpeg `drawbox` and its expression scales proportionally with the video frame. Chinese appears above English in warm straw yellow, is 1.2 times the English font size, and both lines use a subtle text shadow; English is white. The default drawbox is black at 0.6 opacity. Fonts, sizes, text colors, box color, and opacity are configurable through the `--chinese-font`, `--english-font`, `--english-font-size`, `--chinese-font-scale`, `--chinese-color`, `--english-color`, `--box-color`, and `--box-opacity` options.
+The script creates the two unchanged single-language SRT tracks, a time-aligned bilingual SRT, and a styled ASS file. ASS generation classifies CJK text above Latin text regardless of the source track, combines rolling lines by language, centers the bilingual lines inside the caption area, and shrinks text that would exceed the available width. The 1920×1080 area `(66,883)`–`(1852,1022)` is drawn as a rectangle inside the ASS file and scales proportionally with the video frame. Chinese appears above English in vivid gold (`#FFC928`), is 1.2 times the English font size, and both lines use bold text with a subtle shadow; English is white. The ASS box is black at 0.6 opacity, so the background appears whether the ASS is played separately or burned in. Fonts, sizes, text colors, box color, and opacity are configurable through the `--chinese-font`, `--english-font`, `--english-font-size`, `--chinese-font-scale`, `--chinese-color`, `--english-color`, `--box-color`, and `--box-opacity` options.
 
 To also download and retain the video and render an MP4 with hard-burned subtitles, add `--burn-in`. On a local Windows computer with Intel Quick Sync and FFmpeg built with `h264_qsv`, use `--video-encoder h264_qsv --global-quality 1`. The equivalent one-line FFmpeg operation is:
 
@@ -23,7 +23,7 @@ To also download and retain the video and render an MP4 with hard-burned subtitl
 ffmpeg -i "a.mp4" -vf "subtitles='transcript.ass'" -c:v h264_qsv -global_quality 1 -c:a copy "output_with_subtitle.mp4"
 ```
 
-The ASS file owns text layout and styling; FFmpeg draws the scaled background box, then renders ASS text over it. The GitHub Actions workflow uses software H.264 encoding because hosted runners do not provide Intel Quick Sync hardware.
+The ASS file owns the background box, text layout, and styling; FFmpeg only renders the ASS file into the video. The GitHub Actions workflow uses software H.264 encoding because hosted runners do not provide Intel Quick Sync hardware.
 
 The default language pair is `zh-Hans,en-orig`, producing Chinese above English. For another pair, inspect available YouTube track codes first:
 

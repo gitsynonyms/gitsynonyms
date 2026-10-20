@@ -91,14 +91,14 @@ form.addEventListener("submit", (event) => {
   if (location === "local") {
     instructionsTitle.textContent = "本地 Anaconda 运行";
     instructionsCopy.textContent = options.burnIn
-      ? "点击复制后，在 Windows PowerShell 中粘贴运行；命令通过 $env:USERPROFILE 定位 Anaconda。本机会用 yt-dlp 下载视频和原始字幕，生成双语 SRT、ASS，再用 FFmpeg 按画面比例 drawbox 并以 h264_qsv / -global_quality 1 硬刻录。需要 yt-dlp、FFmpeg（含 h264_qsv）和 Intel Quick Sync。"
-      : "点击复制后，在 Windows PowerShell 中粘贴运行；命令通过 $env:USERPROFILE 定位 Anaconda。会生成原始单语字幕、双语 SRT 和 ASS；ASS 内写入字体、字号、颜色和字幕定位；本地需要 yt-dlp。";
+      ? "点击复制后，在 Windows PowerShell 中粘贴运行；命令通过 $env:USERPROFILE 定位 Anaconda。本机会用 yt-dlp 下载视频和原始字幕，生成带内置背景框的双语 SRT/ASS，再以 h264_qsv / -global_quality 1 硬刻录。需要 yt-dlp、FFmpeg（含 h264_qsv）和 Intel Quick Sync。"
+      : "点击复制后，在 Windows PowerShell 中粘贴运行；命令通过 $env:USERPROFILE 定位 Anaconda。会生成原始单语字幕、双语 SRT 和自带字幕背景框的 ASS；本地需要 yt-dlp。";
   } else {
     instructionsTitle.textContent = "GitHub 云端 runner 运行";
     instructionsCopy.textContent =
       options.burnIn
-        ? "复制命令后，在已登录且有仓库 Actions 写权限的终端执行；云端会下载字幕和视频，生成双语 SRT、ASS，再用等比 drawbox 和 ASS 文字渲染硬刻录 MP4，到 Actions artifact 下载。"
-        : "复制命令后，在已登录且有仓库 Actions 写权限的终端执行；云端会生成单语字幕、双语 SRT 和 ASS，到 Actions artifact 下载。也可打开 Actions 页面手动启动 workflow。";
+        ? "复制命令后，在已登录且有仓库 Actions 写权限的终端执行；云端会下载字幕和视频，生成内置背景框的双语 SRT/ASS 并硬刻录 MP4，到 Actions artifact 下载。"
+        : "复制命令后，在已登录且有仓库 Actions 写权限的终端执行；云端会生成单语字幕、双语 SRT 和自带背景框的 ASS，到 Actions artifact 下载。也可打开 Actions 页面手动启动 workflow。";
   }
 });
 

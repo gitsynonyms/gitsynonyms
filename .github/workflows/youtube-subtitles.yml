@@ -47,22 +47,22 @@ on:
         type: number
         default: 1.2
       chinese_color:
-        description: Chinese text color in #RRGGBB format (warm straw yellow by default)
+        description: Chinese text color in #RRGGBB format (gold by default)
         required: false
         type: string
-        default: "#FFEC99"
+        default: "#FFC928"
       english_color:
         description: English text color in #RRGGBB format
         required: false
         type: string
         default: "#FFFFFF"
       box_color:
-        description: Adaptive drawbox color in #RRGGBB format
+        description: ASS subtitle box color in #RRGGBB format
         required: false
         type: string
         default: "#000000"
       box_opacity:
-        description: Drawbox opacity from 0 (transparent) to 1 (opaque)
+        description: ASS subtitle box opacity from 0 (transparent) to 1 (opaque)
         required: false
         type: number
         default: 0.6

@@ -38,10 +38,15 @@ def test_ass_uses_chinese_above_english_with_chinese_1_2x_size():
     assert "Style: Chinese,Microsoft YaHei,57.6," in result
     assert "Style: English,Arial,48," in result
     assert "BorderStyle, Outline, Shadow" in result
-    assert "Style: Chinese,Microsoft YaHei,57.6,&H0099ECFF," in result
-    assert ",1,1,1,5,0,0,0,1" in result
-    assert result.count("Dialogue: ") == 1
-    assert "Dialogue: 0,0:00:01.00,0:00:02.00,Chinese" in result
+    assert "Style: Chinese,Microsoft YaHei,57.6,&H0028C9FF," in result
+    assert "Style: CaptionBox,Arial,1,&H66000000," in result
+    assert ",1,2,1,5,0,0,0,1" in result
+    assert result.count("Dialogue: ") == 2
+    assert "Dialogue: 1,0:00:01.00,0:00:02.00,Chinese" in result
+    assert (
+        "Dialogue: 0,0:00:01.00,0:00:02.00,CaptionBox,,0,0,0,,"
+        r"{\an7\pos(66,883)\p1}m 0 0 l 1786 0 1786 139 0 139 0 0{\p0}"
+    ) in result
     assert (
         r"{\an5\pos(959,952.5)}{\fs57.6}你好\N{\fs10}\h\N"
         r"{\rEnglish\fs48}Hello"
@@ -90,7 +95,7 @@ def test_ass_classifies_mixed_lines_and_centers_each_language():
 
     assert "你好世界こんにちは" in result
     assert r"\N{\fs10}\h\N{\rEnglish\fs48}Hello there Good morning" in result
-    assert result.count("Dialogue: ") == 1
+    assert result.count("Dialogue: ") == 2
 
 
 def test_long_ass_lines_shrink_to_fit_caption_box():
@@ -151,8 +156,7 @@ def test_burn_in_uses_ass_filter_and_copies_audio(monkeypatch, tmp_path):
     command, options = calls[0]
     escaped_ass = ass.as_posix().replace(":", r"\:")
     vf = command[command.index("-vf") + 1]
-    assert vf.startswith("drawbox=x=iw*66/1920:y=ih*883/1080:w=iw*1786/1920:h=ih*139/1080:")
-    assert vf.endswith(f",subtitles=filename='{escaped_ass}'")
+    assert vf == f"subtitles=filename='{escaped_ass}'"
     assert command[command.index("-c:a") + 1] == "copy"
     assert command[command.index("-c:v") + 1] == "libx264"
     assert command[command.index("-crf") + 1] == "18"
@@ -180,21 +184,19 @@ def test_qsv_burn_in_uses_requested_one_line_ffmpeg_quality_options(monkeypatch,
     assert command[command.index("-c:v") + 1] == "h264_qsv"
     assert command[command.index("-global_quality") + 1] == "1"
     assert command[command.index("-c:a") + 1] == "copy"
-    assert "color=0x000000@0.6:t=fill" in command[command.index("-vf") + 1]
 
 
-def test_drawbox_opacity_and_color_are_validated(monkeypatch, tmp_path):
-    monkeypatch.setattr(youtube_srt.shutil, "which", lambda _: "ffmpeg.exe")
-    video, ass, output = (tmp_path / name for name in ("source.mp4", "captions.ass", "burned.mp4"))
-    video.touch()
-    ass.touch()
-    for options in ({"box_opacity": 1.1}, {"box_color": "not-a-color"}):
-        try:
-            youtube_srt.burn_ass_into_video(video, ass, output, **options)
-        except ValueError:
-            pass
-        else:
-            raise AssertionError("Expected invalid drawbox configuration to fail")
+def test_ass_caption_box_is_embedded_and_opacity_is_validated():
+    cues = youtube_srt.parse_srt("1\n00:00:01,000 --> 00:00:02,000\ncaption\n\n")
+    result = youtube_srt.build_ass(cues, cues)
+    assert "Style: CaptionBox,Arial,1,&H66000000," in result
+
+    try:
+        youtube_srt.build_ass(cues, cues, box_opacity=1.1)
+    except ValueError as error:
+        assert "Box opacity" in str(error)
+    else:
+        raise AssertionError("Expected invalid ASS box opacity to fail")
 
 
 def test_ytdlp_uses_deno_runtime_when_available(monkeypatch):

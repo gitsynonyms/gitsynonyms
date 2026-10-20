@@ -43,8 +43,8 @@
         <label for="chinese-font-scale">中文相对英文字号倍率</label>
         <input id="chinese-font-scale" name="chinese-font-scale" type="number" min="0.5" max="3" step="0.1" value="1.2" required>
 
-        <label for="chinese-color">中文文字颜色（浅麦秆暖黄）</label>
-        <input id="chinese-color" name="chinese-color" type="color" value="#ffec99">
+        <label for="chinese-color">中文文字颜色（金黄）</label>
+        <input id="chinese-color" name="chinese-color" type="color" value="#ffc928">
 
         <label for="english-color">英文文字颜色</label>
         <input id="english-color" name="english-color" type="color" value="#ffffff">
@@ -52,7 +52,7 @@
         <label for="box-color">自适应字幕黑框颜色</label>
         <input id="box-color" name="box-color" type="color" value="#000000">
 
-        <label for="box-opacity">字幕黑框不透明度（0–1，0.6 = 60% 不透明）</label>
+        <label for="box-opacity">ASS 字幕框不透明度（0–1，0.6 = 60% 不透明）</label>
         <input id="box-opacity" name="box-opacity" type="number" min="0" max="1" step="0.05" value="0.6" required>
 
         <button id="submit-button" type="submit">生成运行命令</button>
@@ -70,7 +70,7 @@
       </section>
 
       <footer>
-        页面不会要求或保存访问令牌。ASS 保存字幕文字、颜色和布局；硬刻录时 FFmpeg 按画面比例绘制背景框并渲染 ASS。本地 QSV 需要兼容的 Intel 硬件和 FFmpeg；云端使用软件编码。YouTube 可能限制字幕或视频访问。
+        页面不会要求或保存访问令牌。ASS 文件自带字幕背景框、文字颜色和布局；单独播放 ASS 或 FFmpeg 硬刻录都会显示相同背景。本地 QSV 需要兼容的 Intel 硬件和 FFmpeg；云端使用软件编码。YouTube 可能限制字幕或视频访问。
       </footer>
     </main>
     <script src="app.js?v=ass-burn-in"></script>
