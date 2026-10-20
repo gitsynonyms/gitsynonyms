@@ -70,7 +70,7 @@
       </section>
 
       <footer>
-        页面不会要求或保存访问令牌。本地模式生成字幕文件；ASS 样式写入字幕文件本身。硬刻录必须使用 GitHub 云端 runner，YouTube 可能限制 runner 访问字幕或视频。
+        页面不会要求或保存访问令牌。ASS 保存字幕文字、颜色和布局；硬刻录时 FFmpeg 按画面比例绘制背景框并渲染 ASS。本地 QSV 需要兼容的 Intel 硬件和 FFmpeg；云端使用软件编码。YouTube 可能限制字幕或视频访问。
       </footer>
     </main>
     <script src="app.js?v=ass-burn-in"></script>
