@@ -13,6 +13,10 @@
         <p class="eyebrow">GITSYNONYMS · CLOUD CAPTIONS</p>
         <h1>YouTube 字幕下载器</h1>
         <p class="intro">输入视频链接，选择字幕样式并自定义字幕框位置与尺寸，生成中英双语 SRT/ASS；也可在 GitHub 云端将 ASS 硬刻录进视频。</p>
+        <nav class="page-nav" aria-label="主导航">
+          <a class="active" href="./">字幕生成</a>
+          <a href="settings.html">字幕设置 <span aria-hidden="true">↗</span></a>
+        </nav>
       </header>
 
       <form id="download-form" class="panel">
@@ -67,7 +71,7 @@
           </label>
           <label class="preset-card" for="box-style-blue">
             <input id="box-style-blue" name="box-style" type="radio" value="presidential-blue">
-            <span class="box-preview blue-box-preview">总统蓝 · #0D132D</span>
+            <span class="box-preview blue-box-preview">总统蓝 · #0F1647</span>
           </label>
         </fieldset>
 
@@ -92,7 +96,7 @@
 
         <label for="box-color-hex">自定义背景框颜色（HEX，可输入 RGB）</label>
         <input id="box-color" name="box-color" type="color" value="#708496">
-        <input id="box-color-hex" name="box-color-hex" type="text" value="#708496" pattern="#[0-9A-Fa-f]{6}" aria-label="背景框颜色 HEX 值，例如 #0D132D" required>
+        <input id="box-color-hex" name="box-color-hex" type="text" value="#708496" pattern="#[0-9A-Fa-f]{6}" aria-label="背景框颜色 HEX 值，例如 #0F1647" required>
 
         <label for="box-opacity">背景框不透明度（0–1）</label>
         <input id="box-opacity" name="box-opacity" type="number" min="0" max="1" step="0.05" value="0.68" required>
@@ -127,6 +131,6 @@
         页面不会要求或保存访问令牌。ASS 文件自带所选背景框、样式和显示时机；坐标会按分辨率等比缩放。玻璃风格为播放器兼容的半透明质感模拟，不会模糊底层视频。单独播放 ASS 或 FFmpeg 硬刻录都会显示相同背景。本地 QSV 需要兼容的 Intel 硬件和 FFmpeg；云端使用软件编码。YouTube 可能限制字幕或视频访问。
       </footer>
     </main>
-    <script src="app.js?v=ass-box-modes"></script>
+    <script src="app.js?v=caption-settings-page"></script>
   </body>
 </html>

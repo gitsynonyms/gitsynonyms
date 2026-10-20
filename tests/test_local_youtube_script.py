@@ -121,7 +121,7 @@ def test_box_styles_apply_default_colors_and_opacity():
 
     assert "Style: CaptionBox,Arial,1,&H52968470," in glass
     assert "Style: CaptionFacet,Arial,1,&HD9FFFFFF," in glass
-    assert "Style: CaptionBox,Arial,1,&H1A2D130D," in blue
+    assert "Style: CaptionBox,Arial,1,&H1A47160F," in blue
     assert ",CaptionFacet,," not in blue
 
 

@@ -30,9 +30,92 @@ const commandOutput = document.querySelector("#run-command");
 const copyButton = document.querySelector("#copy-command");
 const workflowLink = document.querySelector("#workflow-link");
 const statusRegion = document.querySelector("#status");
+const SETTINGS_STORAGE_KEY = "gitsynonyms.captionSettings.v1";
 
 function quotePowerShell(value) {
   return `'${value.replaceAll("'", "''")}'`;
+}
+
+function selectedValue(name, fallback) {
+  return form.querySelector(`input[name="${name}"]:checked`)?.value ?? fallback;
+}
+
+function getCaptionSettings() {
+  return {
+    stylePreset: selectedValue("style-preset", "classic"),
+    boxDisplay: selectedValue("box-display", "always"),
+    boxStyle: selectedValue("box-style", "glass-diamond"),
+    chineseFont: chineseFontInput.value,
+    englishFont: englishFontInput.value,
+    englishFontSize: englishFontSizeInput.value,
+    chineseFontScale: chineseFontScaleInput.value,
+    chineseColor: chineseColorInput.value,
+    englishColor: englishColorInput.value,
+    boxColor: /^#[0-9a-fA-F]{6}$/.test(boxColorHexInput.value)
+      ? boxColorHexInput.value
+      : boxColorInput.value,
+    boxOpacity: boxOpacityInput.value,
+    boxX: boxXInput.value,
+    boxY: boxYInput.value,
+    boxWidth: boxWidthInput.value,
+    boxHeight: boxHeightInput.value,
+  };
+}
+
+function persistCaptionSettings() {
+  try {
+    window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(getCaptionSettings()));
+  } catch (error) {
+    statusRegion.hidden = false;
+    statusRegion.classList.add("error");
+    statusRegion.textContent = `无法在此浏览器保存字幕设置：${error.message}`;
+  }
+}
+
+function applySavedCaptionSettings() {
+  let saved;
+  try {
+    saved = JSON.parse(window.localStorage.getItem(SETTINGS_STORAGE_KEY) ?? "null");
+  } catch (error) {
+    statusRegion.hidden = false;
+    statusRegion.classList.add("error");
+    statusRegion.textContent = `读取字幕设置失败：${error.message}`;
+    return;
+  }
+  if (!saved || typeof saved !== "object") return;
+  if (saved.boxStyle === "presidential-blue" && typeof saved.boxColor === "string" && saved.boxColor.toLowerCase() === "#0d132d") {
+    saved.boxColor = "#0f1647";
+  }
+
+  const radios = {
+    "style-preset": saved.stylePreset,
+    "box-display": saved.boxDisplay,
+    "box-style": saved.boxStyle,
+  };
+  Object.entries(radios).forEach(([name, value]) => {
+    const radio = form.querySelector(`input[name="${name}"][value="${value}"]`);
+    if (radio) radio.checked = true;
+  });
+  const controls = {
+    "chinese-font": saved.chineseFont,
+    "english-font": saved.englishFont,
+    "english-font-size": saved.englishFontSize,
+    "chinese-font-scale": saved.chineseFontScale,
+    "chinese-color": saved.chineseColor,
+    "english-color": saved.englishColor,
+    "box-opacity": saved.boxOpacity,
+    "box-x": saved.boxX,
+    "box-y": saved.boxY,
+    "box-width": saved.boxWidth,
+    "box-height": saved.boxHeight,
+  };
+  Object.entries(controls).forEach(([id, value]) => {
+    if (value !== undefined && value !== null) document.getElementById(id).value = value;
+  });
+  if (/^#[0-9a-fA-F]{6}$/.test(saved.boxColor ?? "")) {
+    boxColorInput.value = saved.boxColor;
+    boxColorHexInput.value = saved.boxColor;
+  }
 }
 
 const stylePresets = {
@@ -55,7 +138,7 @@ const stylePresets = {
 };
 const boxStyles = {
   "glass-diamond": { color: "#708496", opacity: "0.68" },
-  "presidential-blue": { color: "#0d132d", opacity: "0.9" },
+  "presidential-blue": { color: "#0f1647", opacity: "0.9" },
 };
 
 function applyStylePreset(presetName) {
@@ -137,6 +220,9 @@ function syncBurnInRunnerRequirement() {
 burnInInput.addEventListener("change", syncBurnInRunnerRequirement);
 runLocation.addEventListener("change", syncBurnInRunnerRequirement);
 syncBurnInRunnerRequirement();
+applySavedCaptionSettings();
+form.addEventListener("input", persistCaptionSettings);
+form.addEventListener("change", persistCaptionSettings);
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();

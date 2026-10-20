@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0b1020">
+    <title>字幕设置 · GitSynonyms</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="settings-shell">
+      <header class="settings-header">
+        <div>
+          <p class="eyebrow">GITSYNONYMS · CAPTION PREFERENCES</p>
+          <h1>字幕设置</h1>
+          <p class="intro">为双语字幕设置显示时机、背景、字体与位置。配置保存在当前浏览器，并会用于字幕生成页面。</p>
+        </div>
+        <nav class="page-nav" aria-label="主导航">
+          <a href="./">字幕生成</a>
+          <a class="active" href="settings.html">字幕设置</a>
+        </nav>
+      </header>
+
+      <div class="settings-layout">
+        <aside class="settings-sidebar" aria-label="设置分类">
+          <p class="sidebar-title">设置</p>
+          <a class="sidebar-link active" href="#video-subtitles">视频字幕</a>
+          <a class="sidebar-link" href="#display-timing">字幕区显示时机</a>
+          <a class="sidebar-link" href="#background-style">字幕区背景</a>
+          <a class="sidebar-link" href="#text-style">字体与颜色</a>
+          <a class="sidebar-link" href="#position-size">字幕区位置与尺寸</a>
+          <a class="sidebar-link" href="#preview">样式预览</a>
+          <div class="sidebar-divider"></div>
+          <a class="sidebar-back" href="./">← 返回字幕生成</a>
+        </aside>
+
+        <form id="settings-form" class="settings-content">
+          <section id="video-subtitles" class="settings-section">
+            <p class="section-kicker">PREFERENCES / VIDEO</p>
+            <h2>视频字幕</h2>
+            <p class="hint">仅配置本工具实际支持的字幕生成与 ASS 输出选项。</p>
+            <div class="setting-row">
+              <div>
+                <h3>字幕语言顺序</h3>
+                <p>默认中文与英文原文双语；样式预设决定画面上的上下排列。</p>
+              </div>
+              <span class="setting-value">中文 + English</span>
+            </div>
+            <div class="setting-row">
+              <div>
+                <h3>双语文字布局</h3>
+                <p>可选经典金黄中字在上，或样图电影风格英文在上。</p>
+              </div>
+              <div class="segmented-control" role="radiogroup" aria-label="字幕文字布局">
+                <label><input type="radio" name="style-preset" value="classic" checked><span>经典 · 中文在上</span></label>
+                <label><input type="radio" name="style-preset" value="cinema"><span>电影 · 英文在上</span></label>
+              </div>
+            </div>
+          </section>
+
+          <section id="display-timing" class="settings-section">
+            <p class="section-kicker">01 / DISPLAY</p>
+            <h2>字幕区显示时机</h2>
+            <p class="hint">视频底部已有横幅时选“全程显示”以持续遮挡；没有横幅时可只在字幕出现时显示背景区。</p>
+            <div class="choice-grid">
+              <label class="choice-card" for="box-display-always">
+                <input id="box-display-always" name="box-display" type="radio" value="always" checked>
+                <span class="choice-title">全程显示</span>
+                <span class="choice-description">背景区从视频 0 秒持续到结束，适合遮挡原片横幅。</span>
+              </label>
+              <label class="choice-card" for="box-display-caption">
+                <input id="box-display-caption" name="box-display" type="radio" value="with-captions">
+                <span class="choice-title">随字幕显示</span>
+                <span class="choice-description">仅字幕文字出现时显示；字幕空档恢复原画面。</span>
+              </label>
+            </div>
+          </section>
+
+          <section id="background-style" class="settings-section">
+            <p class="section-kicker">02 / BACKGROUND</p>
+            <h2>字幕区背景</h2>
+            <div class="choice-grid">
+              <label class="choice-card" for="box-style-glass">
+                <input id="box-style-glass" name="box-style" type="radio" value="glass-diamond" checked>
+                <span class="background-swatch glass-box-preview">磨砂玻璃 · 钻石切面</span>
+                <span class="choice-description">ASS 半透明分面效果；不对视频画面做真实模糊。</span>
+              </label>
+              <label class="choice-card" for="box-style-blue">
+                <input id="box-style-blue" name="box-style" type="radio" value="presidential-blue">
+                <span class="background-swatch blue-box-preview">总统蓝 · #0F1647</span>
+                <span class="choice-description">深海军蓝纯色背景，颜色可继续自定义。</span>
+              </label>
+            </div>
+            <p class="hint">配色参考：<a href="https://www.flagcolorcodes.com/president-of-the-united-states-of-america-usa-1959-1994" target="_blank" rel="noopener noreferrer">美国总统旗帜（1959–1994）蓝色 #0F1647</a>。</p>
+            <div class="form-grid">
+              <label for="box-color-hex">背景颜色（HEX）</label>
+              <div class="color-input-row">
+                <input id="box-color" name="box-color" type="color" value="#708496" aria-label="选择背景颜色">
+                <input id="box-color-hex" name="box-color-hex" type="text" value="#708496" pattern="#[0-9A-Fa-f]{6}" aria-label="背景颜色 HEX 值" required>
+              </div>
+              <label for="box-opacity">背景不透明度 <output id="box-opacity-value">0.68</output></label>
+              <input id="box-opacity" name="box-opacity" type="range" min="0.2" max="1" step="0.01" value="0.68">
+            </div>
+          </section>
+
+          <section id="text-style" class="settings-section">
+            <p class="section-kicker">03 / TYPOGRAPHY</p>
+            <h2>字体与颜色</h2>
+            <div class="form-grid two-columns">
+              <div>
+                <label for="chinese-font">中文字体</label>
+                <input id="chinese-font" name="chinese-font" value="Microsoft YaHei" required>
+              </div>
+              <div>
+                <label for="english-font">英文原文字体</label>
+                <input id="english-font" name="english-font" value="Arial" required>
+              </div>
+              <div>
+                <label for="english-font-size">英文字号</label>
+                <input id="english-font-size" name="english-font-size" type="number" min="1" max="200" value="48" required>
+              </div>
+              <div>
+                <label for="chinese-font-scale">中文相对英文字号倍率</label>
+                <input id="chinese-font-scale" name="chinese-font-scale" type="number" min="0.5" max="3" step="0.1" value="1.2" required>
+              </div>
+              <div>
+                <label for="chinese-color">中文文字颜色</label>
+                <input id="chinese-color" name="chinese-color" type="color" value="#ffc928">
+              </div>
+              <div>
+                <label for="english-color">英文文字颜色</label>
+                <input id="english-color" name="english-color" type="color" value="#ffffff">
+              </div>
+            </div>
+            <p class="hint">字体必须安装在执行硬刻录的电脑上；颜色会写入 ASS 字幕文件。</p>
+          </section>
+
+          <section id="position-size" class="settings-section">
+            <p class="section-kicker">04 / GEOMETRY</p>
+            <h2>字幕区位置与尺寸</h2>
+            <p class="hint">以 1920×1080 为基准画布。默认坐标和宽高比例保持不变，其他分辨率按比例缩放。</p>
+            <div class="form-grid four-columns">
+              <div><label for="box-x">左边 X</label><input id="box-x" name="box-x" type="number" min="0" value="66" required></div>
+              <div><label for="box-y">顶部 Y</label><input id="box-y" name="box-y" type="number" min="0" value="883" required></div>
+              <div><label for="box-width">宽度</label><input id="box-width" name="box-width" type="number" min="1" value="1786" required></div>
+              <div><label for="box-height">高度</label><input id="box-height" name="box-height" type="number" min="1" value="139" required></div>
+            </div>
+          </section>
+
+          <section id="preview" class="settings-section preview-section">
+            <p class="section-kicker">LIVE PREVIEW</p>
+            <h2>样式预览</h2>
+            <p class="hint">预览仅展示字幕区与文字层级，不连接或上传视频。</p>
+            <div class="video-preview">
+              <div id="preview-caption-box" class="preview-caption-box">
+                <b id="preview-english">A clear message, made easy to read.</b>
+                <strong id="preview-chinese">清晰易读的双语字幕。</strong>
+              </div>
+            </div>
+            <p id="preview-summary" class="preview-summary"></p>
+          </section>
+
+          <div class="settings-actions">
+            <button type="submit">保存设置</button>
+            <a class="secondary-button" href="./">返回字幕生成</a>
+            <span id="save-status" class="save-status" role="status" aria-live="polite"></span>
+          </div>
+        </form>
+      </div>
+      <footer>设置仅保存在当前浏览器的本地存储中；本页面不会收集或上传你的偏好设置。</footer>
+    </main>
+    <script src="settings.js?v=caption-settings-v1"></script>
+  </body>
+</html>
