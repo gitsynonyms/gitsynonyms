@@ -14,6 +14,7 @@ const chineseFontScaleInput = document.querySelector("#chinese-font-scale");
 const chineseColorInput = document.querySelector("#chinese-color");
 const englishColorInput = document.querySelector("#english-color");
 const boxColorInput = document.querySelector("#box-color");
+const boxColorHexInput = document.querySelector("#box-color-hex");
 const boxOpacityInput = document.querySelector("#box-opacity");
 const boxXInput = document.querySelector("#box-x");
 const boxYInput = document.querySelector("#box-y");
@@ -54,7 +55,7 @@ const stylePresets = {
 };
 const boxStyles = {
   "glass-diamond": { color: "#708496", opacity: "0.68" },
-  "presidential-blue": { color: "#0a3161", opacity: "0.9" },
+  "deep-blue": { color: "#0a3161", opacity: "0.9" },
 };
 
 function applyStylePreset(presetName) {
@@ -77,8 +78,19 @@ boxStyleInputs.forEach((input) => {
     const preset = boxStyles[input.value];
     if (!preset) return;
     boxColorInput.value = preset.color;
+    boxColorHexInput.value = preset.color;
     boxOpacityInput.value = preset.opacity;
   });
+});
+
+boxColorInput.addEventListener("input", () => {
+  boxColorHexInput.value = boxColorInput.value.toUpperCase();
+});
+boxColorHexInput.addEventListener("input", () => {
+  const color = boxColorHexInput.value.trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(color)) {
+    boxColorInput.value = color;
+  }
 });
 
 function makeCommand(videoUrl, location, options) {
@@ -137,8 +149,8 @@ form.addEventListener("submit", (event) => {
   const displayDescription = boxDisplay === "always"
     ? "字幕背景框会从视频开始持续到结束，适合遮挡原片横幅"
     : "字幕背景框只在字幕出现时显示";
-  const boxStyleDescription = boxStyle === "presidential-blue"
-    ? "总统蓝背景框"
+  const boxStyleDescription = boxStyle === "deep-blue"
+    ? "深蓝背景框"
     : "磨砂玻璃钻石质感背景框";
   const options = {
     burnIn: burnInInput.checked,

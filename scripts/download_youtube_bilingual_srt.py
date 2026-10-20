@@ -44,7 +44,7 @@ STYLE_PRESETS = {
 }
 BOX_STYLES = {
     "glass-diamond": {"color": "#708496", "opacity": 0.68, "edge": "#E4F2FF"},
-    "presidential-blue": {"color": "#0A3161", "opacity": 0.9, "edge": "#D9E7F5"},
+    "deep-blue": {"color": "#0A3161", "opacity": 0.9, "edge": "#D9E7F5"},
 }
 
 

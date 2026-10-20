@@ -66,8 +66,8 @@
             <span class="box-preview glass-box-preview">磨砂玻璃 · 钻石切面</span>
           </label>
           <label class="preset-card" for="box-style-blue">
-            <input id="box-style-blue" name="box-style" type="radio" value="presidential-blue">
-            <span class="box-preview blue-box-preview">总统蓝</span>
+            <input id="box-style-blue" name="box-style" type="radio" value="deep-blue">
+            <span class="box-preview blue-box-preview">深蓝</span>
           </label>
         </fieldset>
 
@@ -90,8 +90,9 @@
         <label for="english-color">英文文字颜色</label>
         <input id="english-color" name="english-color" type="color" value="#ffffff">
 
-        <label for="box-color">自定义背景框颜色（可选）</label>
+        <label for="box-color-hex">自定义背景框颜色（HEX，可输入 RGB）</label>
         <input id="box-color" name="box-color" type="color" value="#708496">
+        <input id="box-color-hex" name="box-color-hex" type="text" value="#708496" pattern="#[0-9A-Fa-f]{6}" aria-label="背景框颜色 HEX 值，例如 #0A3161" required>
 
         <label for="box-opacity">背景框不透明度（0–1）</label>
         <input id="box-opacity" name="box-opacity" type="number" min="0" max="1" step="0.05" value="0.68" required>

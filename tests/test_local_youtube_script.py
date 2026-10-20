@@ -114,9 +114,9 @@ def test_box_styles_apply_default_colors_and_opacity():
     blue = youtube_srt.build_ass(
         cues,
         cues,
-        box_style="presidential-blue",
-        box_color=youtube_srt.BOX_STYLES["presidential-blue"]["color"],
-        box_opacity=youtube_srt.BOX_STYLES["presidential-blue"]["opacity"],
+        box_style="deep-blue",
+        box_color=youtube_srt.BOX_STYLES["deep-blue"]["color"],
+        box_opacity=youtube_srt.BOX_STYLES["deep-blue"]["opacity"],
     )
 
     assert "Style: CaptionBox,Arial,1,&H52968470," in glass
