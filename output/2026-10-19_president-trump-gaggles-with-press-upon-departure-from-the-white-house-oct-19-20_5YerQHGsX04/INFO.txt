@@ -1,0 +1,17 @@
+Video: President Trump Gaggles with Press Upon Departure from the White House, Oct. 19, 2026
+Video ID: 5YerQHGsX04
+Event date: 2026-10-19
+Source: https://www.youtube.com/watch?v=5YerQHGsX04
+
+auto-generated_English.srt: English captions identified by YouTube as auto-generated.
+The transcript is not independently proofread.
+
+The MP4 itself was not saved: every video/audio stream for this upload returns
+HTTP 403 Forbidden from this environment, across the visionos, android,
+tv_embedded, mweb, ios, tv, web and web_safari clients and the HLS renditions.
+Caption endpoints are unaffected, so the English transcript above is intact.
+
+YouTube lists an automatic Simplified Chinese (zh-Hans) translated caption track.
+Its caption download currently returns HTTP 429 (Too Many Requests), so Chinese
+and bilingual files are pending. No translated text is represented as verified
+or silently substituted.
