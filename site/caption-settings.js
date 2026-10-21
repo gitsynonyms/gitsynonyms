@@ -18,6 +18,38 @@
     boxHeight: "139",
   });
 
+  function relativeLuminance(hexColor) {
+    const channels = hexColor.slice(1).match(/.{2}/g).map((channel) => {
+      const value = Number.parseInt(channel, 16) / 255;
+      return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+    });
+    return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+  }
+
+  function contrastRatio(background, text) {
+    const luminance = [relativeLuminance(background), relativeLuminance(text)].sort((a, b) => b - a);
+    return (luminance[0] + 0.05) / (luminance[1] + 0.05);
+  }
+
+  function normalize(settings) {
+    const normalized = { ...settings };
+    if (
+      normalized.boxStyle === "presidential-blue" &&
+      typeof normalized.boxColor === "string" &&
+      /^#[0-9a-f]{6}$/i.test(normalized.boxColor) &&
+      [normalized.chineseColor, normalized.englishColor].some(
+        (color) =>
+          typeof color === "string" &&
+          /^#[0-9a-f]{6}$/i.test(color) &&
+          contrastRatio(normalized.boxColor, color) < 4.5
+      )
+    ) {
+      normalized.chineseColor = "#ffc928";
+      normalized.englishColor = "#ffffff";
+    }
+    return normalized;
+  }
+
   function read() {
     const saved = window.localStorage.getItem(STORAGE_KEY);
     const settings = saved ? { ...DEFAULTS, ...JSON.parse(saved) } : { ...DEFAULTS };
@@ -28,7 +60,7 @@
     ) {
       settings.boxColor = "#0f1647";
     }
-    return settings;
+    return normalize(settings);
   }
 
   function write(settings) {
@@ -40,5 +72,6 @@
     defaults: DEFAULTS,
     read,
     write,
+    normalize,
   });
 })();
