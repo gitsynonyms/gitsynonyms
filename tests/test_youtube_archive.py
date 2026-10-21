@@ -43,6 +43,11 @@ def test_parse_and_align_srt_entries():
     )
 
 
+def test_parse_srt_skips_blank_line_before_caption_text():
+    parsed = _parse_srt("1\n00:00:01,000 --> 00:00:02,000\n\nHello\n\n")
+    assert parsed[0]["text"] == "Hello"
+
+
 def test_parse_srt_keeps_caption_markup_and_spacing():
     parsed = _parse_srt("1\n00:00:01,000 --> 00:00:02,000\n  <b>Text</b>  \n\n")
     assert parsed[0]["text"] == "  <b>Text</b>  "

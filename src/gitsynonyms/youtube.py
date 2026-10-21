@@ -279,6 +279,7 @@ def _transcript_entries(transcript) -> List[dict]:
 
 
 def _parse_srt(content: str) -> List[dict]:
+    normalized = content.lstrip("\ufeff").replace("\r\n", "\n").replace("\r", "\n")
     pattern = re.compile(
         r"\d+\s*\n(\d{2}:\d{2}:\d{2}[,.]\d{3})\s*-->\s*"
         r"(\d{2}:\d{2}:\d{2}[,.]\d{3})[^\n]*\n(.*?)(?=\n\s*\n|\Z)",
@@ -290,10 +291,16 @@ def _parse_srt(content: str) -> List[dict]:
         return int(hours) * 3600 + int(minutes) * 60 + float(rest)
 
     entries = []
-    for match in pattern.finditer(content.lstrip("\ufeff").replace("\r\n", "\n")):
+    for match in pattern.finditer(normalized):
         start = seconds(match.group(1))
         end = seconds(match.group(2))
-        text = match.group(3).rstrip("\n")
+        text = match.group(3)
+        while text.startswith("\n"):
+            text = text[1:]
+        while text.endswith("\n"):
+            text = text[:-1]
+        if not text.strip():
+            continue
         entries.append({"start": start, "duration": end - start, "text": text})
     if not entries:
         raise ValueError("yt-dlp returned an empty or unreadable SRT file.")
