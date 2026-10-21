@@ -23,6 +23,9 @@ CJK = re.compile(
     r"\ua960-\ua97f\uac00-\ud7ff\uf900-\ufaff\ufe30-\ufe4f\uff00-\uffef]"
 )
 CJK_EM, LATIN_EM = 0.85, 0.45
+# YouTube emits rolling-caption inline timestamps that can sit a few milliseconds
+# outside their own cue window; clamp those instead of rejecting the whole track.
+VTT_TIMESTAMP_TOLERANCE = 0.5
 PLAY_RESOLUTION = (1920, 1080)
 CAPTION_AREA = (66, 883, 1852, 1022)
 STYLE_PRESETS = {
@@ -49,6 +52,17 @@ BOX_STYLES = {
     "solid-color": {"color": "#708496", "opacity": 1, "edge": "#D9E7F5"},
 }
 ENGLISH_HIGHLIGHT_COLOR = "#00D7FF"
+X264_PRESETS = (
+    "ultrafast",
+    "superfast",
+    "veryfast",
+    "faster",
+    "fast",
+    "medium",
+    "slow",
+    "slower",
+    "veryslow",
+)
 
 
 def video_id_from_url(value: str) -> str:
@@ -176,10 +190,15 @@ def parse_vtt(content: str) -> list[dict]:
             for stamp in inline_timestamp.finditer(line):
                 chunks.append((current_start, line[position:stamp.start()]))
                 current_start = vtt_timestamp_to_seconds(stamp.group(1))
-                if not start <= current_start < end:
-                    raise ValueError(
-                        f"Inline WebVTT timestamp is outside its cue: {stamp.group(0)!r}"
-                    )
+                if current_start < start or current_start > end:
+                    if (
+                        start - current_start > VTT_TIMESTAMP_TOLERANCE
+                        or current_start - end > VTT_TIMESTAMP_TOLERANCE
+                    ):
+                        raise ValueError(
+                            f"Inline WebVTT timestamp is outside its cue: {stamp.group(0)!r}"
+                        )
+                    current_start = min(max(current_start, start), end)
                 has_inline_timing = True
                 position = stamp.end()
             chunks.append((current_start, line[position:]))
@@ -1449,6 +1468,8 @@ def burn_ass_into_video(
     *,
     video_encoder: str = "libx264",
     global_quality: int = 18,
+    max_height: int | None = None,
+    preset: str = "medium",
 ) -> None:
     executable = shutil.which("ffmpeg")
     if not executable:
@@ -1457,6 +1478,10 @@ def burn_ass_into_video(
         raise ValueError("Video encoder must be 'h264_qsv' or 'libx264'.")
     if global_quality < 1 or global_quality > 51:
         raise ValueError("Global quality must be between 1 and 51.")
+    if max_height is not None and (max_height < 16 or max_height > 2160):
+        raise ValueError("Burn-in height must be between 16 and 2160 pixels.")
+    if preset not in X264_PRESETS:
+        raise ValueError(f"Unsupported x264 preset: {preset!r}")
     filter_path = str(ass_path.resolve()).replace("\\", "/")
     filter_path = (
         filter_path.replace(":", r"\:")
@@ -1466,21 +1491,26 @@ def burn_ass_into_video(
         .replace("]", r"\]")
     )
     quality_option = "-global_quality" if video_encoder == "h264_qsv" else "-crf"
+    filters = f"subtitles=filename='{filter_path}'"
+    if max_height is not None:
+        # The ASS declares a 1920x1080 PlayRes, so libass scales the caption box
+        # proportionally when the frame is downscaled here.
+        filters = f"scale=-2:{max_height}," + filters
     command = [
         executable,
         "-y",
         "-i",
         str(video),
         "-vf",
-        f"subtitles=filename='{filter_path}'",
+        filters,
         "-c:v",
         video_encoder,
         quality_option,
         str(global_quality),
-        "-c:a",
-        "copy",
-        str(output_path),
     ]
+    if video_encoder == "libx264":
+        command.extend(["-preset", preset])
+    command.extend(["-c:a", "copy", str(output_path)])
     print("  Rendering the video with permanently burned-in ASS subtitles...", flush=True)
     try:
         subprocess.run(
@@ -1593,9 +1623,25 @@ def main(argv: list[str] | None = None) -> int:
         default=18,
         help="FFmpeg quality value (1-51); with h264_qsv this is passed as -global_quality.",
     )
+    parser.add_argument(
+        "--burn-max-height",
+        type=int,
+        help=(
+            "Downscale the burned MP4 to this height before rendering the ASS captions, "
+            "which keeps the archive copy small enough to publish; captions scale with the frame."
+        ),
+    )
+    parser.add_argument(
+        "--burn-preset",
+        choices=X264_PRESETS,
+        default="medium",
+        help="libx264 speed/size preset for burn-in (default: medium).",
+    )
     args = parser.parse_args(argv)
     if args.sleep_subtitles < 0:
         parser.error("--sleep-subtitles must not be negative")
+    if args.burn_max_height is not None and not 16 <= args.burn_max_height <= 2160:
+        parser.error("--burn-max-height must be between 16 and 2160")
     languages = [language.strip() for language in args.languages.split(",")]
     if len(languages) != 2 or not all(languages) or languages[0].lower() == languages[1].lower():
         parser.error("--languages must contain two distinct comma-separated language codes")
@@ -1716,8 +1762,14 @@ def main(argv: list[str] | None = None) -> int:
                 burned_output,
                 video_encoder=args.video_encoder,
                 global_quality=args.global_quality,
+                max_height=args.burn_max_height,
+                preset=args.burn_preset,
             )
-            print(f"  OK: {burned_output.name}", flush=True)
+            print(
+                f"  OK: {burned_output.name} "
+                f"({burned_output.stat().st_size / 1_000_000:.1f} MB)",
+                flush=True,
+            )
         else:
             print("Step 6/6: Video burn-in skipped; pass --burn-in to render a subtitled MP4.", flush=True)
         print("Original downloaded subtitles were left untouched:", flush=True)

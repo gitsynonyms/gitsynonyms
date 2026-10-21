@@ -994,3 +994,72 @@ def test_main_rejects_missing_video_duration_for_persistent_box(monkeypatch, cap
 
     assert youtube_srt.main(["https://www.youtube.com/watch?v=dQw4w9WgXcQ"]) == 1
     assert "Video duration is unavailable" in capsys.readouterr().err
+
+
+def test_vtt_parser_clamps_inline_timestamp_just_past_cue_end():
+    content = (
+        "WEBVTT\n\n"
+        "00:00:01.000 --> 00:00:02.000 align:start position:0%\n"
+        "hello<00:00:02.010><c> world</c>\n"
+    )
+
+    cues = youtube_srt.parse_vtt(content)
+
+    assert cues[0]["text"].strip() == "hello world"
+    assert [word["start"] for word in cues[0]["word_timings"]] == [1.0, 2.0]
+
+
+def test_vtt_parser_still_rejects_inline_timestamp_far_outside_cue():
+    content = (
+        "WEBVTT\n\n"
+        "00:00:01.000 --> 00:00:02.000\n"
+        "hello<00:00:09.000><c> world</c>\n"
+    )
+
+    try:
+        youtube_srt.parse_vtt(content)
+    except ValueError as error:
+        assert "outside its cue" in str(error)
+    else:
+        raise AssertionError("Expected a wildly out-of-cue inline timestamp to fail")
+
+
+def test_burn_in_downscales_before_rendering_captions(monkeypatch, tmp_path):
+    calls = []
+    video, ass, output = (tmp_path / name for name in ("source.mp4", "captions.ass", "burned.mp4"))
+    video.touch()
+    ass.touch()
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda _: "ffmpeg.exe")
+    monkeypatch.setattr(
+        youtube_srt.subprocess,
+        "run",
+        lambda command, **kwargs: calls.append(command),
+    )
+
+    youtube_srt.burn_ass_into_video(
+        video, ass, output, max_height=480, preset="veryfast", global_quality=30
+    )
+
+    command = calls[0]
+    escaped_ass = ass.as_posix().replace(":", r"\:")
+    assert command[command.index("-vf") + 1] == f"scale=-2:480,subtitles=filename='{escaped_ass}'"
+    assert command[command.index("-preset") + 1] == "veryfast"
+    assert command[command.index("-crf") + 1] == "30"
+
+
+def test_burn_in_rejects_invalid_height_and_preset(monkeypatch, tmp_path):
+    video, ass, output = (tmp_path / name for name in ("source.mp4", "captions.ass", "burned.mp4"))
+    video.touch()
+    ass.touch()
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda _: "ffmpeg.exe")
+
+    for kwargs, expected in (
+        ({"max_height": 8}, "Burn-in height"),
+        ({"preset": "turbo"}, "preset"),
+    ):
+        try:
+            youtube_srt.burn_ass_into_video(video, ass, output, **kwargs)
+        except ValueError as error:
+            assert expected in str(error)
+        else:
+            raise AssertionError(f"Expected {kwargs} to be rejected")
