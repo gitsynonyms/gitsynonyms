@@ -702,11 +702,7 @@ input[type="color"] {
 }
 
 .blue-box-preview {
-  background: rgb(15 22 71 / 90%);
-}
-
-.contrast-warning {
-  color: #ffc8ce;
+  background: rgb(10 49 97 / 90%);
 }
 
 .box-position {
