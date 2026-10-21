@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -8,6 +9,10 @@ SCRIPT = Path(__file__).parents[1] / "scripts" / "download_youtube_bilingual_srt
 SPEC = importlib.util.spec_from_file_location("local_youtube_srt", SCRIPT)
 youtube_srt = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(youtube_srt)
+
+
+def without_karaoke_tags(value):
+    return re.sub(r"\{\\kf\d+\}", "", value)
 
 
 def test_video_id_url_variants():
@@ -51,8 +56,20 @@ def test_ass_uses_chinese_above_english_with_chinese_1_2x_size():
     ) in result
     assert (
         r"{\an5\pos(959,952.5)}{\fs57.6}你好\N{\fs10}\h\N"
-        r"{\rEnglish\fs48}Hello"
+        r"{\rEnglish\fs48}{\kf100}Hello"
     ) in result
+    assert "Style: English,Arial,48,&H0028C9FF,&H00FFFFFF," in result
+
+
+def test_ass_highlights_english_words_in_sequence():
+    chinese = youtube_srt.parse_srt("1\n00:00:01,000 --> 00:00:03,000\n你好\n\n")
+    english = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:03,000\nHello world!\n\n"
+    )
+
+    result = youtube_srt.build_ass(chinese, english)
+
+    assert r"{\rEnglish\fs48}{\kf100}Hello {\kf100}world!" in result
     assert result.count("MarginV") == 2
 
 
@@ -153,13 +170,13 @@ def test_cinema_preset_places_english_above_chinese_and_supports_custom_box():
     )
 
     assert "Style: Chinese,SimSun,57.6,&H00D0F0FF," in result
-    assert "Style: English,Georgia,48,&H00D0F0FF," in result
+    assert "Style: English,Georgia,48,&H0028C9FF,&H00D0F0FF," in result
     assert (
         "Dialogue: 0,0:00:00.00,0:00:08.00,CaptionBox,,0,0,0,,"
         r"{\an7\pos(100,800)\p1}m 0 0 l 1700 0 1700 200 0 200 0 0{\p0}"
     ) in result
     assert (
-        r"{\an5\pos(950,900)}{\rEnglish\fs48}Primary school"
+        r"{\an5\pos(950,900)}{\rEnglish\fs48}{\kf50}Primary {\kf50}school"
         r"\N{\fs10}\h\N{\rChinese\fs57.6}小学生"
     ) in result
 
@@ -174,7 +191,7 @@ def test_ass_styles_support_custom_text_colors():
     )
 
     assert "Style: Chinese,Microsoft YaHei,57.6,&H000000FF," in result
-    assert "Style: English,Arial,48,&H00FF0000," in result
+    assert "Style: English,Arial,48,&H0028C9FF,&H00FF0000," in result
 
 
 def test_ass_classifies_mixed_lines_and_centers_each_language():
@@ -188,7 +205,8 @@ def test_ass_classifies_mixed_lines_and_centers_each_language():
     result = youtube_srt.build_ass(top, bottom)
 
     assert "你好世界こんにちは" in result
-    assert r"\N{\fs10}\h\N{\rEnglish\fs48}Hello there Good morning" in result
+    assert r"\N{\fs10}\h\N{\rEnglish\fs48}" in result
+    assert "Hello there Good morning" in without_karaoke_tags(result)
     assert result.count("Dialogue: ") == 3
 
 
@@ -204,7 +222,7 @@ def test_ass_flattens_source_wrapped_lines_into_one_line_per_language():
     result = youtube_srt.build_ass(chinese, english)
 
     assert "小学生要好好学习" in result
-    assert "Primary school students should study hard." in result
+    assert "Primary school students should study hard." in without_karaoke_tags(result)
     assert "小学生要好好\\N学习" not in result
 
 
@@ -222,11 +240,11 @@ def test_ass_reconstructs_overlapping_rolling_captions_as_single_lines():
 
     assert "今天" in result
     assert "将召开会议" in result
-    assert "This afternoon" in result
-    assert "the task force" in result
+    assert "This afternoon" in without_karaoke_tags(result)
+    assert "the task force" in without_karaoke_tags(result)
     assert "今天下午，工作组将召开会议" not in result
     assert "This afternoon, the task force will meet" not in result
-    assert "will meet" in result
+    assert "will meet" in without_karaoke_tags(result)
     assert "Dialogue: 1,0:00:01.00,0:00:02.00" in result
     assert "Dialogue: 1,0:00:02.00,0:00:05.00" in result
 
@@ -282,16 +300,16 @@ def test_ass_rolls_overlapping_youtube_caption_window_into_one_line():
     assert (
         "Ladies and gentlemen, the President of the United States, "
         "Donald J. Trump, and"
-    ) in events["0:00:04.16"]
+    ) in without_karaoke_tags(events["0:00:04.16"])
     assert "女士们先生们，美国总统唐纳德·特朗普和" in events["0:00:04.16"]
     assert "Dialogue: 1,0:00:08.72,0:00:13.00" in events["0:00:08.72"]
     assert "Ladies and gentlemen" not in events["0:00:08.72"]
-    assert "First Lady Melania Trump." in events["0:00:08.72"]
+    assert "First Lady Melania Trump." in without_karaoke_tags(events["0:00:08.72"])
     assert "第一夫人梅拉尼娅·特朗普" in events["0:00:08.72"]
     assert r"特\N{\fs10}" not in events["0:00:08.72"]
     assert (
         r"\N{\fs10}\h\N{\rEnglish\fs48}First Lady Melania Trump."
-        in events["0:00:08.72"]
+        in without_karaoke_tags(events["0:00:08.72"])
     )
 
 
@@ -346,7 +364,7 @@ def test_ass_converts_caption_markup_and_escapes_literal_override_braces():
 
     assert r"{\b1}你好{\b0}" in result
     assert r"\{\\pos(1,2)\}" in result
-    assert r"{\i1}Hello & bye{\i0}" in result
+    assert r"{\i1}Hello & bye{\i0}" in without_karaoke_tags(result)
 
 
 def test_ass_rejects_invalid_font_parameters():
@@ -502,7 +520,7 @@ def test_merge_uses_one_latest_caption_per_language_without_rolling():
     assert "介绍" in ass
     assert "身份" in ass
     assert r"介绍\N身份" not in ass
-    assert r"Ladies and gentlemen the United States" in ass
+    assert r"Ladies and gentlemen the United States" in without_karaoke_tags(ass)
 
 
 def test_merge_pairs_cues_with_the_same_end_time_into_two_lines():

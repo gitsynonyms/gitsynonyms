@@ -48,6 +48,7 @@ BOX_STYLES = {
     "presidential-blue": {"color": "#0F1647", "opacity": 0.9, "edge": "#D9E7F5"},
     "solid-color": {"color": "#708496", "opacity": 1, "edge": "#D9E7F5"},
 }
+ENGLISH_HIGHLIGHT_COLOR = "#FFC928"
 
 
 def video_id_from_url(value: str) -> str:
@@ -393,6 +394,38 @@ def ass_escape_text(value: str) -> str:
         cursor = match.end()
     parts.append(escape_text(value[cursor:]))
     return "".join(parts)
+
+
+def ass_karaoke_text(value: str, duration: float) -> str:
+    body = ass_escape_text(value)
+    word_spans = []
+    cursor = 0
+    override_tag = re.compile(r"(?<!\\)\{[^}]*\}")
+    for tag in override_tag.finditer(body):
+        word_spans.extend(
+            (cursor + word.start(), cursor + word.end())
+            for word in _rolling_word_spans(body[cursor : tag.start()])
+        )
+        cursor = tag.end()
+    word_spans.extend(
+        (cursor + word.start(), cursor + word.end())
+        for word in _rolling_word_spans(body[cursor:])
+    )
+    if not word_spans:
+        return body
+
+    total_centiseconds = max(0, round(duration * 100))
+    base_duration, remainder = divmod(total_centiseconds, len(word_spans))
+    result = []
+    cursor = 0
+    for index, (start, end) in enumerate(word_spans):
+        word_duration = base_duration + (index < remainder)
+        result.append(body[cursor:start])
+        result.append(f"{{\\kf{word_duration}}}")
+        result.append(body[start:end])
+        cursor = end
+    result.append(body[cursor:])
+    return "".join(result)
 
 
 def ass_timestamp(seconds: float) -> str:
@@ -972,6 +1005,7 @@ def build_ass(
 
     first_ass_color = ass_color(first_color)
     second_ass_color = ass_color(second_color)
+    highlight_ass_color = ass_color(ENGLISH_HIGHLIGHT_COLOR)
     shadow_ass_color = ass_color(shadow_color, opacity=35)
     box_ass_color = ass_color(box_color, opacity=round(box_opacity * 100))
     box_edge_color = ass_color(BOX_STYLES[box_style]["edge"], opacity=24)
@@ -991,7 +1025,7 @@ def build_ass(
     styles = (
         f"Style: Chinese,{first_font},{first_font_size:g},{first_ass_color},&H000000FF,"
         f"&H80000000,{shadow_ass_color},-1,0,0,0,100,100,0,0,1,2,1,5,0,0,0,1",
-        f"Style: English,{second_font},{second_font_size},{second_ass_color},&H000000FF,"
+        f"Style: English,{second_font},{second_font_size},{highlight_ass_color},{second_ass_color},"
         f"&H80000000,{shadow_ass_color},0,0,0,0,100,100,0,0,1,2,1,5,0,0,0,1",
         f"Style: CaptionBox,Arial,1,{box_ass_color},&H000000FF,"
         f"&H00000000,{box_edge_color},0,0,0,0,100,100,0,0,1,1,0,7,0,0,0,1",
@@ -1088,7 +1122,12 @@ def build_ass(
                 body += r"{\rChinese"
             else:
                 body += "{"
-            body += f"\\fs{size:g}" + "}" + ass_escape_text(text)
+            body += f"\\fs{size:g}" + "}"
+            body += (
+                ass_karaoke_text(text, end - start)
+                if language == "english"
+                else ass_escape_text(text)
+            )
         body = f"{{\\an5\\pos({area_center_x:g},{area_center_y:g})}}" + body
         event = {
             "start": start,
