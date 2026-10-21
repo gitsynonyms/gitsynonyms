@@ -14,3 +14,6 @@ build/
 # Never commit exported browser/yt-dlp session cookies
 cookies*.txt
 *.cookies.txt
+
+# Large media handed over via file sharing links
+downloads/
