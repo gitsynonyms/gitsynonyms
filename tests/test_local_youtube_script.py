@@ -709,8 +709,14 @@ def test_ass_preserves_vtt_start_and_trims_stale_inline_timed_tail():
     dialogues = [
         line for line in ass.splitlines() if line.startswith("Dialogue: 1,")
     ]
-    first_caption = next(line for line in dialogues if "Ladies and gentlemen" in line)
-    last_caption = next(line for line in dialogues if "First Lady Melania Trump." in line)
+    first_caption = next(
+        line for line in dialogues
+        if "Ladies and gentlemen" in without_karaoke_tags(line)
+    )
+    last_caption = next(
+        line for line in dialogues
+        if "First Lady Melania Trump." in without_karaoke_tags(line)
+    )
 
     assert first_caption.startswith("Dialogue: 1,0:00:03.96,")
     assert ",0:01:05.63," not in last_caption
