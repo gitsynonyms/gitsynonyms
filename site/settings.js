@@ -10,6 +10,7 @@ const previewBox = document.querySelector("#preview-caption-box");
 const previewEnglish = document.querySelector("#preview-english");
 const previewChinese = document.querySelector("#preview-chinese");
 const previewSummary = document.querySelector("#preview-summary");
+const contrastStatus = document.querySelector("#caption-contrast-status");
 const saveStatus = document.querySelector("#save-status");
 
 const comfortPalettes = {
@@ -151,6 +152,18 @@ function updatePaletteSelection(settings = getFormSettings()) {
   });
 }
 
+function updateCaptionContrast(settings) {
+  const chineseRatio = contrastRatio(settings.boxColor, settings.chineseColor);
+  const englishRatio = contrastRatio(settings.boxColor, settings.englishColor);
+  const minimumRatio = Math.min(chineseRatio, englishRatio);
+  contrastStatus.textContent =
+    `文字/背景对比度：中文 ${chineseRatio.toFixed(2)}:1，英文 ${englishRatio.toFixed(2)}:1。` +
+    (minimumRatio < 4.5
+      ? " 对比不足，深色背景建议使用金色中文和白色英文。"
+      : " 对比度良好。");
+  contrastStatus.classList.toggle("contrast-warning", minimumRatio < 4.5);
+}
+
 function applyComfortPalette(name) {
   const palette = comfortPalettes[name];
   if (!palette) return;
@@ -204,6 +217,7 @@ function updatePreview() {
   opacityValue.value = settings.boxOpacity;
   opacityValue.textContent = settings.boxOpacity;
   updatePaletteSelection(settings);
+  updateCaptionContrast(settings);
   previewSummary.textContent =
     `${settings.boxDisplay === "always" ? "全程显示" : "仅字幕期间显示"} · ` +
     `${settings.boxStyle === "presidential-blue" ? "总统蓝" : settings.boxStyle === "solid-color" ? "纯色背景" : "磨砂玻璃钻石"} · ` +
@@ -244,6 +258,7 @@ form.addEventListener("change", (event) => {
       colorHexInput.value = preset.boxColor;
       opacityInput.value = preset.boxOpacity;
     }
+    applySettings(sharedSettings.normalize(getFormSettings()));
   }
   updatePreview();
   persistSettings();
