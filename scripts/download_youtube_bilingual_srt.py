@@ -702,19 +702,49 @@ def _serialize_same_end_cues(
                 [first_start_ms]
                 + [round(cue["start"] * 1000) for cue in predecessors]
             )
+            group_segments = []
             for index, (cue, boundary_ms) in enumerate(zip(group, boundaries_ms)):
                 text = contributions[index]
                 if index == 0 and prefix:
                     text = _append_rolling_text(prefix, text, separator=separator)
                 segment_end_ms = boundary_ms
                 if text and segment_end_ms > segment_start_ms:
-                    serialized.append({
+                    group_segments.append({
                         **group[0],
                         "start": segment_start_ms / 1000,
                         "end": segment_end_ms / 1000,
                         "text": text,
                     })
                 segment_start_ms = boundary_ms
+
+            segment_index = 0
+            while segment_index < len(group_segments):
+                segment = group_segments[segment_index]
+                if segment["end"] - segment["start"] >= 0.25:
+                    segment_index += 1
+                    continue
+                if segment_index + 1 < len(group_segments):
+                    following = group_segments[segment_index + 1]
+                    following["text"] = (
+                        segment["text"]
+                        + (separator if separator else "")
+                        + following["text"]
+                    ).strip()
+                    following["start"] = segment["start"]
+                    del group_segments[segment_index]
+                elif segment_index > 0:
+                    previous = group_segments[segment_index - 1]
+                    previous["text"] = (
+                        previous["text"]
+                        + (separator if separator else "")
+                        + segment["text"]
+                    ).strip()
+                    previous["end"] = segment["end"]
+                    del group_segments[segment_index]
+                    segment_index -= 1
+                else:
+                    segment_index += 1
+            serialized.extend(group_segments)
             consumed.update(id(cue) for cue in group)
             continue
 

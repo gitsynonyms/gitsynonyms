@@ -611,6 +611,26 @@ def test_ass_skips_later_splits_after_vtt_timings_assign_all_words():
     ]
 
 
+def test_ass_merges_tiny_paired_rolling_fragment_into_visible_interval():
+    cues = youtube_srt.parse_srt(
+        "1\n00:00:06,030 --> 00:00:08,630\n"
+        "Ladies and gentlemen, the president of\n\n"
+        "2\n00:00:06,040 --> 00:00:08,630\n"
+        "Ladies and gentlemen, the president of the United States\n"
+    )
+    signature = youtube_srt._cue_group_signature(cues)
+
+    serialized = youtube_srt._serialize_same_end_cues(
+        cues,
+        paired_group_signatures={signature},
+    )
+
+    assert [(cue["start"], cue["end"]) for cue in serialized] == [(6.03, 8.63)]
+    assert serialized[0]["text"] == (
+        "Ladies and gentlemen, the president of the United States"
+    )
+
+
 def test_parser_handles_blank_after_timestamp_without_shifting_cues():
     source = (
         "1\n00:00:01,000 --> 00:00:02,000\n\nHello\n\n"
