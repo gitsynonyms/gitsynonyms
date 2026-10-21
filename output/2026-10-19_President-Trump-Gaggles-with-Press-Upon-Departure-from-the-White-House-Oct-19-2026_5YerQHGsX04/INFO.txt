@@ -8,6 +8,7 @@ Duration: 00:19:47 (1187 s)
 Files:
 5YerQHGsX04.source.mp4              1080p H.264 (yt-dlp format 137) + AAC (140) source video.
 5YerQHGsX04.en.en-orig.vtt          English captions exactly as downloaded from YouTube.
+auto-generated_English.srt          English captions converted to SubRip (969 cues, text unchanged).
 machine-translated_Chinese.srt       Chinese line produced by machine-translating the English track.
 machine-translated_Bilingual.srt     Time-aligned bilingual SRT, Chinese above English (969 cues).
 machine-translated_Bilingual.ass     Styled ASS (classic preset, glass-diamond box) used for burn-in.
