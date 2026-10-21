@@ -606,6 +606,21 @@ def test_vtt_parser_skips_blank_line_after_timing_header():
     assert parsed[0]["text"] == "Ladies and gentlemen,"
 
 
+def test_parse_vtt_clamps_inline_timestamp_past_the_cue_end():
+    cues = youtube_srt.parse_vtt(
+        "WEBVTT\n\n"
+        "00:00:55.760 --> 00:00:57.190\n"
+        "a Democrat and that is what they do.\n"
+        "That's<00:00:56.000><c> all</c><00:00:57.200><c> know</c>\n"
+    )
+
+    assert len(cues) == 1
+    assert cues[0]["start"] == 55.76
+    assert cues[0]["end"] == 57.19
+    assert cues[0]["text"] == "a Democrat and that is what they do.\nThat's all know"
+    assert cues[0]["word_timings"][-1] == {"start": 57.19, "end": 57.19, "text": "know"}
+
+
 def test_ass_uses_vtt_word_timestamps_instead_of_uniform_estimate():
     cues = youtube_srt.parse_vtt(
         "WEBVTT\n\n"

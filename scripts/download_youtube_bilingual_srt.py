@@ -175,11 +175,13 @@ def parse_vtt(content: str) -> list[dict]:
             position = 0
             for stamp in inline_timestamp.finditer(line):
                 chunks.append((current_start, line[position:stamp.start()]))
-                current_start = vtt_timestamp_to_seconds(stamp.group(1))
-                if not start <= current_start < end:
-                    raise ValueError(
-                        f"Inline WebVTT timestamp is outside its cue: {stamp.group(0)!r}"
-                    )
+                stamp_start = vtt_timestamp_to_seconds(stamp.group(1))
+                if not start <= stamp_start < end:
+                    # Rolling YouTube captions can carry a word timestamp a few
+                    # milliseconds past the cue end. Keep the caption text and
+                    # clamp the highlight instead of rejecting the whole track.
+                    stamp_start = min(max(stamp_start, start), end)
+                current_start = stamp_start
                 has_inline_timing = True
                 position = stamp.end()
             chunks.append((current_start, line[position:]))
