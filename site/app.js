@@ -16,6 +16,8 @@ const workflowLink = document.querySelector("#workflow-link");
 const statusRegion = document.querySelector("#status");
 const settingsSummary = document.querySelector("#caption-settings-summary");
 
+runLocation.value = "runner";
+
 function quotePowerShell(value) {
   return `'${value.replaceAll("'", "''")}'`;
 }
