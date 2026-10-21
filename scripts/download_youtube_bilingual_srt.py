@@ -48,7 +48,7 @@ BOX_STYLES = {
     "presidential-blue": {"color": "#0F1647", "opacity": 0.9, "edge": "#D9E7F5"},
     "solid-color": {"color": "#708496", "opacity": 1, "edge": "#D9E7F5"},
 }
-ENGLISH_HIGHLIGHT_COLOR = "#FFC928"
+ENGLISH_HIGHLIGHT_COLOR = "#00D7FF"
 
 
 def video_id_from_url(value: str) -> str:

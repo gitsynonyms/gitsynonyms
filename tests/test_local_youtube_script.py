@@ -58,7 +58,7 @@ def test_ass_uses_chinese_above_english_with_chinese_1_2x_size():
         r"{\an5\pos(959,952.5)}{\fs57.6}你好\N{\fs10}\h\N"
         r"{\rEnglish\fs48}{\kf100}Hello"
     ) in result
-    assert "Style: English,Arial,48,&H0028C9FF,&H00FFFFFF," in result
+    assert "Style: English,Arial,48,&H00FFD700,&H00FFFFFF," in result
 
 
 def test_ass_highlights_english_words_in_sequence():
@@ -170,7 +170,7 @@ def test_cinema_preset_places_english_above_chinese_and_supports_custom_box():
     )
 
     assert "Style: Chinese,SimSun,57.6,&H00D0F0FF," in result
-    assert "Style: English,Georgia,48,&H0028C9FF,&H00D0F0FF," in result
+    assert "Style: English,Georgia,48,&H00FFD700,&H00D0F0FF," in result
     assert (
         "Dialogue: 0,0:00:00.00,0:00:08.00,CaptionBox,,0,0,0,,"
         r"{\an7\pos(100,800)\p1}m 0 0 l 1700 0 1700 200 0 200 0 0{\p0}"
@@ -191,7 +191,7 @@ def test_ass_styles_support_custom_text_colors():
     )
 
     assert "Style: Chinese,Microsoft YaHei,57.6,&H000000FF," in result
-    assert "Style: English,Arial,48,&H0028C9FF,&H00FF0000," in result
+    assert "Style: English,Arial,48,&H00FFD700,&H00FF0000," in result
 
 
 def test_ass_classifies_mixed_lines_and_centers_each_language():

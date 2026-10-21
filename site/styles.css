@@ -567,6 +567,10 @@ input[type="color"] {
   text-shadow: 0 2px 3px rgb(0 0 0 / 85%), 0 0 1px rgb(0 0 0 / 90%);
 }
 
+.preview-highlight {
+  color: #00d7ff;
+}
+
 .preview-caption-box strong {
   color: var(--preview-chinese-color, #ffc928);
   font-family: var(--preview-chinese-font, sans-serif);
