@@ -6,3 +6,11 @@ venv/
 dist/
 build/
 *.egg-info/
+
+# Local toolchain and wheel cache (sandbox runs)
+.tools/
+.wheels/
+
+# Never commit exported browser/yt-dlp session cookies
+cookies*.txt
+*.cookies.txt
