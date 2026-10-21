@@ -49,7 +49,6 @@ BOX_STYLES = {
     "solid-color": {"color": "#708496", "opacity": 1, "edge": "#D9E7F5"},
 }
 ENGLISH_HIGHLIGHT_COLOR = "#00D7FF"
-ASS_CAPTION_LEAD_SECONDS = 0.15
 
 
 def video_id_from_url(value: str) -> str:
@@ -1152,7 +1151,6 @@ def build_ass(
     last_caption_time = max(cue["end"] for cue in cues)
     box_end = max(last_caption_time, video_duration or 0)
     events = []
-    last_caption_end: float | None = None
 
     def append_box_events(start: float, end: float) -> None:
         events.append(
@@ -1208,11 +1206,7 @@ def build_ass(
         )
         visible_lines = [line for line in order if line[1]]
         style = "English" if visible_lines[0][0] == "english" else "Chinese"
-        event_start = max(
-            0,
-            start - ASS_CAPTION_LEAD_SECONDS,
-            last_caption_end if last_caption_end is not None else 0,
-        )
+        event_start = start
         english_word_timings = _word_timings_for_text(english, active)
         body = ""
         for line_index, (language, text, size) in enumerate(visible_lines):
@@ -1255,7 +1249,6 @@ def build_ass(
             events[-1]["end"] = end
         else:
             events.append(event)
-        last_caption_end = end
 
     events.sort(key=lambda event: (event["start"], event["layer"]))
     return "\n".join(
