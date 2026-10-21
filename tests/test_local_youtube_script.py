@@ -220,11 +220,40 @@ def test_ass_reconstructs_overlapping_rolling_captions_as_single_lines():
 
     result = youtube_srt.build_ass(chinese, english)
 
-    assert "今天下午，工作组" in result
-    assert "This afternoon, the task force" in result
-    assert "今天下午，工作组将召开会议" in result
-    assert "This afternoon, the task force will meet" in result
+    assert "今天" in result
+    assert "将召开会议" in result
+    assert "This afternoon" in result
+    assert "the task force" in result
+    assert "今天下午，工作组将召开会议" not in result
+    assert "This afternoon, the task force will meet" not in result
+    assert "will meet" in result
+    assert "Dialogue: 1,0:00:01.00,0:00:02.00" in result
     assert "Dialogue: 1,0:00:02.00,0:00:05.00" in result
+
+
+def test_ass_serializes_rolling_cues_with_different_end_times_without_repeats():
+    cues = youtube_srt.parse_srt(
+        "1\n00:01:05,760 --> 00:01:08,960\nGood morning. Welcome\n\n"
+        "2\n00:01:08,960 --> 00:01:13,200\n"
+        "Good morning. Welcome cabinet members, doctors, directors,\n\n"
+        "3\n00:01:13,200 --> 00:01:14,720\n"
+        "cabinet members, doctors, directors, administrators,\n\n"
+        "4\n00:01:14,720 --> 00:01:18,000\n"
+        "administrators, and all in attendance today.\n\n"
+    )
+
+    serialized = youtube_srt._serialize_same_end_cues(cues)
+
+    assert [(cue["start"], cue["end"]) for cue in serialized] == [
+        (65.76, 68.96),
+        (68.96, 73.2),
+        (73.2, 74.72),
+        (74.72, 78.0),
+    ]
+    assert " ".join(cue["text"] for cue in serialized) == (
+        "Good morning. Welcome cabinet members, doctors, directors, "
+        "administrators, and all in attendance today."
+    )
 
 
 def test_ass_rolls_overlapping_youtube_caption_window_into_one_line():
@@ -250,11 +279,20 @@ def test_ass_rolls_overlapping_youtube_caption_window_into_one_line():
     assert "0:00:06.16" not in events
     assert "0:00:08.72" in events
     assert "Dialogue: 1,0:00:04.16,0:00:08.72" in events["0:00:04.16"]
-    assert "Ladies and gentlemen, the President of the United States, Donald J." in events["0:00:04.16"]
+    assert (
+        "Ladies and gentlemen, the President of the United States, "
+        "Donald J. Trump, and"
+    ) in events["0:00:04.16"]
+    assert "女士们先生们，美国总统唐纳德·特朗普和" in events["0:00:04.16"]
     assert "Dialogue: 1,0:00:08.72,0:00:13.00" in events["0:00:08.72"]
     assert "Ladies and gentlemen" not in events["0:00:08.72"]
-    assert "Trump, and First Lady Melania Trump." in events["0:00:08.72"]
-    assert "the United States, Donald J." not in events["0:00:08.72"]
+    assert "First Lady Melania Trump." in events["0:00:08.72"]
+    assert "第一夫人梅拉尼娅·特朗普" in events["0:00:08.72"]
+    assert r"特\N{\fs10}" not in events["0:00:08.72"]
+    assert (
+        r"\N{\fs10}\h\N{\rEnglish\fs48}First Lady Melania Trump."
+        in events["0:00:08.72"]
+    )
 
 
 def test_ass_serializes_three_same_end_cues_without_gaps_or_overlap():
@@ -511,6 +549,45 @@ def test_parser_preserves_original_markup_and_caption_text():
     assert parsed[0]["text"] == "<b>Hello</b>\n<i> world </i>"
 
 
+def test_vtt_parser_extracts_cues_and_inline_word_timestamps():
+    parsed = youtube_srt.parse_vtt(
+        "WEBVTT\n\n"
+        "cue-1\n"
+        "00:00:01.000 --> 00:00:03.000 align:start position:0%\n"
+        '<v Speaker><00:00:01.200>Hello <00:00:01.800>world!</v>\n\n'
+        "00:03.000 --> 00:04.000\n"
+        "<c.green>Good morning.</c>\n"
+    )
+
+    assert len(parsed) == 2
+    assert (parsed[0]["start"], parsed[0]["end"]) == (1.0, 3.0)
+    assert parsed[0]["text"] == "Hello world!"
+    assert [(word["start"], word["text"]) for word in parsed[0]["word_timings"]] == [
+        (1.2, "Hello"),
+        (1.8, "world"),
+    ]
+    assert parsed[1]["text"] == "Good morning."
+    assert "word_timings" not in parsed[1]
+
+
+def test_ass_uses_vtt_word_timestamps_instead_of_uniform_estimate():
+    cues = youtube_srt.parse_vtt(
+        "WEBVTT\n\n"
+        "00:00:01.000 --> 00:00:03.000\n"
+        "<00:00:01.100>Ladies <00:00:01.400>and "
+        "<00:00:01.800>gentlemen, <00:00:02.200>the President\n\n"
+        "00:00:02.000 --> 00:00:03.000\n"
+        "<00:00:02.000>the President <00:00:02.400>of the United States\n"
+    )
+
+    serialized = youtube_srt._serialize_same_end_cues(cues)
+
+    assert [(cue["start"], cue["end"], cue["text"]) for cue in serialized] == [
+        (1.0, 2.0, "Ladies and gentlemen,"),
+        (2.0, 3.0, "the President of the United States"),
+    ]
+
+
 def test_parser_handles_blank_after_timestamp_without_shifting_cues():
     source = (
         "1\n00:00:01,000 --> 00:00:02,000\n\nHello\n\n"
@@ -552,15 +629,35 @@ def test_write_srt_emits_utf8_bom_and_crlf(tmp_path):
     assert youtube_srt.validate_srt(path.read_text(encoding="utf-8-sig")) == 1
 
 
+def test_write_vtt_converts_bilingual_srt_and_validates_output(tmp_path):
+    path = tmp_path / "bilingual.vtt"
+
+    youtube_srt.write_vtt(
+        path,
+        "1\n00:00:01,250 --> 00:00:02,500\n你好\nHello\n",
+    )
+
+    assert path.read_text(encoding="utf-8") == (
+        "WEBVTT\n\n1\n00:00:01.250 --> 00:00:02.500\n你好\nHello\n"
+    )
+    parsed = youtube_srt.parse_vtt(path.read_text(encoding="utf-8"))
+    assert [(cue["start"], cue["end"], cue["text"]) for cue in parsed] == [
+        (1.25, 2.5, "你好\nHello")
+    ]
+
+
 def test_download_track_matches_yt_dlp_extended_language_filename(monkeypatch, tmp_path):
     monkeypatch.setattr(youtube_srt.shutil, "which", lambda _: "yt-dlp.exe")
 
     def fake_run(_args, **_kwargs):
         assert _kwargs["capture_output"] is False
         assert "--sleep-subtitles" not in _args
-        subtitle = tmp_path / "IySF_8OArvw.en.en-orig.srt"
+        assert _args[_args.index("--sub-format") + 1] == "vtt/best"
+        assert _args[_args.index("--convert-subs") + 1] == "vtt"
+        subtitle = tmp_path / "IySF_8OArvw.en.en-orig.vtt"
         subtitle.write_text(
-            "1\n00:00:01,000 --> 00:00:02,000\nHello\n\n", encoding="utf-8"
+            "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHello\n",
+            encoding="utf-8",
         )
         return subprocess.CompletedProcess([], 0, "", "")
 
@@ -575,7 +672,7 @@ def test_download_track_matches_yt_dlp_extended_language_filename(monkeypatch, t
     )
     source_path, entries = entries
     assert source_path.read_text(encoding="utf-8") == (
-        "1\n00:00:01,000 --> 00:00:02,000\nHello\n\n"
+        "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHello\n"
     )
     assert entries[0]["text"] == "Hello"
 
@@ -605,12 +702,10 @@ def test_main_preserves_raw_tracks_and_merges_original_caption_content(monkeypat
             str(template)
             .replace("%(id)s", "IySF_8OArvw")
             .replace("%(language)s", language)
-            .replace("%(ext)s", "srt")
+            .replace("%(ext)s", "vtt")
         )
         text = "<i>Hello &amp; welcome</i>" if language == "en-orig" else "<b>你好</b>"
-        source_content = (
-            f"1\n00:00:01,000 --> 00:00:02,000\n{text}\n\n"
-        )
+        source_content = f"WEBVTT\n\n00:00:01.000 --> 00:00:02.000\n{text}\n"
         subtitle_path.write_text(source_content, encoding="utf-8")
         original_bytes[language] = subtitle_path.read_bytes()
         return subprocess.CompletedProcess([], 0, "", "")
@@ -628,12 +723,17 @@ def test_main_preserves_raw_tracks_and_merges_original_caption_content(monkeypat
     source_paths = [
         Path(line)
         for line in output_lines
-        if line.startswith(str(tmp_path)) and "IySF_8OArvw." in line
+        if line.startswith(str(tmp_path)) and "IySF_8OArvw." in line and line.endswith(".vtt")
     ]
     bilingual_paths = [
         Path(line)
         for line in output_lines
         if line.startswith(str(tmp_path)) and "_Bilingual_" in line and line.endswith(".srt")
+    ]
+    bilingual_vtt_paths = [
+        Path(line)
+        for line in output_lines
+        if line.startswith(str(tmp_path)) and "_Bilingual_" in line and line.endswith(".vtt")
     ]
     ass_paths = [
         Path(line)
@@ -642,13 +742,17 @@ def test_main_preserves_raw_tracks_and_merges_original_caption_content(monkeypat
     ]
     assert len(source_paths) == 2
     assert len(bilingual_paths) == 1
+    assert len(bilingual_vtt_paths) == 1
     assert len(ass_paths) == 1
     raw_files = {path.name.split(".")[-2]: path for path in source_paths}
     assert raw_files["en-orig"].read_bytes() == original_bytes["en-orig"]
     assert raw_files["zh-Hans"].read_bytes() == original_bytes["zh-Hans"]
     bilingual = bilingual_paths[0].read_text(encoding="utf-8-sig")
-    assert "<b>你好</b>\n<i>Hello &amp; welcome</i>" in bilingual
-    assert "&amp;" in bilingual
+    assert "<b>你好</b>\n<i>Hello & welcome</i>" in bilingual
+    assert "&amp;" not in bilingual
     assert "<i>" in bilingual
+    bilingual_vtt = bilingual_vtt_paths[0].read_text(encoding="utf-8")
+    assert bilingual_vtt.startswith("WEBVTT\n\n1\n00:00:01.000 --> 00:00:02.000")
+    assert "<b>你好</b>\n<i>Hello & welcome</i>" in bilingual_vtt
     assert downloaded_languages == [("en-orig", "0"), ("zh-Hans", "56")]
     assert "Style: Chinese,Microsoft YaHei,57.6," in ass_paths[0].read_text(encoding="utf-8-sig")

@@ -11,6 +11,7 @@ import re
 import shutil
 import subprocess
 import sys
+from difflib import SequenceMatcher
 from datetime import date, datetime
 from pathlib import Path
 from typing import Sequence
@@ -116,6 +117,117 @@ def parse_srt(content: str) -> list[dict]:
             )
     if not result:
         raise ValueError("Subtitle file is empty or not valid SRT.")
+    return result
+
+
+def vtt_timestamp_to_seconds(value: str) -> float:
+    match = re.fullmatch(r"(?:(\d{2,}):)?(\d{2}):(\d{2})\.(\d{3})", value)
+    if not match:
+        raise ValueError(f"Invalid WebVTT timestamp: {value!r}")
+    hours, minutes, seconds, milliseconds = match.groups()
+    result = (
+        int(hours or 0) * 3600
+        + int(minutes) * 60
+        + int(seconds)
+        + int(milliseconds) / 1000
+    )
+    if int(minutes) > 59 or int(seconds) > 59 or not math.isfinite(result):
+        raise ValueError(f"Invalid WebVTT timestamp: {value!r}")
+    return result
+
+
+def parse_vtt(content: str) -> list[dict]:
+    normalized = content.lstrip("\ufeff").replace("\r\n", "\n").replace("\r", "\n")
+    timestamp_pattern = r"(?:\d{2,}:)?\d{2}:\d{2}\.\d{3}"
+    timing_line = re.compile(
+        rf"^\s*({timestamp_pattern})\s+-->\s+({timestamp_pattern})(?:\s+.*)?$"
+    )
+    inline_timestamp = re.compile(rf"<({timestamp_pattern})>")
+    result = []
+    lines = normalized.split("\n")
+    index = 0
+    while index < len(lines):
+        match = timing_line.match(lines[index])
+        if not match:
+            index += 1
+            continue
+        start = vtt_timestamp_to_seconds(match.group(1))
+        end = vtt_timestamp_to_seconds(match.group(2))
+        if end <= start:
+            raise ValueError(f"WebVTT cue end must be after its start: {lines[index]!r}")
+        index += 1
+        body_lines = []
+        while index < len(lines) and lines[index].strip():
+            body_lines.append(lines[index])
+            index += 1
+
+        chunks: list[tuple[float, str]] = []
+        current_start = start
+        has_inline_timing = False
+        for line_index, line in enumerate(body_lines):
+            if line_index:
+                chunks.append((current_start, "\n"))
+            position = 0
+            for stamp in inline_timestamp.finditer(line):
+                chunks.append((current_start, line[position:stamp.start()]))
+                current_start = vtt_timestamp_to_seconds(stamp.group(1))
+                if not start <= current_start < end:
+                    raise ValueError(
+                        f"Inline WebVTT timestamp is outside its cue: {stamp.group(0)!r}"
+                    )
+                has_inline_timing = True
+                position = stamp.end()
+            chunks.append((current_start, line[position:]))
+
+        cleaned_chunks = []
+        for chunk_start, chunk_text in chunks:
+            text = html.unescape(chunk_text)
+            text = re.sub(r"</?(?:v|lang|c(?:\.[\w-]+)*)(?:\s+[^>]*)?>", "", text)
+            text = re.sub(r"<(?:ruby|rt)(?:\s+[^>]*)?>|</(?:ruby|rt)>", "", text)
+            text = re.sub(r"<[^>]*>", lambda tag: tag.group(0) if tag.group(0).lower() in {
+                "<b>", "</b>", "<i>", "</i>", "<u>", "</u>"
+            } else "", text)
+            cleaned_chunks.append((chunk_start, text))
+        cue_text = "".join(text for _, text in cleaned_chunks).strip()
+        if not cue_text:
+            continue
+
+        cue = {
+            "start": start,
+            "end": end,
+            "text": cue_text,
+            "start_timestamp": match.group(1),
+            "end_timestamp": match.group(2),
+        }
+        if has_inline_timing:
+            words = []
+            for chunk_index, (chunk_start, text) in enumerate(cleaned_chunks):
+                chunk_end = (
+                    cleaned_chunks[chunk_index + 1][0]
+                    if chunk_index + 1 < len(cleaned_chunks)
+                    else end
+                )
+                tokens = _rolling_word_spans(text)
+                for token_index, token in enumerate(tokens):
+                    token_start = chunk_start + (
+                        (chunk_end - chunk_start) * token_index / len(tokens)
+                        if tokens
+                        else 0
+                    )
+                    token_end = chunk_start + (
+                        (chunk_end - chunk_start) * (token_index + 1) / len(tokens)
+                        if tokens
+                        else 0
+                    )
+                    words.append({
+                        "start": token_start,
+                        "end": token_end,
+                        "text": token.group(),
+                    })
+            cue["word_timings"] = words
+        result.append(cue)
+    if not result:
+        raise ValueError("Subtitle file has no valid WebVTT cues.")
     return result
 
 
@@ -391,41 +503,247 @@ def _rolling_word_spans(text: str) -> list[re.Match[str]]:
     )
 
 
-def _serialize_same_end_cues(cues: Sequence[dict]) -> list[dict]:
-    ordered = sorted(cues, key=lambda cue: (cue["start"], cue["end"]))
-    groups: dict[int, list[dict]] = {}
-    for cue in ordered:
-        groups.setdefault(round(cue["end"] * 1000), []).append(cue)
+def _vtt_word_cut(
+    text: str, cues: Sequence[dict], boundary: float
+) -> int | None:
+    full_words = _rolling_word_spans(text)
+    if not full_words:
+        return None
+    full_tokens = [word.group().casefold() for word in full_words]
+    timed_starts: dict[int, float] = {}
+    for cue in cues:
+        cue_timings = cue.get("word_timings", [])
+        if not cue_timings:
+            continue
+        cue_words = _rolling_word_spans(cue["text"])
+        cue_tokens = [word.group().casefold() for word in cue_words]
+        matcher = SequenceMatcher(None, full_tokens, cue_tokens, autojunk=False)
+        for full_index, cue_index, size in matcher.get_matching_blocks():
+            for offset in range(size):
+                token_index = full_index + offset
+                timing_index = cue_index + offset
+                if timing_index < len(cue_timings):
+                    timed_starts[token_index] = min(
+                        timed_starts.get(token_index, cue_timings[timing_index]["start"]),
+                        cue_timings[timing_index]["start"],
+                    )
+    if not timed_starts:
+        return None
+    last_visible = max(
+        (index for index, start in timed_starts.items() if start < boundary),
+        default=-1,
+    )
+    return min(len(full_words), last_visible + 1)
 
-    rolling_groups = [
-        sorted(group, key=lambda cue: cue["start"])
-        for group in groups.values()
-        if len(group) > 1 and len({round(cue["start"] * 1000) for cue in group}) > 1
-    ]
+
+def _rolling_delta(previous: str, current: str, *, allow_single_word: bool) -> str:
+    if not previous or not current or "<" in previous or "<" in current:
+        return current
+    previous_plain = re.sub(r"\s+", " ", html.unescape(previous)).strip()
+    current_plain = re.sub(r"\s+", " ", html.unescape(current)).strip()
+    if CJK.search(previous_plain + current_plain):
+        min_overlap = 1 if allow_single_word else 2
+        max_overlap = min(len(previous_plain), len(current_plain))
+        for length in range(max_overlap, min_overlap - 1, -1):
+            if previous_plain[-length:] == current_plain[:length]:
+                return current_plain[length:].lstrip(" \t，。！？、；：,.!?;:-")
+        return current
+
+    previous_words = _rolling_word_spans(previous_plain)
+    current_words = _rolling_word_spans(current_plain)
+    if len(previous_words) < 2 or not current_words:
+        return current
+    previous_tokens = [word.group().casefold() for word in previous_words]
+    current_tokens = [word.group().casefold() for word in current_words]
+    if (
+        len(previous_tokens) <= len(current_tokens)
+        and current_tokens[:len(previous_tokens)] == previous_tokens
+    ):
+        return current_plain[current_words[len(previous_tokens) - 1].end():].lstrip(
+            " \t,.;:!?-"
+        )
+
+    min_overlap = 1 if allow_single_word else 2
+    max_overlap = min(len(previous_tokens), len(current_tokens))
+    for count in range(max_overlap, min_overlap - 1, -1):
+        if previous_tokens[-count:] == current_tokens[:count]:
+            return current_plain[current_words[count - 1].end():].lstrip(
+                " \t,.;:!?-"
+            )
+    return current
+
+
+def _rolling_cue_groups(cues: Sequence[dict]) -> list[list[dict]]:
+    ordered = sorted(cues, key=lambda cue: (cue["start"], cue["end"]))
+    rolling_groups = []
+    current_group = []
+
+    for cue in ordered:
+        if current_group:
+            previous = current_group[-1]
+            current_text = _single_caption_line(cue["text"])
+            previous_text = _single_caption_line(previous["text"])
+            sample = re.sub(r"<[^>]*>", "", previous_text + current_text)
+            separator = "" if CJK.search(html.unescape(sample)) else " "
+            same_end = any(
+                round(prior["end"] * 1000) == round(cue["end"] * 1000)
+                for prior in current_group
+            )
+            temporally_contiguous = cue["start"] <= max(
+                prior["end"] for prior in current_group
+            ) + 0.25
+            rolling = _rolling_delta(
+                previous_text,
+                current_text,
+                allow_single_word=len(current_group) > 1,
+            ) != current_text
+            if same_end or (temporally_contiguous and rolling):
+                current_group.append(cue)
+                continue
+            if len(current_group) > 1:
+                rolling_groups.append(current_group)
+            current_group = []
+        current_group.append(cue)
+    if len(current_group) > 1:
+        rolling_groups.append(current_group)
+    return rolling_groups
+
+
+def _cue_group_signature(group: Sequence[dict]) -> tuple[tuple[int, int], ...]:
+    return tuple(
+        (round(cue["start"] * 1000), round(cue["end"] * 1000))
+        for cue in group
+    )
+
+
+def _serialize_same_end_cues(
+    cues: Sequence[dict],
+    *,
+    paired_group_signatures: set[tuple[tuple[int, int], ...]] | None = None,
+) -> list[dict]:
+    ordered = sorted(cues, key=lambda cue: (cue["start"], cue["end"]))
+    rolling_groups = _rolling_cue_groups(ordered)
+    paired_group_signatures = paired_group_signatures or set()
+
     grouped_ids = {id(cue) for group in rolling_groups for cue in group}
     consumed: set[int] = set()
     serialized = []
     for group in rolling_groups:
+        if _cue_group_signature(group) in paired_group_signatures:
+            separator = (
+                ""
+                if CJK.search(
+                    html.unescape(
+                        re.sub(
+                            r"<[^>]*>",
+                            "",
+                            _single_caption_line(group[0]["text"]),
+                        )
+                    )
+                )
+                else " "
+            )
+            contributions = []
+            accumulated = ""
+            for cue in group:
+                current = html.unescape(
+                    re.sub(r"<[^>]*>", "", _single_caption_line(cue["text"]))
+                ).strip()
+                if accumulated and current.casefold().startswith(accumulated.casefold()):
+                    combined = current
+                    contribution = current[len(accumulated):].lstrip()
+                else:
+                    combined = _append_rolling_text(
+                        accumulated,
+                        current,
+                        separator=separator,
+                    )
+                    contribution = (
+                        combined[len(accumulated):].lstrip()
+                        if accumulated and combined.startswith(accumulated)
+                        else combined
+                    )
+                contributions.append(contribution)
+                accumulated = combined
+
+            first_start_ms = round(group[0]["start"] * 1000)
+            final_end_ms = max(round(cue["end"] * 1000) for cue in group)
+            boundaries_ms = [
+                round(cue["start"] * 1000) for cue in group[1:]
+            ] + [final_end_ms]
+            predecessors = [
+                cue
+                for cue in ordered
+                if id(cue) not in grouped_ids
+                and id(cue) not in consumed
+                and round(cue["end"] * 1000) in boundaries_ms[:-1]
+                and round(cue["start"] * 1000) < first_start_ms
+            ]
+            prefix = _combine_caption_entries(
+                [
+                    (
+                        cue,
+                        html.unescape(
+                            re.sub(
+                                r"<[^>]*>",
+                                "",
+                                _single_caption_line(cue["text"]),
+                            )
+                        ),
+                    )
+                    for cue in sorted(predecessors, key=lambda cue: cue["start"])
+                ],
+                separator=separator,
+            )
+            if predecessors:
+                consumed.update(id(cue) for cue in predecessors)
+
+            segment_start_ms = min(
+                [first_start_ms]
+                + [round(cue["start"] * 1000) for cue in predecessors]
+            )
+            for index, (cue, boundary_ms) in enumerate(zip(group, boundaries_ms)):
+                text = contributions[index]
+                if index == 0 and prefix:
+                    text = _append_rolling_text(prefix, text, separator=separator)
+                segment_end_ms = boundary_ms
+                if text and segment_end_ms > segment_start_ms:
+                    serialized.append({
+                        **group[0],
+                        "start": segment_start_ms / 1000,
+                        "end": segment_end_ms / 1000,
+                        "text": text,
+                    })
+                segment_start_ms = boundary_ms
+            consumed.update(id(cue) for cue in group)
+            continue
+
         first_start_ms = round(group[0]["start"] * 1000)
-        common_end_ms = round(group[0]["end"] * 1000)
-        duration_ms = common_end_ms - first_start_ms
+        final_end_ms = max(round(cue["end"] * 1000) for cue in group)
+        duration_ms = final_end_ms - first_start_ms
         if duration_ms <= 0:
             continue
 
         sample = _single_caption_line(group[0]["text"])
         separator = "" if CJK.search(html.unescape(re.sub(r"<[^>]*>", "", sample))) else " "
-        full_text = _combine_caption_entries(
-            [
-                (
-                    cue,
-                    html.unescape(
-                        re.sub(r"<[^>]*>", "", _single_caption_line(cue["text"]))
-                    ),
+        full_text = ""
+        for cue in group:
+            current_text = html.unescape(
+                re.sub(r"<[^>]*>", "", _single_caption_line(cue["text"]))
+            )
+            remainder = _rolling_delta(
+                full_text,
+                current_text,
+                allow_single_word=True,
+            )
+            if full_text and remainder != current_text:
+                full_text += (separator if separator and remainder else "") + remainder
+            else:
+                full_text = _append_rolling_text(
+                    full_text,
+                    current_text,
+                    separator=separator,
                 )
-                for cue in group
-            ],
-            separator=separator,
-        )
         words = _rolling_word_spans(full_text)
         if not words:
             continue
@@ -433,14 +751,20 @@ def _serialize_same_end_cues(cues: Sequence[dict]) -> list[dict]:
         split_points_ms = [
             round(cue["start"] * 1000)
             for cue in group[1:]
-            if first_start_ms < round(cue["start"] * 1000) < common_end_ms
+            if first_start_ms < round(cue["start"] * 1000) < final_end_ms
         ]
-        segment_boundaries_ms = split_points_ms + [common_end_ms]
+        split_points_ms = sorted(set(split_points_ms))
+        segment_boundaries_ms = split_points_ms + [final_end_ms]
         cuts = []
         for boundary_ms in split_points_ms:
-            elapsed_ms = boundary_ms - first_start_ms
-            cuts.append(
-                max(
+            timed_cut = _vtt_word_cut(
+                full_text,
+                group,
+                boundary_ms / 1000,
+            )
+            if timed_cut is None:
+                elapsed_ms = boundary_ms - first_start_ms
+                timed_cut = max(
                     0,
                     min(
                         len(words),
@@ -448,7 +772,7 @@ def _serialize_same_end_cues(cues: Sequence[dict]) -> list[dict]:
                         // (2 * duration_ms),
                     ),
                 )
-            )
+            cuts.append(timed_cut)
         cuts.append(len(words))
 
         preceding_at_boundary: dict[int, list[dict]] = {}
@@ -468,11 +792,11 @@ def _serialize_same_end_cues(cues: Sequence[dict]) -> list[dict]:
         previous_cut = 0
         segment_start_ms = first_start_ms
         for boundary_ms, cut in zip(segment_boundaries_ms, cuts):
-            start_offset = 0 if previous_cut == 0 else words[previous_cut - 1].end()
+            start_offset = 0 if previous_cut == 0 else words[previous_cut].start()
             end_offset = (
                 len(full_text)
                 if cut == len(words)
-                else words[cut - 1].end() if cut > previous_cut else start_offset
+                else words[cut].start() if cut > previous_cut else start_offset
             )
             segment_text = full_text[start_offset:end_offset].strip()
             predecessors = preceding_at_boundary.get(boundary_ms, [])
@@ -600,8 +924,21 @@ def build_ass(
         f"Style: CaptionFacet,Arial,1,{facet_color},&H000000FF,"
         f"&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1",
     )
-    first = _serialize_same_end_cues(first)
-    second = _serialize_same_end_cues(second)
+    first_group_signatures = {
+        _cue_group_signature(group) for group in _rolling_cue_groups(first)
+    }
+    second_group_signatures = {
+        _cue_group_signature(group) for group in _rolling_cue_groups(second)
+    }
+    paired_group_signatures = first_group_signatures & second_group_signatures
+    first = _serialize_same_end_cues(
+        first,
+        paired_group_signatures=paired_group_signatures,
+    )
+    second = _serialize_same_end_cues(
+        second,
+        paired_group_signatures=paired_group_signatures,
+    )
     cues = [*first, *second]
     if any(cue["end"] <= cue["start"] or not cue["text"].strip() for cue in cues):
         raise ValueError("Cannot serialize empty or invalid subtitle cues.")
@@ -757,6 +1094,27 @@ def validate_srt(content: str) -> int:
     return len(blocks)
 
 
+def srt_to_vtt(content: str) -> str:
+    validate_srt(content)
+    normalized = content.lstrip("\ufeff").replace("\r\n", "\n").replace("\r", "\n")
+    normalized = re.sub(
+        r"(?m)^(\d{2}:\d{2}:\d{2}),(\d{3}) --> "
+        r"(\d{2}:\d{2}:\d{2}),(\d{3})$",
+        r"\1.\2 --> \3.\4",
+        normalized,
+    )
+    return "WEBVTT\n\n" + normalized.rstrip("\n") + "\n"
+
+
+def write_vtt(path: Path, content: str) -> None:
+    converted = srt_to_vtt(content)
+    cue_count = len(parse_vtt(converted))
+    path.write_text(converted, encoding="utf-8", newline="")
+    written = path.read_text(encoding="utf-8")
+    if len(parse_vtt(written)) != cue_count:
+        raise OSError(f"WebVTT output failed validation after writing: {path}")
+
+
 def write_srt(path: Path, content: str) -> None:
     cue_count = validate_srt(content)
     normalized = content.rstrip("\r\n").replace("\r\n", "\n").replace("\r", "\n")
@@ -828,9 +1186,9 @@ def download_track(
         "--sub-langs",
         language,
         "--sub-format",
-        "srt/best",
+        "vtt/best",
         "--convert-subs",
-        "srt",
+        "vtt",
         "-o",
         str(directory / "%(id)s.%(language)s.%(ext)s"),
         url,
@@ -839,12 +1197,12 @@ def download_track(
     matches = [
         path
         for path in directory.glob(f"{video_id}.*")
-        if path.is_file() and path.name.lower().endswith(f".{language.lower()}.srt")
+        if path.is_file() and path.name.lower().endswith(f".{language.lower()}.vtt")
     ]
     if not matches:
-        raise RuntimeError(f"yt-dlp did not produce the requested {language} SRT.")
+        raise RuntimeError(f"yt-dlp did not produce the requested {language} WebVTT file.")
     source_path = matches[0]
-    return source_path, parse_srt(source_path.read_text(encoding="utf-8-sig"))
+    return source_path, parse_vtt(source_path.read_text(encoding="utf-8-sig"))
 
 
 def download_video(url: str, video_id: str, directory: Path) -> Path:
@@ -1093,9 +1451,13 @@ def main(argv: list[str] | None = None) -> int:
 
         print("Step 4/5: Merging the unchanged downloaded tracks...", flush=True)
         combined_kind = f"{first_kind}+{second_kind}"
-        output = folder / f"{combined_kind}_Bilingual_{first_code}-{second_code}.srt"
-        write_srt(output, align_and_merge(first, second))
-        ass_output = folder / f"{combined_kind}_Bilingual_{first_code}-{second_code}.ass"
+        output_stem = f"{combined_kind}_Bilingual_{first_code}-{second_code}"
+        merged_srt = align_and_merge(first, second)
+        output = folder / f"{output_stem}.srt"
+        write_srt(output, merged_srt)
+        vtt_output = folder / f"{output_stem}.vtt"
+        write_vtt(vtt_output, merged_srt)
+        ass_output = folder / f"{output_stem}.ass"
         write_ass(
             ass_output,
             build_ass(
@@ -1123,6 +1485,7 @@ def main(argv: list[str] | None = None) -> int:
         print("Step 5/6: Validating generated subtitle files...", flush=True)
         cue_count = validate_srt(output.read_text(encoding="utf-8-sig"))
         print(f"  OK: {output.name} ({cue_count} cues)", flush=True)
+        print(f"  OK: {vtt_output.name} (WebVTT)", flush=True)
         print(f"  OK: {ass_output.name} (ASS styles: Chinese above English)", flush=True)
         if args.burn_in:
             print("Step 6/6: Downloading the video and burning in the ASS subtitles...", flush=True)
@@ -1143,6 +1506,7 @@ def main(argv: list[str] | None = None) -> int:
         print(second_path.resolve())
         print("Done. Subtitle files:", flush=True)
         print(output.resolve())
+        print(vtt_output.resolve())
         print(ass_output.resolve())
         if args.burn_in:
             print(burned_output.resolve())
