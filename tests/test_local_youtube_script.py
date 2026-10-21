@@ -588,6 +588,29 @@ def test_ass_uses_vtt_word_timestamps_instead_of_uniform_estimate():
     ]
 
 
+def test_ass_skips_later_splits_after_vtt_timings_assign_all_words():
+    cues = youtube_srt.parse_vtt(
+        "WEBVTT\n\n"
+        "00:00:01.000 --> 00:00:05.000\n"
+        "<00:00:01.100>Hello <00:00:01.200>there <00:00:01.300>today\n\n"
+        "00:00:02.000 --> 00:00:05.000\n"
+        "Hello there\n\n"
+        "00:00:03.000 --> 00:00:05.000\n"
+        "Hello\n"
+    )
+
+    serialized = youtube_srt._serialize_same_end_cues(cues)
+
+    assert serialized == [
+        {
+            **cues[0],
+            "start": 1.0,
+            "end": 2.0,
+            "text": "Hello there today",
+        }
+    ]
+
+
 def test_parser_handles_blank_after_timestamp_without_shifting_cues():
     source = (
         "1\n00:00:01,000 --> 00:00:02,000\n\nHello\n\n"

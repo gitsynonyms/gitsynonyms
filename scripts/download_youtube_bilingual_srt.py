@@ -792,7 +792,14 @@ def _serialize_same_end_cues(
         previous_cut = 0
         segment_start_ms = first_start_ms
         for boundary_ms, cut in zip(segment_boundaries_ms, cuts):
-            start_offset = 0 if previous_cut == 0 else words[previous_cut].start()
+            cut = max(previous_cut, min(cut, len(words)))
+            start_offset = (
+                0
+                if previous_cut == 0
+                else words[previous_cut].start()
+                if previous_cut < len(words)
+                else len(full_text)
+            )
             end_offset = (
                 len(full_text)
                 if cut == len(words)
