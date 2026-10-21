@@ -546,11 +546,6 @@ input[type="color"] {
   background: color-mix(in srgb, var(--preview-color, #708496) calc(var(--preview-opacity, 1) * 100%), transparent);
 }
 
-.preview-caption-box.caption-only-preview {
-  outline: 1px dashed rgb(255 255 255 / 45%);
-  outline-offset: 4px;
-}
-
 .preview-caption-box b,
 .preview-caption-box strong {
   max-width: 100%;

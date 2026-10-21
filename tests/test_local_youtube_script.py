@@ -100,7 +100,7 @@ def test_ass_caption_box_covers_video_from_zero_through_duration():
     ) in result
 
 
-def test_box_can_appear_only_during_caption_intervals():
+def test_box_remains_visible_through_caption_gaps_and_video_end():
     top = youtube_srt.parse_srt(
         "1\n00:00:01,000 --> 00:00:02,000\nFirst\n\n"
         "2\n00:00:04,000 --> 00:00:05,000\nSecond\n\n"
@@ -110,13 +110,13 @@ def test_box_can_appear_only_during_caption_intervals():
         "2\n00:00:04,000 --> 00:00:05,000\n第二\n\n"
     )
 
-    result = youtube_srt.build_ass(top, bottom, box_display="with-captions")
+    result = youtube_srt.build_ass(top, bottom, video_duration=8)
 
-    assert "Dialogue: 0,0:00:00.00," not in result
     box_lines = [line for line in result.splitlines() if ",CaptionBox,," in line]
-    assert len(box_lines) == 2
-    assert "Dialogue: 0,0:00:01.00,0:00:02.00,CaptionBox" in box_lines[0]
-    assert "Dialogue: 0,0:00:04.00,0:00:05.00,CaptionBox" in box_lines[1]
+    assert len(box_lines) == 1
+    assert (
+        "Dialogue: 0,0:00:00.00,0:00:08.00,CaptionBox,,0,0,0,,"
+    ) in box_lines[0]
 
 
 def test_box_styles_apply_default_colors_and_opacity():
@@ -913,6 +913,7 @@ def test_main_preserves_raw_tracks_and_merges_original_caption_content(monkeypat
                 "id": "IySF_8OArvw",
                 "title": "Example event",
                 "upload_date": "20261018",
+                "duration": 2,
                 "language": "en",
                 "subtitles": {},
                 "automatic_captions": {"en-orig": [], "zh-Hans": []},
@@ -982,3 +983,14 @@ def test_main_preserves_raw_tracks_and_merges_original_caption_content(monkeypat
     assert "<b>你好</b>\n<i>Hello & welcome</i>" in bilingual_vtt
     assert downloaded_languages == [("en-orig", "0"), ("zh-Hans", "56")]
     assert "Style: Chinese,Microsoft YaHei,57.6," in ass_paths[0].read_text(encoding="utf-8-sig")
+
+
+def test_main_rejects_missing_video_duration_for_persistent_box(monkeypatch, capsys):
+    def fake_run_ytdlp(_arguments, **_kwargs):
+        metadata = {"id": "dQw4w9WgXcQ", "title": "Example", "subtitles": {}}
+        return subprocess.CompletedProcess([], 0, json.dumps(metadata), "")
+
+    monkeypatch.setattr(youtube_srt, "run_ytdlp", fake_run_ytdlp)
+
+    assert youtube_srt.main(["https://www.youtube.com/watch?v=dQw4w9WgXcQ"]) == 1
+    assert "Video duration is unavailable" in capsys.readouterr().err

@@ -1063,7 +1063,6 @@ def build_ass(
     play_res_y: int = PLAY_RESOLUTION[1],
     caption_order: str = "chinese-first",
     video_duration: float | None = None,
-    box_display: str = "always",
     box_style: str = "glass-diamond",
 ) -> str:
     if not first or not second:
@@ -1076,8 +1075,6 @@ def build_ass(
         raise ValueError("Font size must be positive and Chinese font scale must be between 0.5 and 3.")
     if caption_order not in {"chinese-first", "english-first"}:
         raise ValueError("Caption order must be 'chinese-first' or 'english-first'.")
-    if box_display not in {"always", "with-captions"}:
-        raise ValueError("Box display must be 'always' or 'with-captions'.")
     if box_style not in BOX_STYLES:
         raise ValueError(f"Unsupported subtitle box style: {box_style!r}")
     if video_duration is not None and (
@@ -1182,8 +1179,7 @@ def build_ass(
                 ),
             })
 
-    if box_display == "always":
-        append_box_events(0, box_end)
+    append_box_events(0, box_end)
     for start, end in zip(boundaries, boundaries[1:]):
         if end <= start:
             continue
@@ -1194,9 +1190,6 @@ def build_ass(
         chinese, english = classify_caption_lines(active)
         if not chinese and not english:
             continue
-        if box_display == "with-captions":
-            append_box_events(start, end)
-
         cn_size = fit_font_size(chinese, first_font_size, available_width) if chinese else 0
         en_size = fit_font_size(english, second_font_size, available_width) if english else 0
         order = (
@@ -1563,9 +1556,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--english-color", help="English ASS text color in #RRGGBB format.")
     parser.add_argument(
         "--box-display",
-        choices=("always", "with-captions"),
+        choices=("always",),
         default="always",
-        help="Show the box throughout the video or only while subtitle text is active.",
+        help="Keep the background box visible throughout the video.",
     )
     parser.add_argument(
         "--box-style",
@@ -1620,6 +1613,16 @@ def main(argv: list[str] | None = None) -> int:
         metadata = json.loads(
             run_ytdlp(["--no-warnings", "--skip-download", "--dump-single-json", args.url]).stdout
         )
+        video_duration = metadata.get("duration")
+        if (
+            not isinstance(video_duration, (int, float))
+            or not math.isfinite(video_duration)
+            or video_duration <= 0
+        ):
+            raise ValueError(
+                "Video duration is unavailable; cannot guarantee the background box "
+                "remains visible through the full video."
+            )
         manual = metadata.get("subtitles", {})
         automatic = metadata.get("automatic_captions", {})
         tracks = {**automatic, **manual}
@@ -1694,8 +1697,7 @@ def main(argv: list[str] | None = None) -> int:
                 ),
                 caption_area=caption_area,
                 caption_order="english-first" if args.style_preset == "cinema" else "chinese-first",
-                video_duration=metadata.get("duration"),
-                box_display=args.box_display,
+                video_duration=video_duration,
                 box_style=args.box_style,
             ),
         )

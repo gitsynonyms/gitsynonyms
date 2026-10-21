@@ -34,14 +34,6 @@ on:
           - classic
           - cinema
         default: classic
-      box_display:
-        description: Subtitle background-box display timing
-        required: false
-        type: choice
-        options:
-          - always
-          - with-captions
-        default: always
       box_style:
         description: Subtitle background appearance
         required: false
@@ -151,7 +143,6 @@ jobs:
           ENGLISH_COLOR: ${{ inputs.english_color }}
           BOX_COLOR: ${{ inputs.box_color }}
           BOX_OPACITY: ${{ inputs.box_opacity }}
-          BOX_DISPLAY: ${{ inputs.box_display }}
           BOX_STYLE: ${{ inputs.box_style }}
           STYLE_PRESET: ${{ inputs.style_preset }}
           BOX_X: ${{ inputs.box_x }}
@@ -176,7 +167,7 @@ jobs:
           fi
           args=("$source" --output-dir output --languages zh-Hans,en-orig)
           args+=(--style-preset "$STYLE_PRESET")
-          args+=(--box-display "$BOX_DISPLAY" --box-style "$BOX_STYLE")
+          args+=(--box-display always --box-style "$BOX_STYLE")
           args+=(--chinese-font "$CHINESE_FONT" --english-font "$ENGLISH_FONT")
           args+=(--english-font-size "$ENGLISH_FONT_SIZE" --chinese-font-scale "$CHINESE_FONT_SCALE")
           args+=(--chinese-color "$CHINESE_COLOR" --english-color "$ENGLISH_COLOR")

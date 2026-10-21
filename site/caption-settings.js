@@ -2,7 +2,6 @@
   const STORAGE_KEY = "gitsynonyms.captionSettings.v1";
   const DEFAULTS = Object.freeze({
     stylePreset: "classic",
-    boxDisplay: "always",
     boxStyle: "glass-diamond",
     chineseFont: "Microsoft YaHei",
     englishFont: "Arial",

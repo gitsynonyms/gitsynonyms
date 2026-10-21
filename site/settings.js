@@ -54,7 +54,6 @@ function getFormSettings() {
   const checked = (name) => form.querySelector(`input[name="${name}"]:checked`).value;
   return {
     stylePreset: checked("style-preset"),
-    boxDisplay: checked("box-display"),
     boxStyle: checked("box-style"),
     chineseFont: value("chinese-font").trim(),
     englishFont: value("english-font").trim(),
@@ -82,7 +81,7 @@ function setValue(name, value) {
 }
 
 function applySettings(settings) {
-  for (const name of ["style-preset", "box-display", "box-style"]) {
+  for (const name of ["style-preset", "box-style"]) {
     const key = name.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
     setValue(name, settings[key]);
   }
@@ -197,7 +196,6 @@ function updatePreview() {
   previewBox.classList.toggle("blue-preview", settings.boxStyle === "presidential-blue");
   previewBox.classList.toggle("glass-preview", settings.boxStyle === "glass-diamond");
   previewBox.classList.toggle("solid-preview", settings.boxStyle === "solid-color");
-  previewBox.classList.toggle("caption-only-preview", settings.boxDisplay === "with-captions");
   previewBox.style.setProperty("--preview-color", settings.boxColor);
   previewBox.style.setProperty("--preview-opacity", settings.boxOpacity);
   previewBox.style.setProperty("--preview-chinese-color", settings.chineseColor);
@@ -219,7 +217,7 @@ function updatePreview() {
   updatePaletteSelection(settings);
   updateCaptionContrast(settings);
   previewSummary.textContent =
-    `${settings.boxDisplay === "always" ? "全程显示" : "仅字幕期间显示"} · ` +
+    `背景全程显示 · ` +
     `${settings.boxStyle === "presidential-blue" ? "总统蓝" : settings.boxStyle === "solid-color" ? "纯色背景" : "磨砂玻璃钻石"} · ` +
     `${settings.boxX}, ${settings.boxY} · ${settings.boxWidth} × ${settings.boxHeight}`;
 }

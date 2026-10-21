@@ -42,8 +42,7 @@ function renderCaptionSettingsSummary() {
       : settings.boxStyle === "solid-color"
         ? `纯色 ${settings.boxColor.toUpperCase()}`
         : "磨砂玻璃 · 钻石切面";
-    const display = settings.boxDisplay === "always" ? "背景全程显示" : "背景随字幕显示";
-    settingsSummary.textContent = `${style} · ${background} · ${display}`;
+    settingsSummary.textContent = `${style} · ${background} · 背景全程显示`;
   } catch {
     settingsSummary.textContent = "无法读取字幕设置，请前往设置页检查浏览器本地存储。";
   }
@@ -58,14 +57,13 @@ function makeCommand(videoUrl, location, options) {
     return [
       `$script = Join-Path $PWD 'download_youtube_bilingual_srt.py'`,
       `Invoke-WebRequest -Uri '${SCRIPT_URL}' -OutFile $script`,
-      `& (Join-Path $env:USERPROFILE 'anaconda3\\python.exe') $script ${quotedUrl} --languages zh-Hans,en-orig --output-dir 'D:\\MyDownload' --style-preset ${options.stylePreset} --box-display ${options.boxDisplay} --box-style ${options.boxStyle} --chinese-font ${quotePowerShell(options.chineseFont)} --english-font ${quotePowerShell(options.englishFont)} --english-font-size ${options.englishFontSize} --chinese-font-scale ${options.chineseFontScale} --chinese-color ${quotePowerShell(options.chineseColor)} --english-color ${quotePowerShell(options.englishColor)} --box-color ${quotePowerShell(options.boxColor)} --box-opacity ${options.boxOpacity} --box-x ${options.boxX} --box-y ${options.boxY} --box-width ${options.boxWidth} --box-height ${options.boxHeight}${burnArgs}`,
+      `& (Join-Path $env:USERPROFILE 'anaconda3\\python.exe') $script ${quotedUrl} --languages zh-Hans,en-orig --output-dir 'D:\\MyDownload' --style-preset ${options.stylePreset} --box-display always --box-style ${options.boxStyle} --chinese-font ${quotePowerShell(options.chineseFont)} --english-font ${quotePowerShell(options.englishFont)} --english-font-size ${options.englishFontSize} --chinese-font-scale ${options.chineseFontScale} --chinese-color ${quotePowerShell(options.chineseColor)} --english-color ${quotePowerShell(options.englishColor)} --box-color ${quotePowerShell(options.boxColor)} --box-opacity ${options.boxOpacity} --box-x ${options.boxX} --box-y ${options.boxY} --box-width ${options.boxWidth} --box-height ${options.boxHeight}${burnArgs}`,
     ].join("; ");
   }
   const workflowInputs = [
     ["source", quotedUrl],
     ["burn_in", String(options.burnIn)],
     ["style_preset", options.stylePreset],
-    ["box_display", options.boxDisplay],
     ["box_style", options.boxStyle],
     ["chinese_font", quotePowerShell(options.chineseFont)],
     ["english_font", quotePowerShell(options.englishFont)],
@@ -110,9 +108,7 @@ form.addEventListener("submit", (event) => {
   } catch {
     return;
   }
-  const displayDescription = settings.boxDisplay === "always"
-    ? "字幕背景框会从视频开始持续到结束，适合遮挡原片横幅"
-    : "字幕背景框只在字幕出现时显示";
+  const displayDescription = "字幕背景框会从视频开始持续到结束，适合遮挡原片横幅";
   const boxStyleDescription = settings.boxStyle === "presidential-blue"
     ? "总统蓝背景框"
     : settings.boxStyle === "solid-color"
