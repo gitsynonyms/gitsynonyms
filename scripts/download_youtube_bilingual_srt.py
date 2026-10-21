@@ -156,6 +156,10 @@ def parse_vtt(content: str) -> list[dict]:
         if end <= start:
             raise ValueError(f"WebVTT cue end must be after its start: {lines[index]!r}")
         index += 1
+        while index < len(lines) and not lines[index].strip():
+            index += 1
+        if index >= len(lines) or timing_line.match(lines[index]):
+            continue
         body_lines = []
         while index < len(lines) and lines[index].strip():
             body_lines.append(lines[index])
@@ -616,6 +620,38 @@ def _cue_group_signature(group: Sequence[dict]) -> tuple[tuple[int, int], ...]:
     )
 
 
+def _trim_stale_ass_cue_ends(
+    first: Sequence[dict], second: Sequence[dict]
+) -> tuple[list[dict], list[dict]]:
+    cues = [*first, *second]
+    latest_word_starts: dict[tuple[int, int], float] = {}
+    for cue in cues:
+        timings = cue.get("word_timings", [])
+        if len(timings) < 2:
+            continue
+        last_word_start = max(word["start"] for word in timings)
+        if cue["end"] - last_word_start > 3:
+            interval = (round(cue["start"] * 1000), round(cue["end"] * 1000))
+            latest_word_starts[interval] = max(
+                latest_word_starts.get(interval, last_word_start),
+                last_word_start,
+            )
+
+    def trim(track: Sequence[dict]) -> list[dict]:
+        result = []
+        for cue in track:
+            interval = (round(cue["start"] * 1000), round(cue["end"] * 1000))
+            last_word_start = latest_word_starts.get(interval)
+            if last_word_start is None:
+                result.append(cue)
+                continue
+            end = min(cue["end"], last_word_start + 0.5)
+            result.append({**cue, "end": end} if end > cue["start"] else cue)
+        return result
+
+    return trim(first), trim(second)
+
+
 def _serialize_same_end_cues(
     cues: Sequence[dict],
     *,
@@ -903,6 +939,7 @@ def build_ass(
 ) -> str:
     if not first or not second:
         raise ValueError("Both subtitle tracks must contain cues.")
+    first, second = _trim_stale_ass_cue_ends(first, second)
     for name, font in (("Chinese", first_font), ("English", second_font)):
         if not font.strip() or any(char in font for char in ",\r\n{}"):
             raise ValueError(f"{name} font name must be non-empty and cannot contain commas or braces.")

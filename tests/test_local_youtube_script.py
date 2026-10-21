@@ -570,6 +570,23 @@ def test_vtt_parser_extracts_cues_and_inline_word_timestamps():
     assert "word_timings" not in parsed[1]
 
 
+def test_vtt_parser_skips_blank_line_after_timing_header():
+    parsed = youtube_srt.parse_vtt(
+        "WEBVTT\n\n"
+        "00:00:03.960 --> 00:00:06.030 align:start position:0%\n"
+        "\n"
+        "Ladies<00:00:04.440> and gentlemen,\n\n"
+        "00:00:06.030 --> 00:00:06.040 align:start position:0%\n"
+        "Ladies and gentlemen,\n"
+    )
+
+    assert [(cue["start"], cue["end"]) for cue in parsed] == [
+        (3.96, 6.03),
+        (6.03, 6.04),
+    ]
+    assert parsed[0]["text"] == "Ladies and gentlemen,"
+
+
 def test_ass_uses_vtt_word_timestamps_instead_of_uniform_estimate():
     cues = youtube_srt.parse_vtt(
         "WEBVTT\n\n"
@@ -628,6 +645,61 @@ def test_ass_merges_tiny_paired_rolling_fragment_into_visible_interval():
     assert [(cue["start"], cue["end"]) for cue in serialized] == [(6.03, 8.63)]
     assert serialized[0]["text"] == (
         "Ladies and gentlemen, the president of the United States"
+    )
+
+
+def test_ass_preserves_vtt_start_and_trims_stale_inline_timed_tail():
+    english = youtube_srt.parse_vtt(
+        "WEBVTT\n\n"
+        "00:00:03.960 --> 00:00:06.030 align:start position:0%\n\n"
+        "Ladies<00:00:04.440> and<00:00:04.560> gentlemen,"
+        "<00:00:05.200> the<00:00:05.320> president"
+        "<00:00:05.920> of\n\n"
+        "00:00:06.030 --> 00:00:06.040 align:start position:0%\n"
+        "Ladies and gentlemen, the president of\n\n"
+        "00:00:06.040 --> 00:00:08.630 align:start position:0%\n"
+        "Ladies and gentlemen, the president of the"
+        "<00:00:06.120> United<00:00:06.560> States,"
+        "<00:00:07.120> Donald<00:00:07.600> J."
+        "<00:00:07.840> Trump,<00:00:08.480> and\n\n"
+        "00:00:08.630 --> 00:00:08.640 align:start position:0%\n"
+        "the United States, Donald J. Trump, and\n\n"
+        "00:00:08.640 --> 00:01:05.630 align:start position:0%\n\n"
+        "the United States, Donald J. Trump, and\n"
+        "First<00:00:08.960> Lady<00:00:09.280> Melania"
+        "<00:00:09.800> Trump.\n"
+    )
+    chinese = youtube_srt.parse_vtt(
+        "WEBVTT\n\n"
+        "00:00:03.960 --> 00:00:06.030 align:start position:0%\n\n"
+        "女士们<00:00:04.613>、<00:00:05.266>先生们<00:00:05.919>，\n\n"
+        "00:00:06.030 --> 00:00:06.040 align:start position:0%\n"
+        "女士们、先生们，\n\n"
+        "00:00:06.040 --> 00:00:08.630 align:start position:0%\n"
+        "女士们、先生们，"
+        "美国<00:00:06.528>总统<00:00:07.016>唐纳德"
+        "<00:00:07.504>·J·<00:00:07.992>特朗普<00:00:08.480>和\n\n"
+        "00:00:08.630 --> 00:00:08.640 align:start position:0%\n"
+        "美国总统唐纳德·J·特朗普和\n\n"
+        "00:00:08.640 --> 00:01:05.630 align:start position:0%\n\n"
+        "美国总统唐纳德·J·特朗普和\n"
+        "第一<00:00:08.872>夫人<00:00:09.104>梅拉尼娅"
+        "<00:00:09.336>·<00:00:09.568>特朗普<00:00:09.800>。\n"
+    )
+
+    ass = youtube_srt.build_ass(chinese, english)
+    dialogues = [
+        line for line in ass.splitlines() if line.startswith("Dialogue: 1,")
+    ]
+    first_caption = next(line for line in dialogues if "Ladies and gentlemen" in line)
+    last_caption = next(line for line in dialogues if "First Lady Melania Trump." in line)
+
+    assert first_caption.startswith("Dialogue: 1,0:00:03.96,")
+    assert ",0:01:05.63," not in last_caption
+    assert last_caption.startswith("Dialogue: 1,0:00:08.64,0:00:10.30,")
+    assert not any(
+        line.startswith("Dialogue: 1,0:00:10.22,0:00:10.30,")
+        for line in dialogues
     )
 
 
