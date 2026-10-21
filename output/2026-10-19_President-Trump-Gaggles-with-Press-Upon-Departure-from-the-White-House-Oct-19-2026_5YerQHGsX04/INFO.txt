@@ -1,0 +1,31 @@
+Video: President Trump Gaggles with Press Upon Departure from the White House, Oct. 19, 2026
+Video ID: 5YerQHGsX04
+Event date: 2026-10-19
+Source: https://www.youtube.com/watch?v=5YerQHGsX04
+Uploader: The White House
+Duration: 00:19:47 (1187 s)
+
+Files:
+5YerQHGsX04.source.mp4              1080p H.264 (yt-dlp format 137) + AAC (140) source video.
+5YerQHGsX04.en.en-orig.vtt          English captions exactly as downloaded from YouTube.
+machine-translated_Chinese.srt       Chinese line produced by machine-translating the English track.
+machine-translated_Bilingual.srt     Time-aligned bilingual SRT, Chinese above English (969 cues).
+machine-translated_Bilingual.ass     Styled ASS (classic preset, glass-diamond box) used for burn-in.
+Burned_Bilingual_5YerQHGsX04.mp4     Source video with the bilingual ASS burned in (libx264, CRF 18).
+
+Caption provenance:
+English track: YouTube auto-generated captions (en-orig). The transcript is not independently
+proofread.
+Chinese track: YouTube's own zh-Hans auto-translation is listed for this video, but every
+request for it was answered with HTTP 429 (Too Many Requests), both directly and through
+alternative egress routes, so no YouTube translation track is represented here. The Chinese
+line is instead a machine translation of the English track produced with the Google Translate
+endpoint (translate.googleapis.com/translate_a/single). It is therefore labelled
+"machine-translated" rather than "auto-translated", it is not a YouTube-authored translation,
+and it has not been proofread by a human.
+
+Parser note:
+One inline word timestamp in the English WebVTT track (00:18:57.200) falls 10 ms past the end
+of its cue. scripts/download_youtube_bilingual_srt.py now clamps such timestamps to the cue
+boundary instead of rejecting the whole track, and tests/test_local_youtube_script.py covers
+that behaviour.

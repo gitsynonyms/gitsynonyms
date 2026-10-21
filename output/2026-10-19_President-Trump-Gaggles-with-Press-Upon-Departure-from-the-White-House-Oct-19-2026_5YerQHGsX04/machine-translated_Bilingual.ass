@@ -1,0 +1,730 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+ScaledBorderAndShadow: yes
+WrapStyle: 2
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Chinese,Microsoft YaHei,57.6,&H0028C9FF,&H000000FF,&H80000000,&HA6000000,-1,0,0,0,100,100,0,0,1,2,1,5,0,0,0,1
+Style: English,Arial,48,&H00FFD700,&H00FFFFFF,&H80000000,&HA6000000,0,0,0,0,100,100,0,0,1,2,1,5,0,0,0,1
+Style: CaptionBox,Arial,1,&H52968470,&H000000FF,&H00000000,&HC2FFF2E4,0,0,0,0,100,100,0,0,1,1,0,7,0,0,0,1
+Style: CaptionFacet,Arial,1,&HD9FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:19:47.48,CaptionBox,,0,0,0,,{\an7\pos(66,883)\p1}m 0 0 l 1786 0 1786 139 0 139 0 0{\p0}
+Dialogue: 0,0:00:00.00,0:19:47.48,CaptionFacet,,0,0,0,,{\an7\pos(66,883)\p1}m 0 0 l 500 0 l 390 58 l 0 58 0 0{\p0}
+Dialogue: 1,0:00:00.72,0:00:02.63,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}大家好。我要去堪\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}Hello {\kt32\k159}everybody.
+Dialogue: 1,0:00:02.64,0:00:05.83,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}萨斯度过一次愉快的旅行\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}I'm {\kt24\k16}going {\kt40\k16}to {\kt56\k16}take {\kt72\k24}a {\kt96\k24}nice {\kt120\k32}trip {\kt152\k24}to {\kt176\k143}Kansas
+Dialogue: 1,0:00:05.84,0:00:07.51,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我要去堪萨斯州进行一次愉快的旅行，那里有一位出色的参议员\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}where {\kt24\k16}we {\kt40\k0}have {\kt40\k32}a {\kt72\k48}wonderful {\kt120\k47}Senator
+Dialogue: 1,0:00:07.51,0:00:07.52,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我们有一位出色的参议员
+Dialogue: 1,0:00:07.52,0:00:10.07,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我们有一位出色的马歇尔参议员。他会做得很好。我\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k48}Marshall. {\kt48\k0}He's {\kt48\k0}going {\kt48\k120}to {\kt168\k16}do {\kt184\k24}very {\kt208\k24}well. {\kt232\k23}I
+Dialogue: 1,0:00:10.08,0:00:12.79,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}马歇尔。他会做得很好。我认为他会赢。我赢得了\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}think {\kt0\k0}he's {\kt0\k0}going {\kt0\k136}to {\kt136\k56}uh {\kt192\k0}win. {\kt192\k40}I {\kt232\k16}won {\kt248\k23}the
+Dialogue: 1,0:00:12.80,0:00:15.83,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我认为他会赢。我以很多很多分赢得了州政府。我喜欢\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}state {\kt24\k32}by {\kt56\k24}many, {\kt80\k32}many {\kt112\k0}points. {\kt112\k152}I {\kt264\k0}love {\kt264\k39}the
+Dialogue: 1,0:00:15.83,0:00:15.84,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}陈述很多很多点。我喜欢
+Dialogue: 1,0:00:15.84,0:00:17.67,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}陈述很多很多点。我爱堪萨斯州的人民，这就是我去堪萨斯州的原因\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}people {\kt24\k0}of {\kt24\k72}Kansas {\kt96\k16}and {\kt112\k16}that's {\kt128\k0}why {\kt128\k32}I {\kt160\k23}go
+Dialogue: 1,0:00:17.67,0:00:17.68,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}堪萨斯州人民，这就是我去的原因
+Dialogue: 1,0:00:17.68,0:00:21.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}堪萨斯州的人民，这就是我去那里的原因。所以希望我们能有一个\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}there. {\kt32\k80}So {\kt112\k0}hopefully {\kt112\k80}uh {\kt192\k0}we'll {\kt192\k0}have {\kt192\k128}a {\kt320\k39}a
+Dialogue: 1,0:00:21.27,0:00:21.28,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}那里。所以希望我们能有一个
+Dialogue: 1,0:00:21.28,0:00:23.99,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}那里。所以希望我们能在堪萨斯取得一场伟大的胜利，但我们会知道\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}great {\kt24\k32}victory {\kt56\k0}in {\kt56\k160}Kansas, {\kt216\k0}but {\kt216\k40}we'll {\kt256\k15}know
+Dialogue: 1,0:00:23.99,0:00:24.00,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}堪萨斯州的伟大胜利，但我们会知道
+Dialogue: 1,0:00:24.00,0:00:25.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}堪萨斯州的伟大胜利，但我们很快就会知道。我想他会做\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}soon {\kt24\k0}enough. {\kt24\k0}I {\kt24\k0}think {\kt24\k0}he's {\kt24\k0}going {\kt24\k0}to {\kt24\k119}do
+Dialogue: 1,0:00:25.43,0:00:25.44,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}很快。我想他会做
+Dialogue: 1,0:00:25.44,0:00:27.83,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}很快。我认为他会做得很好。罗杰·马歇尔是其中之一\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}very {\kt0\k80}well. {\kt80\k48}Roger {\kt128\k48}Marshall {\kt176\k24}is {\kt200\k0}one {\kt200\k0}of {\kt200\k39}the
+Dialogue: 1,0:00:27.84,0:00:30.87,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}很好。罗杰·马歇尔是政府中最优秀的人之一\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}finest {\kt0\k0}people {\kt0\k168}in {\kt168\k32}in {\kt200\k48}government {\kt248\k24}as {\kt272\k16}far {\kt288\k15}as
+Dialogue: 1,0:00:30.87,0:00:30.88,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}政府中最优秀的人
+Dialogue: 1,0:00:30.88,0:00:31.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}据我所知，政府里最优秀的人
+Dialogue: 1,0:00:31.03,0:00:31.04,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k1}I'm
+Dialogue: 1,0:00:31.04,0:00:35.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我很担心。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k208}I'm >> {\kt208\k207}concerned.
+Dialogue: 1,0:00:35.20,0:00:37.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}你说你不想开车\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}You {\kt24\k40}said {\kt64\k24}that {\kt88\k16}you {\kt104\k16}don't {\kt120\k16}want {\kt136\k16}to {\kt152\k31}drive
+Dialogue: 1,0:00:37.04,0:00:39.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}你说过你不想把弗拉基米尔·普京赶出酒吧。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}the {\kt16\k48}Vladimir {\kt64\k24}Putin {\kt88\k24}away {\kt112\k24}from {\kt136\k8}the {\kt144\k111}bar.
+Dialogue: 1,0:00:39.60,0:00:41.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}弗拉基米尔·普京离开了酒吧。他向你保证他是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}What {\kt32\k48}guarantee {\kt80\k24}has {\kt104\k16}he {\kt120\k0}made {\kt120\k0}you {\kt120\k56}that {\kt176\k23}he's
+Dialogue: 1,0:00:41.60,0:00:42.95,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他向你做出了什么保证他愿意讨价还价？\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}willing {\kt0\k48}to {\kt48\k24}strike {\kt72\k16}a {\kt88\k47}bargain? >>
+Dialogue: 1,0:00:42.96,0:00:44.71,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}愿意讨价还价吗？>> 好吧，你\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}Well, {\kt24\k24}you'll {\kt48\k16}see {\kt64\k24}soon {\kt88\k32}enough {\kt120\k24}because {\kt144\k31}I'm
+Dialogue: 1,0:00:44.72,0:00:47.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}很快就会看到，因为我正试图劫持人质，呃\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}trying {\kt0\k32}to {\kt32\k0}get {\kt32\k40}a {\kt72\k0}hostage {\kt72\k160}that {\kt232\k0}uh {\kt232\k55}the
+Dialogue: 1,0:00:47.59,0:00:47.60,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}试图劫持人质
+Dialogue: 1,0:00:47.60,0:00:50.79,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}试图获得这个国家长期以来一直在追捕的人质\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k48}country's {\kt48\k16}been {\kt64\k32}after {\kt96\k0}for {\kt96\k40}a {\kt136\k16}long {\kt152\k112}time {\kt264\k55}and
+Dialogue: 1,0:00:50.79,0:00:50.80,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}国家长期以来一直在追求
+Dialogue: 1,0:00:50.80,0:00:53.51,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这个国家已经追求了很长一段时间，而且比我的时间早，让我们看看会发生什么\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k40}before {\kt40\k0}my {\kt40\k0}time {\kt40\k168}and {\kt208\k0}let's {\kt208\k0}see {\kt208\k63}what
+Dialogue: 1,0:00:53.52,0:00:56.47,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}在我的时间之前，让我们看看会发生什么很快就会这样了。我们\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k40}happens. {\kt40\k40}That'll {\kt80\k48}be {\kt128\k32}that'll {\kt160\k0}be {\kt160\k104}soon. {\kt264\k31}We
+Dialogue: 1,0:00:56.48,0:00:58.47,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}发生。很快就会这样了。我们也有一个非常好的情况\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}also {\kt24\k0}have {\kt24\k40}a {\kt64\k16}very {\kt80\k24}good {\kt104\k64}situation {\kt168\k31}with
+Dialogue: 1,0:00:58.47,0:00:58.48,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}也有很好的情况
+Dialogue: 1,0:00:58.48,0:01:01.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}与伊朗的关系也非常好。他正在解雇伊朗。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}respect {\kt0\k104}to {\kt104\k0}Iran. {\kt104\k88}He's {\kt192\k24}laying {\kt216\k24}off {\kt240\k55}Iran.
+Dialogue: 1,0:01:01.44,0:01:03.75,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}尊重伊朗。他正在解雇伊朗。这很好，因为我们正在打击伊朗\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}It's {\kt24\k0}nice {\kt24\k112}because {\kt136\k24}we're {\kt160\k0}hitting {\kt160\k71}Iran
+Dialogue: 1,0:01:03.76,0:01:06.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这很好，因为我们正在非常严厉地打击伊朗，正如你所知道的那样\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}very {\kt24\k32}hard {\kt56\k0}as {\kt56\k32}you {\kt88\k48}know {\kt136\k80}economically {\kt216\k23}as
+Dialogue: 1,0:01:06.15,0:01:06.16,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}正如你所知道的，在经济上非常困难
+Dialogue: 1,0:01:06.16,0:01:09.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}正如你所知，在经济和军事上都非常困难，俄罗斯已经做到了\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}well {\kt0\k88}as {\kt88\k0}militarily {\kt88\k136}and {\kt224\k56}Russia's {\kt280\k23}done
+Dialogue: 1,0:01:09.19,0:01:09.20,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}军事上也是如此，俄罗斯已经完成了
+Dialogue: 1,0:01:09.20,0:01:12.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}以及军事方面，俄罗斯没有采取任何我们可以看到的行动，我\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}nothing {\kt32\k0}there {\kt32\k0}that {\kt32\k160}we {\kt192\k0}can {\kt192\k0}see {\kt192\k80}and {\kt272\k23}I
+Dialogue: 1,0:01:12.15,0:01:12.16,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}那里没有我们能看到的东西，而我
+Dialogue: 1,0:01:12.16,0:01:14.95,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我们没有看到任何东西，我认为呃这是一个非常积极的事情\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}think {\kt0\k88}uh {\kt88\k0}that's {\kt88\k0}a {\kt88\k72}very {\kt160\k0}positive {\kt160\k104}and {\kt264\k15}of
+Dialogue: 1,0:01:14.96,0:01:16.79,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}认为呃这是非常积极的当然我们正在与他谈判\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}course {\kt0\k48}we're {\kt48\k0}negotiating {\kt48\k88}with {\kt136\k24}him {\kt160\k23}on
+Dialogue: 1,0:01:16.80,0:01:20.07,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}当然，我们正在与他就乌克兰问题进行谈判。所以呃我不想打破\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k136}Ukraine. {\kt136\k0}So {\kt136\k0}uh {\kt136\k112}I'm {\kt248\k16}not {\kt264\k0}looking {\kt264\k48}to {\kt312\k15}break
+Dialogue: 1,0:01:20.07,0:01:20.08,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}乌克兰。所以呃我不想打破
+Dialogue: 1,0:01:20.08,0:01:22.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}乌克兰。所以呃，我不想在谈判中间中断谈判。和\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}up {\kt32\k80}negotiations {\kt112\k24}right {\kt136\k0}in {\kt136\k24}the {\kt160\k0}middle. {\kt160\k47}And
+Dialogue: 1,0:01:22.15,0:01:22.16,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}在中间进行谈判。和
+Dialogue: 1,0:01:22.16,0:01:24.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}在中间进行谈判。顺便说一句，我有权这样做\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}by {\kt0\k24}the {\kt24\k0}way, {\kt24\k0}I {\kt24\k0}have {\kt24\k96}the {\kt120\k0}right {\kt120\k32}to {\kt152\k0}do {\kt152\k47}that
+Dialogue: 1,0:01:24.16,0:01:27.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}顺便说一句，我有权随时立即这样做。所以如果事情\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}at {\kt24\k0}any {\kt24\k104}time {\kt128\k0}immediately. {\kt128\k120}So {\kt248\k16}if {\kt264\k23}things
+Dialogue: 1,0:01:27.04,0:01:28.79,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}随时立即。所以如果事情不顺利，我总是可以做到。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}don't {\kt24\k16}work {\kt40\k0}out, {\kt40\k48}I {\kt88\k16}can {\kt104\k0}always {\kt104\k40}do {\kt144\k31}it. >>
+Dialogue: 1,0:01:28.80,0:01:31.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}不努力，我总能做到。>> 你曾经是共和党人吗？\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Have {\kt0\k24}you {\kt24\k136}ever {\kt160\k64}Republicans {\kt224\k16}who {\kt240\k0}have {\kt240\k39}been
+Dialogue: 1,0:01:31.60,0:01:33.83,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 你们有曾经公开发声的共和党人吗？你见过吗\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}speaking {\kt0\k0}out? {\kt0\k0}Have {\kt0\k184}you {\kt184\k0}seen {\kt184\k39}the
+Dialogue: 1,0:01:33.83,0:01:33.84,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}说出来？你见过吗
+Dialogue: 1,0:01:33.84,0:01:37.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}说出来？你看到那些一直在发声的共和党人了吗？\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Republicans {\kt0\k0}who {\kt0\k0}have {\kt0\k0}been {\kt0\k0}speaking {\kt0\k319}out? >>
+Dialogue: 1,0:01:37.04,0:01:38.47,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}那些已经发声的共和党人？>> 好吧，我想当他们发现什么时\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Well, {\kt0\k0}I {\kt0\k48}think {\kt48\k24}when {\kt72\k24}they {\kt96\k0}find {\kt96\k0}out {\kt96\k47}what
+Dialogue: 1,0:01:38.48,0:01:42.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 好吧，我想当他们知道这笔交易是什么时，他们呃当我有四个\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}the {\kt24\k24}deal {\kt48\k0}is, {\kt48\k0}they {\kt48\k224}uh {\kt272\k40}when {\kt312\k32}I've {\kt344\k16}had {\kt360\k23}four
+Dialogue: 1,0:01:42.31,0:01:42.32,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}交易是，他们呃当我有四个
+Dialogue: 1,0:01:42.32,0:01:44.47,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}交易是，他们呃，当我给他们四个人打电话时，他们只把\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}of {\kt16\k24}them {\kt40\k0}call {\kt40\k0}up {\kt40\k0}and {\kt40\k80}they {\kt120\k16}only {\kt136\k0}put {\kt136\k79}out
+Dialogue: 1,0:01:44.47,0:01:44.48,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他们中的一些人打电话来，但他们只出去了
+Dialogue: 1,0:01:44.48,0:01:46.95,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他们中的一些人打电话过来，昨晚才发出消息。我正处于\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}word {\kt32\k32}last {\kt64\k0}night. {\kt64\k0}I'm {\kt64\k0}in {\kt64\k144}the {\kt208\k0}midst {\kt208\k39}of
+Dialogue: 1,0:01:46.95,0:01:46.96,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}昨晚的话。我正处于
+Dialogue: 1,0:01:46.96,0:01:48.95,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}昨晚的话。我正在就一笔交易进行谈判。当你在\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}negotiating {\kt0\k0}a {\kt0\k0}deal. {\kt0\k176}When {\kt176\k23}you're
+Dialogue: 1,0:01:48.96,0:01:50.95,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}谈判达成协议。当你在谈判一项交易时，你不会这样做\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}negotiating {\kt0\k0}a {\kt0\k0}deal, {\kt0\k0}you {\kt0\k0}don't {\kt0\k0}do {\kt0\k0}that {\kt0\k199}to
+Dialogue: 1,0:01:50.96,0:01:53.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}在谈判一项交易时，你不会对你正在谈\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}the {\kt16\k0}people {\kt16\k0}you're {\kt16\k0}negotiating {\kt16\k0}and {\kt16\k191}the
+Dialogue: 1,0:01:53.04,0:01:55.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}判的人和乌克兰达成的交易。还有，我是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}deals {\kt0\k0}Ukraine {\kt0\k0}deal. {\kt0\k0}Also, {\kt0\k215}I'm
+Dialogue: 1,0:01:55.19,0:01:55.20,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}乌克兰交易。还有，我是
+Dialogue: 1,0:01:55.20,0:01:57.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}deals Ukraine deal.另外，我正在与他们就伊朗问\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}negotiating {\kt0\k0}with {\kt0\k0}them {\kt0\k0}on {\kt0\k0}Iran {\kt0\k183}because
+Dialogue: 1,0:01:57.04,0:01:59.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}题进行谈判，因为他们在伊朗问题上表现得\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}they've {\kt0\k0}been {\kt0\k0}very {\kt0\k96}well {\kt96\k0}behaved {\kt96\k0}on {\kt96\k159}Iran.
+Dialogue: 1,0:01:59.60,0:02:01.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}很好。另外，我正在与他们协商\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Also, {\kt0\k0}I'm {\kt0\k0}negotiating {\kt0\k0}with {\kt0\k0}them {\kt0\k183}on
+Dialogue: 1,0:02:01.44,0:02:04.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}另外，我正在与他们就人质问题进行谈判，我也在就人质问题进行谈判\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}hostages {\kt0\k0}and {\kt0\k0}I'm {\kt0\k0}also {\kt0\k0}negotiating {\kt0\k271}on
+Dialogue: 1,0:02:04.15,0:02:04.16,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}人质，我也在谈判
+Dialogue: 1,0:02:04.16,0:02:08.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}人质和我也在就柴油问题进行谈判。所以，当你当你\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}diesel. {\kt0\k0}So, {\kt0\k0}when {\kt0\k0}you {\kt0\k0}when {\kt0\k415}you
+Dialogue: 1,0:02:08.31,0:02:08.32,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}柴油机。所以，当你当你
+Dialogue: 1,0:02:08.32,0:02:09.91,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}柴油机。所以，当你在谈判时，你不应该这样做\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}when {\kt0\k0}you're {\kt0\k0}negotiating, {\kt0\k0}you {\kt0\k0}don't {\kt0\k159}do
+Dialogue: 1,0:02:09.91,0:02:09.92,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}当你谈判时，你不做
+Dialogue: 1,0:02:09.92,0:02:11.99,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}当你谈判时，你不会这样做。当我告诉共和党人时\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}that. {\kt0\k0}When {\kt0\k88}I {\kt88\k0}tell {\kt88\k0}that {\kt88\k0}to {\kt88\k119}Republicans
+Dialogue: 1,0:02:11.99,0:02:12.00,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}那。当我告诉共和党人时
+Dialogue: 1,0:02:12.00,0:02:13.83,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}那。当我对那些敢于直言不讳的共和党人说这句话时，他们并没有多少人\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}that {\kt24\k0}speak {\kt24\k0}out {\kt24\k72}and {\kt96\k16}there {\kt112\k32}aren't {\kt144\k0}many {\kt144\k39}of
+Dialogue: 1,0:02:13.83,0:02:13.84,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}说出来的人并不多
+Dialogue: 1,0:02:13.84,0:02:16.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}敢于说出来的人并不多，呃，因为他们有信心\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}them {\kt0\k0}uh {\kt0\k0}because {\kt0\k0}they {\kt0\k152}have {\kt152\k0}confidence {\kt152\k79}in
+Dialogue: 1,0:02:16.15,0:02:16.16,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他们呃因为他们有信心
+Dialogue: 1,0:02:16.16,0:02:17.83,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他们呃，因为他们对他有信心，是我让他们到达那里的。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}him, {\kt0\k0}I'm {\kt0\k64}the {\kt64\k0}one {\kt64\k32}that {\kt96\k0}got {\kt96\k0}them {\kt96\k71}there.
+Dialogue: 1,0:02:17.84,0:02:19.83,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他，是我把他们带到那里的。我就是那个获胜的人。我就\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}I'm {\kt0\k0}the {\kt0\k0}one {\kt0\k88}that's {\kt88\k0}winning. {\kt88\k0}I'm {\kt88\k96}the {\kt184\k15}one
+Dialogue: 1,0:02:19.84,0:02:21.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}是那个获胜的人。我是参加集会的人。正在采取\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}that's {\kt24\k0}doing {\kt24\k40}the {\kt64\k0}rallies. {\kt64\k72}It's {\kt136\k39}taking
+Dialogue: 1,0:02:21.59,0:02:21.60,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}那就是集会。正在采取
+Dialogue: 1,0:02:21.60,0:02:24.07,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}那就是集会。它使人们处于胜利的位置。当你\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k72}people {\kt72\k0}into {\kt72\k0}a {\kt72\k88}winning {\kt160\k0}position. {\kt160\k0}When {\kt160\k87}you
+Dialogue: 1,0:02:24.08,0:02:25.99,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}使人处于制胜的位置。当你观察发生的事情时，如果你采取\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}look {\kt0\k24}at {\kt24\k32}what's {\kt56\k0}happened, {\kt56\k0}if {\kt56\k104}you {\kt160\k0}take {\kt160\k31}a
+Dialogue: 1,0:02:25.99,0:02:26.00,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}看看发生了什么，如果你采取
+Dialogue: 1,0:02:26.00,0:02:27.51,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}看看发生了什么事，如果你看看我来之后发生了什么\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}look {\kt0\k0}at {\kt0\k0}what's {\kt0\k88}happened {\kt88\k0}since {\kt88\k0}I've {\kt88\k63}been
+Dialogue: 1,0:02:27.51,0:02:27.52,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}看看自从我来之后发生了什么
+Dialogue: 1,0:02:27.52,0:02:30.95,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}看看自从我做了这些大规模的事情以来发生了什么，完全卖完了\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}doing {\kt16\k80}these {\kt96\k120}massive, {\kt216\k56}totally {\kt272\k0}sold {\kt272\k71}out
+Dialogue: 1,0:02:30.95,0:02:30.96,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}做这些大规模的，完全卖完了
+Dialogue: 1,0:02:30.96,0:02:33.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}进行这些大规模的、完全售罄的集会，没有人见过任何东西\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k64}rallies, {\kt64\k0}nobody's {\kt64\k0}ever {\kt64\k160}seen {\kt224\k39}anything
+Dialogue: 1,0:02:33.59,0:02:33.60,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}集会，没人见过任何东西
+Dialogue: 1,0:02:33.60,0:02:36.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}集会，没有人见过这样的事情。举个例子，我们在\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}like {\kt0\k0}it. {\kt0\k128}As {\kt128\k24}an {\kt152\k0}example, {\kt152\k0}we're {\kt152\k0}up {\kt152\k103}in
+Dialogue: 1,0:02:36.16,0:02:38.87,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}喜欢它。举个例子，我们在德克萨斯州。我们不是，我们在阿拉\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Texas. {\kt0\k72}We {\kt72\k0}weren't {\kt72\k0}We're {\kt72\k0}up {\kt72\k120}in {\kt192\k64}Alaska. {\kt256\k15}We
+Dialogue: 1,0:02:38.88,0:02:41.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}斯加。我们不是。我们每个地方的每个人都起来了\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}weren't. {\kt0\k0}We're {\kt0\k80}up {\kt80\k96}everybody {\kt176\k40}every {\kt216\k15}place
+Dialogue: 1,0:02:41.20,0:02:43.67,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}不是。我去过的每一个地方我们都为大家服务。我们起来了。先生。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}that {\kt0\k48}I've {\kt48\k0}gone {\kt48\k0}to. {\kt48\k0}We're {\kt48\k168}up. {\kt216\k31}Mr. >>
+Dialogue: 1,0:02:43.67,0:02:43.68,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我去过的地方。我们起来了。先生。
+Dialogue: 1,0:02:43.68,0:02:44.79,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我去过的地方。我们起来了。 >> 总统先生，您同意吗？\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}President, {\kt0\k0}have {\kt0\k48}you {\kt48\k0}agreed {\kt48\k0}to {\kt48\k63}a
+Dialogue: 1,0:02:44.80,0:02:47.35,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 总统先生，您是否同意与总统举行三边会议\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k56}trilateral {\kt56\k0}meeting {\kt56\k0}with {\kt56\k199}President
+Dialogue: 1,0:02:47.36,0:02:48.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}与总统谈论三边会议。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}talk {\kt24\k55}about. >>
+Dialogue: 1,0:02:48.16,0:02:50.71,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}谈论。>> 不，但我愿意我会这么做。并非如此\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}No, {\kt24\k0}but {\kt24\k40}I {\kt64\k32}would {\kt96\k24}I {\kt120\k0}would {\kt120\k0}do {\kt120\k0}it. {\kt120\k0}Not {\kt120\k135}so
+Dialogue: 1,0:02:50.72,0:02:53.35,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 不，但我愿意我会这么做。对于乌克兰来说则不然。我因为俄罗斯\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}much {\kt0\k0}for {\kt0\k0}Ukraine. {\kt0\k0}I {\kt0\k160}because {\kt160\k103}Russia
+Dialogue: 1,0:02:53.35,0:02:53.36,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}对于乌克兰来说意义重大。我因为俄罗斯
+Dialogue: 1,0:02:53.36,0:02:55.91,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}对于乌克兰来说意义重大。我因为坦率地说，俄罗斯对乌克兰一直很好。他们\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}frankly {\kt0\k0}has {\kt0\k128}been {\kt128\k0}fine {\kt128\k0}on {\kt128\k0}Ukraine. {\kt128\k127}They
+Dialogue: 1,0:02:55.92,0:02:57.91,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}坦率地说，乌克兰问题一直很好。他们并没有做太多事情。和一样的\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}haven't {\kt0\k0}been {\kt0\k0}doing {\kt0\k0}much. {\kt0\k0}And {\kt0\k184}the {\kt184\k15}same
+Dialogue: 1,0:02:57.92,0:03:00.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}没有做太多事情。中国也是如此。我们希望它\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}thing {\kt0\k40}with {\kt40\k0}China. {\kt40\k0}We {\kt40\k0}would {\kt40\k0}have {\kt40\k0}it {\kt40\k183}to
+Dialogue: 1,0:03:00.15,0:03:00.16,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}与中国的事。我们希望它
+Dialogue: 1,0:03:00.16,0:03:01.83,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}与中国的事。我们会用\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}talk {\kt0\k48}about {\kt48\k48}nuclear {\kt96\k0}weapons {\kt96\k71}and
+Dialogue: 1,0:03:01.84,0:03:03.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}它来谈论核武器和
+Dialogue: 1,0:03:03.43,0:03:03.44,English,,0,0,0,,{\an5\pos(959,952.5)}{\rEnglish\fs48}{\kt0\k1}denuclearization.
+Dialogue: 1,0:03:03.44,0:03:05.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}无核化。我可以随时开会\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}denuclearization. {\kt0\k16}And {\kt16\k48}anytime {\kt64\k24}I {\kt88\k16}can {\kt104\k16}have {\kt120\k16}a {\kt136\k24}meeting {\kt160\k23}on
+Dialogue: 1,0:03:05.28,0:03:06.87,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我可以随时召开无核化会议。
+Dialogue: 1,0:03:06.87,0:03:06.88,English,,0,0,0,,{\an5\pos(959,952.5)}{\rEnglish\fs48}{\kt0\k1}denuclearization.
+Dialogue: 1,0:03:06.88,0:03:09.51,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}无核化。因此，在我的任期内，我们做了更多\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}denuclearization. {\kt0\k16}So {\kt16\k24}we {\kt40\k16}have {\kt56\k64}more {\kt120\k40}during {\kt160\k16}my {\kt176\k40}term {\kt216\k16}I {\kt232\k16}did {\kt248\k15}it.
+Dialogue: 1,0:03:09.52,0:03:11.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}的事情。我们拥有的核武器比\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}We {\kt0\k0}have {\kt0\k72}more {\kt72\k48}nuclear {\kt120\k40}weapons {\kt160\k31}than
+Dialogue: 1,0:03:11.44,0:03:14.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我们拥有比任何人都多的核武器。俄罗斯位居第二。中国第三\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k48}anybody. {\kt48\k88}Russia {\kt136\k24}is {\kt160\k48}second. {\kt208\k48}China's {\kt256\k31}third
+Dialogue: 1,0:03:14.31,0:03:14.32,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}任何人。俄罗斯位居第二。中国第三
+Dialogue: 1,0:03:14.32,0:03:16.95,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}任何人。俄罗斯位居第二。中国排名第三，但正在追赶。中国远远落后\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}but {\kt24\k40}catching {\kt64\k72}up. {\kt136\k40}China {\kt176\k32}was {\kt208\k24}way {\kt232\k31}behind
+Dialogue: 1,0:03:16.96,0:03:18.63,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}但正在追赶。中国曾经远远落后，现在正在迎头赶上。这需要\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}and {\kt24\k16}now {\kt40\k0}they're {\kt40\k0}catching {\kt40\k88}up. {\kt128\k24}It'll {\kt152\k15}take
+Dialogue: 1,0:03:18.63,0:03:18.64,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}现在他们正在迎头赶上。这需要
+Dialogue: 1,0:03:18.64,0:03:21.83,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}现在他们正在迎头赶上。他们大概需要五年的时间。我们会\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}them {\kt24\k48}about {\kt72\k56}probably {\kt128\k24}five {\kt152\k0}years. {\kt152\k120}We {\kt272\k47}would
+Dialogue: 1,0:03:21.83,0:03:21.84,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他们大概有五年了。我们会
+Dialogue: 1,0:03:21.84,0:03:23.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他们大概有五年了。我们将根据以下情况安排会议\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k40}schedule {\kt40\k24}a {\kt64\k32}meeting {\kt96\k24}based {\kt120\k32}on {\kt152\k23}the
+Dialogue: 1,0:03:23.59,0:03:23.60,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}根据以下内容安排会议
+Dialogue: 1,0:03:23.60,0:03:25.11,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}根据无核化安排会议
+Dialogue: 1,0:03:25.11,0:03:25.12,English,,0,0,0,,{\an5\pos(959,952.5)}{\rEnglish\fs48}{\kt0\k1}denuclearization
+Dialogue: 1,0:03:25.12,0:03:27.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}无核化这对我们来说是一件非常积极的事情\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}denuclearization {\kt0\k24}and {\kt24\k24}that's {\kt48\k24}a {\kt72\k24}very {\kt96\k48}positive {\kt144\k24}thing {\kt168\k16}for {\kt184\k23}the
+Dialogue: 1,0:03:27.19,0:03:27.20,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这对于
+Dialogue: 1,0:03:27.20,0:03:30.07,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这对世界来说是一件非常积极的事情。所以，如果他们愿意的话我会这么做\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k128}world. {\kt128\k16}So, {\kt144\k16}I {\kt160\k16}would {\kt176\k16}do {\kt192\k16}it {\kt208\k16}if {\kt224\k32}if {\kt256\k16}they {\kt272\k15}want
+Dialogue: 1,0:03:30.07,0:03:30.08,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}世界。所以，如果他们愿意的话我会这么做
+Dialogue: 1,0:03:30.08,0:03:32.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}世界。所以，如果他们想要一个我刚刚听说过的，我就会这么做。如果\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}to {\kt16\k0}have {\kt16\k0}a {\kt16\k112}I {\kt128\k16}just {\kt144\k16}heard {\kt160\k0}about {\kt160\k0}it. {\kt160\k63}If
+Dialogue: 1,0:03:32.32,0:03:34.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我刚刚听说过。如果他们想拥有它，我想它会\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}they'd {\kt24\k0}like {\kt24\k0}to {\kt24\k0}have {\kt24\k112}it, {\kt136\k24}I {\kt160\k8}think {\kt168\k16}it {\kt184\k15}would
+Dialogue: 1,0:03:34.31,0:03:34.32,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他们想要拥有它，我想它会
+Dialogue: 1,0:03:34.32,0:03:37.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他们希望举办，我认为它将在中国举行。他刚刚离开\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k8}be {\kt8\k24}held {\kt32\k24}in {\kt56\k40}China. {\kt96\k0}He {\kt96\k32}just {\kt128\k32}left {\kt160\k80}here. {\kt240\k31}Uh
+Dialogue: 1,0:03:37.04,0:03:38.87,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这里。呃如果习主席想要的话我就\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}if {\kt32\k40}President {\kt72\k24}Xi {\kt96\k0}wants {\kt96\k0}to {\kt96\k0}have {\kt96\k64}it, {\kt160\k23}I'd
+Dialogue: 1,0:03:38.87,0:03:38.88,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}如果习主席想要的话，我会
+Dialogue: 1,0:03:38.88,0:03:40.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}如果习主席想要的话，我就会拥有。我确信我们正在谈论\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}have {\kt0\k40}it. {\kt40\k16}I'm {\kt56\k24}sure {\kt80\k24}we're {\kt104\k24}talking {\kt128\k15}about
+Dialogue: 1,0:03:40.31,0:03:40.32,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}拥有它。我确信我们正在谈论
+Dialogue: 1,0:03:40.32,0:03:43.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}拥有它。我确信我们也在谈论其他事情，比如贸易，但是嗯\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}other {\kt32\k0}things {\kt32\k64}like {\kt96\k24}trade, {\kt120\k32}too, {\kt152\k96}but {\kt248\k63}um
+Dialogue: 1,0:03:43.43,0:03:43.44,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}其他事情，比如贸易，也是如此，但是嗯
+Dialogue: 1,0:03:43.44,0:03:44.87,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}其他事情，比如贸易，也是，但是嗯，是的，我会这么做。你\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}yeah, {\kt0\k0}I {\kt0\k0}would {\kt0\k80}do {\kt80\k0}that. {\kt80\k48}Have {\kt128\k15}you
+Dialogue: 1,0:03:44.88,0:03:47.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}是的，我会那么做。你有没有调查过谁放慢了速度或\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k72}investigated {\kt72\k16}at {\kt88\k40}all {\kt128\k24}who {\kt152\k32}slowed {\kt184\k32}down {\kt216\k15}or
+Dialogue: 1,0:03:47.19,0:03:47.20,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}调查所有谁放慢速度或
+Dialogue: 1,0:03:47.20,0:03:49.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}调查了所有放慢速度或特别是中断的人\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}specifically {\kt0\k112}the {\kt112\k48}interruption {\kt160\k23}of
+Dialogue: 1,0:03:49.03,0:03:49.04,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}特别是中断
+Dialogue: 1,0:03:49.04,0:03:50.71,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}特别是斯塔林乌克兰的打断，他下令\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k56}Starling {\kt56\k0}Ukraine {\kt56\k64}who {\kt120\k0}ordered {\kt120\k47}that
+Dialogue: 1,0:03:50.72,0:03:51.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}订购该产品的乌克兰椋鸟是谁下令中断的？
+Dialogue: 1,0:03:51.19,0:03:51.20,English,,0,0,0,,{\an5\pos(959,952.5)}{\rEnglish\fs48}{\kt0\k1}interruption?
+Dialogue: 1,0:03:51.20,0:03:52.95,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}中断？>> 我不知道是谁，但\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}interruption? >> {\kt0\k16}I {\kt16\k8}don't {\kt24\k8}know {\kt32\k24}who {\kt56\k16}it {\kt72\k24}was, {\kt96\k24}but {\kt120\k16}I'd {\kt136\k16}like {\kt152\k23}to
+Dialogue: 1,0:03:52.96,0:03:53.62,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我想知道\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}find {\kt16\k50}out
+Dialogue: 1,0:03:56.48,0:03:58.79,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}麦克布伦指责伊朗战争而你\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k48}MacBron {\kt48\k16}is {\kt64\k32}blaming {\kt96\k16}the {\kt112\k40}Iran {\kt152\k32}war {\kt184\k24}and {\kt208\k23}you
+Dialogue: 1,0:03:58.80,0:04:00.87,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}麦克布伦将法国的骚乱归咎于伊朗战争和你\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k88}essentially {\kt88\k0}for {\kt88\k32}the {\kt120\k48}rioting {\kt168\k16}in {\kt184\k23}France
+Dialogue: 1,0:04:00.87,0:04:00.88,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}主要是为了法国的骚乱
+Dialogue: 1,0:04:00.88,0:04:01.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}主要是为了现在法国的骚乱。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}right {\kt16\k15}now. >>
+Dialogue: 1,0:04:01.20,0:04:04.23,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}现在。>> 我不认为我认为你和谁在一\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}I {\kt16\k8}don't {\kt24\k56}think {\kt80\k16}I {\kt96\k24}think {\kt120\k104}that {\kt224\k0}Who {\kt224\k40}you {\kt264\k39}with? >>
+Dialogue: 1,0:04:04.24,0:04:06.47,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}起？>> 不，先生。玛丽每日电讯报。>>\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}No, {\kt24\k24}sir. {\kt48\k72}Mary {\kt120\k32}Daily {\kt152\k71}Wire. >>
+Dialogue: 1,0:04:06.48,0:04:09.67,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}哦，《每日电讯报》很好。对不起。每日先生\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Oh, {\kt0\k48}Daily {\kt48\k40}Wire's {\kt88\k104}good. {\kt192\k24}Sorry. {\kt216\k72}Daily {\kt288\k31}Mr.
+Dialogue: 1,0:04:09.68,0:04:11.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 哦，《每日电讯报》很好。对不起。每日总统先生，您愿意与\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k56}President, {\kt56\k0}would {\kt56\k40}you {\kt96\k8}do {\kt104\k16}a {\kt120\k0}meeting {\kt120\k55}with
+Dialogue: 1,0:04:11.43,0:04:11.44,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}主席先生，您愿意与我们会面吗？
+Dialogue: 1,0:04:11.44,0:04:11.99,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}总统先生，您愿意与总统会面吗？
+Dialogue: 1,0:04:11.99,0:04:12.00,English,,0,0,0,,{\an5\pos(959,952.5)}{\rEnglish\fs48}{\kt0\k1}President
+Dialogue: 1,0:04:12.00,0:04:14.95,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}总统>>伊曼纽尔？他是我的朋友。我告诉\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}President >> {\kt0\k96}Emanuel? {\kt96\k16}He's {\kt112\k24}a {\kt136\k16}friend {\kt152\k8}of {\kt160\k88}mine. {\kt248\k32}I {\kt280\k15}told
+Dialogue: 1,0:04:14.95,0:04:14.96,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 伊曼纽尔？他是我的朋友。我告诉
+Dialogue: 1,0:04:14.96,0:04:16.95,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 伊曼纽尔？他是我的朋友。我很久以前就告诉过他，你赚大了\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}him {\kt0\k48}a {\kt48\k16}long {\kt64\k16}time {\kt80\k40}ago, {\kt120\k24}you're {\kt144\k16}making {\kt160\k16}a {\kt176\k23}big
+Dialogue: 1,0:04:16.95,0:04:16.96,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}很久以前，你就赚了大钱
+Dialogue: 1,0:04:16.96,0:04:19.11,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}很久以前，你在法国犯了一个大错误。你让\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}mistake {\kt32\k24}in {\kt56\k0}France. {\kt56\k120}You're {\kt176\k39}letting
+Dialogue: 1,0:04:19.12,0:04:21.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}法国的错误。你让来自世界各地的每个人都进来。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k40}everybody {\kt40\k24}from {\kt64\k16}the {\kt80\k24}world {\kt104\k0}come {\kt104\k88}in. {\kt192\k23}The
+Dialogue: 1,0:04:21.28,0:04:23.83,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}来自世界各地的每个人都进来了。全世界都进来了。你知道，\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}whole {\kt0\k56}world {\kt56\k24}was {\kt80\k0}coming {\kt80\k112}in. {\kt192\k32}And {\kt224\k16}you {\kt240\k15}know,
+Dialogue: 1,0:04:23.83,0:04:23.84,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}整个世界都进来了。你知道，
+Dialogue: 1,0:04:23.84,0:04:25.35,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}整个世界都在涌入。你知道，正如你所知，巴黎将成为一个\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}as {\kt0\k0}you {\kt0\k56}know, {\kt56\k40}Paris {\kt96\k16}is {\kt112\k8}going {\kt120\k8}to {\kt128\k0}be {\kt128\k23}a
+Dialogue: 1,0:04:25.35,0:04:25.36,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}如你所知，巴黎将成为
+Dialogue: 1,0:04:25.36,0:04:27.83,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}如您所知，巴黎很快就会成为穆斯林城市。那不是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k48}Muslim {\kt48\k32}city {\kt80\k32}very {\kt112\k0}soon. {\kt112\k80}And {\kt192\k24}that {\kt216\k31}wasn't
+Dialogue: 1,0:04:27.83,0:04:27.84,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}穆斯林城市很快就会出现。那不是
+Dialogue: 1,0:04:27.84,0:04:30.55,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}穆斯林城市很快就会出现。但事实并非如此。事情不是这样的。我告诉\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}the {\kt24\k0}deal. {\kt24\k0}That {\kt24\k0}wasn't {\kt24\k128}the {\kt152\k0}deal. {\kt152\k0}I {\kt152\k119}told
+Dialogue: 1,0:04:30.56,0:04:32.47,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这笔交易。事情不是这样的。我告诉伊曼纽尔，你应该关闭你的\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Emanuel, {\kt0\k88}you {\kt88\k24}should {\kt112\k32}close {\kt144\k24}up {\kt168\k23}your
+Dialogue: 1,0:04:32.48,0:04:34.55,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}伊曼纽尔，你应该关闭边界。让我\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}borders. {\kt0\k96}And {\kt96\k24}let's {\kt120\k24}see. {\kt144\k24}I've {\kt168\k0}known {\kt168\k39}him
+Dialogue: 1,0:04:34.56,0:04:37.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}们看看。我认识他大概有八九年了。我告诉\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}for {\kt24\k48}probably {\kt72\k16}eight {\kt88\k24}or {\kt112\k24}nine {\kt136\k0}years. {\kt136\k0}I {\kt136\k127}told
+Dialogue: 1,0:04:37.20,0:04:39.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}大概有八九年了。我一见到他就告诉他，我说，\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}him {\kt0\k0}as {\kt0\k56}soon {\kt56\k0}as {\kt56\k32}I {\kt88\k24}met {\kt112\k48}him, {\kt160\k16}I {\kt176\k7}said, "
+Dialogue: 1,0:04:39.03,0:04:39.04,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我一见到他，我就对他说：
+Dialogue: 1,0:04:39.04,0:04:41.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我一见到他，我就说：“你犯了一个大错误。我们关门了\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}You're {\kt0\k0}making {\kt0\k0}a {\kt0\k0}big {\kt0\k176}mistake. {\kt176\k32}We {\kt208\k31}closed
+Dialogue: 1,0:04:41.44,0:04:43.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}“你犯了一个大错误。我们关闭了边境。”他做到了。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}our {\kt0\k64}borders." {\kt64\k24}He {\kt88\k95}did. >>
+Dialogue: 1,0:04:43.28,0:04:45.11,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我们的边界。”他做到了。>> 你知道吗？他\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}And {\kt0\k0}you {\kt0\k32}know {\kt32\k32}what? {\kt64\k0}His {\kt64\k64}borders {\kt128\k0}are {\kt128\k55}a
+Dialogue: 1,0:04:45.12,0:04:47.11,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}的边界是一个问题。而且他还有一点点\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}problem. {\kt0\k0}And {\kt0\k96}he {\kt96\k24}also {\kt120\k0}has {\kt120\k40}a {\kt160\k8}little {\kt168\k0}bit {\kt168\k31}of
+Dialogue: 1,0:04:47.12,0:04:48.79,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}问题。他的精力也有点问题，但他们有\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}a {\kt0\k40}problem {\kt40\k24}with {\kt64\k48}energy, {\kt112\k24}but {\kt136\k16}they {\kt152\k15}have
+Dialogue: 1,0:04:48.79,0:04:48.80,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}能源问题，但他们有
+Dialogue: 1,0:04:48.80,0:04:50.39,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}能源有问题，但他们已经走了。你知道，他们做得更好\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}gone. {\kt0\k0}You {\kt0\k88}know, {\kt88\k24}they're {\kt112\k24}doing {\kt136\k23}better
+Dialogue: 1,0:04:50.40,0:04:52.79,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}走了。你知道，他们比其他人做得更好。但伊曼纽尔应该有\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}than {\kt32\k0}others. {\kt32\k0}But {\kt32\k0}Emanuel {\kt32\k0}should {\kt32\k207}have
+Dialogue: 1,0:04:52.79,0:04:52.80,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}比其他人。但伊曼纽尔应该有
+Dialogue: 1,0:04:52.80,0:04:54.71,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}比其他人。但伊曼纽尔早就应该关闭边境了。我\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}closed {\kt0\k0}his {\kt0\k0}borders {\kt0\k0}a {\kt0\k0}long {\kt0\k0}time {\kt0\k0}ago. {\kt0\k191}I
+Dialogue: 1,0:04:54.72,0:04:55.75,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}很久以前就关闭了边界。我告诉他这样做。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}told {\kt0\k0}him {\kt0\k56}to {\kt56\k47}do. >>
+Dialogue: 1,0:04:55.76,0:04:58.07,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}告诉他去做。>> 主席先生\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Mr. {\kt0\k231}President
+Dialogue: 1,0:04:58.08,0:05:00.07,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 总统先生挥手表示支持普京\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}says {\kt0\k64}you're {\kt64\k48}supporting {\kt112\k32}Putin {\kt144\k24}by {\kt168\k31}waving
+Dialogue: 1,0:05:00.07,0:05:00.08,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}说你挥手支持普京
+Dialogue: 1,0:05:00.08,0:05:02.55,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}说你通过挥舞这些制裁来支持普京。不 我是 我支持\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}these {\kt24\k64}sanctions. {\kt88\k32}No, {\kt120\k32}I'm {\kt152\k0}I'm {\kt152\k95}supporting
+Dialogue: 1,0:05:02.55,0:05:02.56,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这些制裁。不 我是 我支持
+Dialogue: 1,0:05:02.56,0:05:05.75,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这些制裁。不，我支持呃停止俄罗斯和俄罗斯之间的战争\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}uh {\kt24\k0}stopping {\kt24\k64}the {\kt88\k64}war {\kt152\k48}between {\kt200\k0}Russia {\kt200\k119}and
+Dialogue: 1,0:05:05.75,0:05:05.76,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}呃停止俄罗斯和之间的战争
+Dialogue: 1,0:05:05.76,0:05:06.39,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}呃停止俄罗斯和乌克兰之间的战争。
+Dialogue: 1,0:05:06.39,0:05:06.40,English,,0,0,0,,{\an5\pos(959,952.5)}{\rEnglish\fs48}{\kt0\k1}Ukraine.
+Dialogue: 1,0:05:06.40,0:05:07.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}乌克兰。>> 上帝如何\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Ukraine. >> {\kt0\k16}How {\kt16\k16}does {\kt32\k16}God {\kt48\k55}help? >>
+Dialogue: 1,0:05:07.44,0:05:09.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}帮助？>> 你知道吗？为什么？因为那是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}And {\kt16\k8}you {\kt24\k8}know {\kt32\k88}what? {\kt120\k32}Why? {\kt152\k24}Because {\kt176\k23}that's
+Dialogue: 1,0:05:09.44,0:05:12.63,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 你知道吗？为什么？因为这就是我的谋生之道。坦白说，呃\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}what {\kt16\k16}I {\kt32\k16}do {\kt48\k16}for {\kt64\k16}a {\kt80\k32}living. {\kt112\k56}And {\kt168\k88}frankly, {\kt256\k63}uh
+Dialogue: 1,0:05:12.63,0:05:12.64,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我以什么为生。坦白说，呃
+Dialogue: 1,0:05:12.64,0:05:14.95,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我以什么为生。坦率地说，呃齐林斯\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k64}Zilinski {\kt64\k24}is {\kt88\k16}not {\kt104\k40}helping {\kt144\k48}matters {\kt192\k0}much. {\kt192\k39}I
+Dialogue: 1,0:05:14.95,0:05:14.96,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}基
+Dialogue: 1,0:05:14.96,0:05:17.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}并没有多大帮助。我认为他不\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}think {\kt16\k16}he {\kt32\k24}doesn't {\kt56\k16}want {\kt72\k24}to {\kt96\k24}stop {\kt120\k56}it. {\kt176\k0}But {\kt176\k31}I
+Dialogue: 1,0:05:17.03,0:05:17.04,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}想
+Dialogue: 1,0:05:17.04,0:05:19.67,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}阻止它。但我希望看到人们不死。他们是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}want {\kt0\k24}to {\kt24\k56}see {\kt80\k0}people {\kt80\k72}not {\kt152\k80}die. {\kt232\k31}They're
+Dialogue: 1,0:05:19.67,0:05:19.68,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}想要看到人不死。他们是
+Dialogue: 1,0:05:19.68,0:05:24.07,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}想要看到人不死。他们平均损失了 25 到 35,000 人\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k80}losing {\kt80\k40}probably {\kt120\k24}on {\kt144\k56}average {\kt200\k0}25 {\kt200\k80}to {\kt280\k79}35,{\kt359\k80}000
+Dialogue: 1,0:05:24.07,0:05:24.08,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}平均损失可能为 25 至 35,000
+Dialogue: 1,0:05:24.08,0:05:26.71,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}每个月平均可能失去 25 至 35,000 名士兵。我想要的一切\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k64}soldiers {\kt64\k40}every {\kt104\k32}single {\kt136\k72}month. {\kt208\k0}All {\kt208\k0}I {\kt208\k55}want
+Dialogue: 1,0:05:26.71,0:05:26.72,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}每个月都有士兵。我想要的一切
+Dialogue: 1,0:05:26.72,0:05:29.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}每个月都有士兵。我想做的事，我不在乎。我想要得到\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}to {\kt0\k0}do, {\kt0\k96}I {\kt96\k16}don't {\kt112\k0}care. {\kt112\k0}I {\kt112\k0}want {\kt112\k88}to {\kt200\k16}get {\kt216\k15}the
+Dialogue: 1,0:05:29.03,0:05:29.04,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}做什么，我不在乎。我想要得到
+Dialogue: 1,0:05:29.04,0:05:31.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}做什么，我不在乎。我想让战争停止。我不想看到25\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}war {\kt32\k0}stopped. {\kt32\k0}I {\kt32\k0}don't {\kt32\k0}want {\kt32\k0}to {\kt32\k0}see {\kt32\k223}25
+Dialogue: 1,0:05:31.60,0:05:33.11,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}战争停止了。我
+Dialogue: 1,0:05:33.12,0:05:35.91,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}不想看到2535,000。上个月是 32,000。我不想要\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}35,{\kt0\k0}000. {\kt0\k0}Last {\kt0\k0}month {\kt0\k88}it {\kt88\k24}was {\kt112\k64}32,{\kt176\k0}000. {\kt176\k0}I {\kt176\k0}don't {\kt176\k103}want
+Dialogue: 1,0:05:35.92,0:05:39.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}上个月是 32,000。我不想看到32,000名士兵死亡。什么都没有\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}to {\kt0\k0}see {\kt0\k0}32,{\kt0\k0}000 {\kt0\k224}soldiers {\kt224\k64}dead. {\kt288\k32}Has {\kt320\k31}nothing
+Dialogue: 1,0:05:39.43,0:05:39.44,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}目睹 32,000 名士兵阵亡。什么都没有
+Dialogue: 1,0:05:39.44,0:05:41.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}目睹 32,000 名士兵阵亡。与这个国家没有任何关系。但你知道\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}to {\kt0\k32}do {\kt32\k24}with {\kt56\k24}this {\kt80\k0}country. {\kt80\k0}But {\kt80\k0}you {\kt80\k103}know
+Dialogue: 1,0:05:41.28,0:05:44.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}与这个国家有关。但你知道吗？我从人的角度。乌克兰\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}what? {\kt0\k64}I {\kt64\k0}from {\kt64\k40}a {\kt104\k40}human {\kt144\k0}standpoint. {\kt144\k159}Ukraine
+Dialogue: 1,0:05:44.32,0:05:47.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}什么？我从人的角度。乌克兰正在失去很多 乌克兰正在失去一切\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}is {\kt0\k0}losing {\kt0\k88}a {\kt88\k16}lot {\kt104\k0}of {\kt104\k88}Ukraine {\kt192\k24}is {\kt216\k0}losing {\kt216\k55}all
+Dialogue: 1,0:05:47.04,0:05:49.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}乌克兰正在失去很多人，正在失去所有的人。你知道，我正在看一个\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}of {\kt16\k24}its {\kt40\k0}men. {\kt40\k0}You {\kt40\k0}know, {\kt40\k128}I {\kt168\k16}was {\kt184\k0}watching {\kt184\k55}a
+Dialogue: 1,0:05:49.43,0:05:49.44,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}它的人。你知道，我正在看一个
+Dialogue: 1,0:05:49.44,0:05:51.99,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}它的人。你知道，那天晚上我在电视上看到一个女人\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}woman {\kt0\k48}on {\kt48\k0}television {\kt48\k80}the {\kt128\k16}other {\kt144\k0}night {\kt144\k111}and
+Dialogue: 1,0:05:51.99,0:05:52.00,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}那天晚上电视上的女人
+Dialogue: 1,0:05:52.00,0:05:54.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}那天晚上电视上的一个女人，她有点责怪。她说他是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}she {\kt24\k0}blames {\kt24\k56}a {\kt80\k48}little. {\kt128\k16}She {\kt144\k56}said {\kt200\k31}he's
+Dialogue: 1,0:05:54.32,0:05:56.79,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}她有点责怪。她说他正在杀死我们的人。而事实是，她\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}killing {\kt32\k0}our {\kt32\k0}men. {\kt32\k0}And {\kt32\k144}the {\kt176\k0}fact {\kt176\k0}is, {\kt176\k71}she
+Dialogue: 1,0:05:56.80,0:05:59.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}杀死我们的人。她说，事实是，这非常令人心酸。她\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}said, {\kt0\k0}and {\kt0\k0}it {\kt0\k80}was {\kt80\k24}very {\kt104\k0}poignant. {\kt104\k135}She
+Dialogue: 1,0:05:59.20,0:06:02.07,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}说道，而且非常的心酸。她说：“我们的人正在死去。我们的人已经\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}said, "{\kt0\k0}Our {\kt0\k96}men {\kt96\k32}are {\kt128\k88}dying. {\kt216\k24}Our {\kt240\k24}men {\kt264\k23}have
+Dialogue: 1,0:06:02.08,0:06:04.79,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}说：“我们的人快要死了。我们的人很多时候都没有腿了。你看看周围，\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}no {\kt24\k40}legs {\kt64\k24}in {\kt88\k24}many {\kt112\k0}cases. {\kt112\k72}You {\kt184\k16}look {\kt200\k71}around,
+Dialogue: 1,0:06:04.80,0:06:07.11,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}很多情况下没有腿。你环顾四周，他们没有腿。他们在心理上\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}they {\kt0\k0}have {\kt0\k0}no {\kt0\k0}legs. {\kt0\k0}They're {\kt0\k184}in {\kt184\k47}mental
+Dialogue: 1,0:06:07.12,0:06:09.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他们没有腿。他们在精神病院里。”她说的是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k112}institutions." {\kt112\k40}She's {\kt152\k24}talking {\kt176\k39}about
+Dialogue: 1,0:06:09.27,0:06:09.28,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}机构。”她说的是
+Dialogue: 1,0:06:09.28,0:06:11.67,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}机构。”她谈论的是乌克兰。而且她非常出名。而且\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Ukraine. {\kt0\k0}And {\kt0\k0}she's {\kt0\k168}very {\kt168\k24}well {\kt192\k0}known. {\kt192\k47}And
+Dialogue: 1,0:06:11.67,0:06:11.68,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}乌克兰。她非常出名。和
+Dialogue: 1,0:06:11.68,0:06:13.67,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}乌克兰。她非常出名。他们想把\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}they {\kt0\k0}want {\kt0\k40}to {\kt40\k8}put {\kt48\k0}her {\kt48\k40}in {\kt88\k0}prison. {\kt88\k0}I {\kt88\k111}want
+Dialogue: 1,0:06:13.67,0:06:13.68,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}她
+Dialogue: 1,0:06:13.68,0:06:16.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}关进监狱。我想看到战争停止。你输了\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}to {\kt0\k0}see {\kt0\k64}the {\kt64\k0}war {\kt64\k104}stop. {\kt168\k0}You're {\kt168\k79}losing
+Dialogue: 1,0:06:16.16,0:06:19.75,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}看到战争停止。你正在失去大量的人，其中大部分是年轻人\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k104}tremendous {\kt104\k0}numbers {\kt104\k120}of {\kt224\k72}mostly {\kt296\k63}young
+Dialogue: 1,0:06:19.75,0:06:19.76,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}数量巨大，其中大多数是年轻人
+Dialogue: 1,0:06:19.76,0:06:23.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}数量巨大，大多是年轻军人。这意味着 25,000\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}military {\kt0\k0}men. {\kt0\k152}And {\kt152\k16}that {\kt168\k0}means {\kt168\k0}25,{\kt168\k0}000 {\kt168\k183}to
+Dialogue: 1,0:06:23.28,0:06:26.87,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}军人。这意味着每月 25,000 到 35,000。我想要的只是俄罗斯\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}35,{\kt0\k0}000 {\kt0\k0}a {\kt0\k0}month. {\kt0\k0}All {\kt0\k0}I {\kt0\k0}want {\kt0\k256}is {\kt256\k24}for {\kt280\k79}Russia
+Dialogue: 1,0:06:26.87,0:06:26.88,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}每月35,000。我想要的只是俄罗斯
+Dialogue: 1,0:06:26.88,0:06:30.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}每月35,000。我只希望俄罗斯和乌克兰停止这场愚蠢的战争。先生。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}and {\kt0\k0}Ukraine {\kt0\k0}to {\kt0\k200}stop {\kt200\k40}that {\kt240\k0}stupid {\kt240\k80}war. {\kt320\k23}Mr. >>
+Dialogue: 1,0:06:30.32,0:06:31.99,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}和乌克兰停止这场愚蠢的战争。 >> 总统先生，您能见见总统吗\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k40}President, {\kt40\k0}would {\kt40\k40}you {\kt80\k24}meet {\kt104\k16}with {\kt120\k47}President
+Dialogue: 1,0:06:31.99,0:06:32.00,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 总统先生，您会见总统吗？
+Dialogue: 1,0:06:32.00,0:06:35.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 主席先生，您能否会见夏主席并讨论结束战争的问题\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Xia {\kt0\k0}and {\kt0\k200}and {\kt200\k0}discuss {\kt200\k64}the {\kt264\k0}end {\kt264\k0}of {\kt264\k0}the {\kt264\k55}war
+Dialogue: 1,0:06:35.20,0:06:36.71,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}夏和和讨论战争结束时约林斯基不在场吗？\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k48}without {\kt48\k64}Yolinski {\kt112\k39}there? >>
+Dialogue: 1,0:06:36.72,0:06:38.87,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}没有约林斯基吗？>> 好吧，我会为了任何事情而见面\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Well, {\kt0\k0}I {\kt0\k0}would {\kt0\k0}meet {\kt0\k112}in {\kt112\k40}order {\kt152\k0}anything {\kt152\k63}I
+Dialogue: 1,0:06:38.88,0:06:40.39,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 好吧，我会开会，以便尽我所能来结束战争，无论是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}can {\kt0\k0}do {\kt0\k0}to {\kt0\k0}end {\kt0\k0}the {\kt0\k112}war, {\kt112\k39}whether
+Dialogue: 1,0:06:40.39,0:06:40.40,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}可以做些什么来结束战争，无论是
+Dialogue: 1,0:06:40.40,0:06:42.63,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}无论有人是否在场，我们都可以采取行动来结束战争。尽我所能\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}somebody's {\kt0\k72}there {\kt72\k0}or {\kt72\k88}not. {\kt160\k0}Whatever {\kt160\k0}I {\kt160\k63}can
+Dialogue: 1,0:06:42.63,0:06:42.64,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}有人在或不在。尽我所能
+Dialogue: 1,0:06:42.64,0:06:45.35,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}有人在或不在。无论我能做什么来结束战争，他们确实想这么做\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}do {\kt0\k0}to {\kt0\k0}end {\kt0\k0}the {\kt0\k0}war {\kt0\k0}and {\kt0\k216}they {\kt216\k0}do {\kt216\k0}want {\kt216\k55}to
+Dialogue: 1,0:06:45.35,0:06:45.36,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}结束战争，他们确实想这样做
+Dialogue: 1,0:06:45.36,0:06:47.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}结束战争，他们确实想在我的建议下举行会议，因为\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}have {\kt0\k24}a {\kt24\k32}meeting {\kt56\k24}at {\kt80\k24}my {\kt104\k0}suggestion {\kt104\k87}because
+Dialogue: 1,0:06:47.27,0:06:47.28,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}按照我的建议开会，因为
+Dialogue: 1,0:06:47.28,0:06:49.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}在我的建议下开个会，因为我将于\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}I'm {\kt16\k0}going {\kt16\k24}to {\kt40\k8}be {\kt48\k0}over {\kt48\k48}in {\kt96\k0}China {\kt96\k103}in
+Dialogue: 1,0:06:49.27,0:06:49.28,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我将在中国结束
+Dialogue: 1,0:06:49.28,0:06:52.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我将于 11 月访问中国，讨论无核化问题。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}November {\kt0\k0}on {\kt0\k120}the {\kt120\k183}denuclearization.
+Dialogue: 1,0:06:52.32,0:06:54.79,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}11月关于无核化。如果我们能够实现\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}And {\kt32\k16}if {\kt48\k16}we {\kt64\k0}could {\kt64\k0}do {\kt64\k0}denuclearization, {\kt64\k183}I
+Dialogue: 1,0:06:54.80,0:06:57.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}无核化，我将为世界做出巨大贡献\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}will {\kt0\k32}have {\kt32\k0}done {\kt32\k88}the {\kt120\k0}world {\kt120\k64}a {\kt184\k32}big {\kt216\k31}big
+Dialogue: 1,0:06:57.27,0:06:57.28,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}将会给世界带来很大的改变
+Dialogue: 1,0:06:57.28,0:06:59.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}将会给世界带来很大的帮助。但你说错了一面\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}favor. {\kt0\k0}But {\kt0\k0}you {\kt0\k0}said {\kt0\k184}the {\kt184\k16}wrong {\kt200\k0}side {\kt200\k31}of
+Dialogue: 1,0:06:59.59,0:06:59.60,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}青睐。但你说错了一面
+Dialogue: 1,0:06:59.60,0:07:01.75,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}青睐。但你在这里说的是历史错误的一面。先生，你错了\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}history {\kt32\k24}here. {\kt56\k0}Sir, {\kt56\k0}you're {\kt56\k0}on {\kt56\k0}the {\kt56\k159}wrong
+Dialogue: 1,0:07:01.75,0:07:01.76,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这里的历史。先生，你错了
+Dialogue: 1,0:07:01.76,0:07:02.63,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这里的历史。先生，你站在了历史的错误一边。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}side {\kt0\k0}of {\kt0\k87}history. >>
+Dialogue: 1,0:07:02.64,0:07:03.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}历史的一面。>> 你\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}What' {\kt0\k32}you {\kt32\k31}say? >>
+Dialogue: 1,0:07:03.28,0:07:04.87,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}说什么？>> 西林斯基说你站在错误的一边\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k48}Silinski {\kt48\k0}says {\kt48\k0}you're {\kt48\k0}on {\kt48\k0}the {\kt48\k0}wrong {\kt48\k111}side
+Dialogue: 1,0:07:04.88,0:07:06.87,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 西林斯基说你在这件事上站在了历史错误的一边。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}of {\kt0\k0}history {\kt0\k0}on {\kt0\k104}this {\kt104\k95}one. >>
+Dialogue: 1,0:07:06.88,0:07:07.75,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}关于这一点的历史。>>西林斯基说\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Silinski {\kt0\k87}said >>
+Dialogue: 1,0:07:07.76,0:07:08.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 西林斯
+Dialogue: 1,0:07:08.31,0:07:08.32,English,,0,0,0,,{\an5\pos(959,952.5)}{\rEnglish\fs48}{\kt0\k1}yes.
+Dialogue: 1,0:07:08.32,0:07:10.07,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}基说>> 是的。>> 西林斯基不知道\N{\fs10}\h\N{\rEnglish\fs48}>> {\kt0\k0}yes. >> {\kt0\k64}Silinski {\kt64\k24}doesn't {\kt88\k16}know {\kt104\k16}what {\kt120\k24}he's {\kt144\k31}talking
+Dialogue: 1,0:07:10.08,0:07:12.71,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}自己在说什么西林斯基是一个应该\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}about. {\kt0\k128}Silinski {\kt128\k8}is {\kt136\k16}a {\kt152\k24}man {\kt176\k72}that {\kt248\k15}should
+Dialogue: 1,0:07:12.71,0:07:12.72,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}关于。西林斯基是一个应该
+Dialogue: 1,0:07:12.72,0:07:14.55,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}关于。西林斯基是一个早就应该解决这场战争的人\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}have {\kt16\k16}had {\kt32\k16}this {\kt48\k32}war {\kt80\k0}settled {\kt80\k64}a {\kt144\k16}long {\kt160\k23}time
+Dialogue: 1,0:07:14.55,0:07:14.56,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这场战争已经平息很久了
+Dialogue: 1,0:07:14.56,0:07:16.63,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这场战争很久以前就已经结束了。如果他愿意听我的话，他\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k72}ago. {\kt72\k24}If {\kt96\k16}he {\kt112\k0}would {\kt112\k24}have {\kt136\k24}listened {\kt160\k8}to {\kt168\k24}me, {\kt192\k15}he
+Dialogue: 1,0:07:16.63,0:07:16.64,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}前。如果他愿意听我的话，他
+Dialogue: 1,0:07:16.64,0:07:18.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}前。如果他听我的话，他会达成更好的协议\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}would {\kt0\k24}have {\kt24\k0}made {\kt24\k40}a {\kt64\k24}much {\kt88\k24}better {\kt112\k24}deal {\kt136\k31}a
+Dialogue: 1,0:07:18.31,0:07:18.32,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}会达成更好的交易
+Dialogue: 1,0:07:18.32,0:07:20.23,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}很久以前就会做一笔更好的交易，他会有一百万\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}long {\kt0\k0}time {\kt0\k88}ago {\kt88\k24}and {\kt112\k0}he'd {\kt112\k0}have {\kt112\k48}a {\kt160\k31}million
+Dialogue: 1,0:07:20.23,0:07:20.24,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}很久以前，他就有了一百万
+Dialogue: 1,0:07:20.24,0:07:22.47,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}很久以前，他身边就有一百万人生活。先生。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}people {\kt32\k32}living {\kt64\k32}from {\kt96\k24}his {\kt120\k64}side. {\kt184\k39}Mr.
+Dialogue: 1,0:07:22.47,0:07:22.48,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}住在他身边的人。先生。
+Dialogue: 1,0:07:22.48,0:07:23.67,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}住在他身边的人。主席先生，
+Dialogue: 1,0:07:23.67,0:07:23.68,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}总统，\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k1}President,
+Dialogue: 1,0:07:23.68,0:07:25.51,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}主席先生，>> 说实话，我不认为\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}President, >> {\kt0\k16}and {\kt16\k16}to {\kt32\k8}be {\kt40\k40}honest, {\kt80\k24}I {\kt104\k16}don't {\kt120\k24}think {\kt144\k24}I {\kt168\k15}think
+Dialogue: 1,0:07:25.52,0:07:28.07,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 说实话，我认为现在还不是其他人进行谈判的时候\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}it's {\kt32\k16}time {\kt48\k32}for {\kt80\k32}somebody {\kt112\k0}else {\kt112\k48}to {\kt160\k95}negotiate
+Dialogue: 1,0:07:28.07,0:07:28.08,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}是时候让别人去谈判了
+Dialogue: 1,0:07:28.08,0:07:30.39,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}现在是其他人代表乌克兰进行谈判的时候了，因为什么\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}on {\kt24\k32}behalf {\kt56\k24}of {\kt80\k80}Ukraine {\kt160\k40}because {\kt200\k31}what's
+Dialogue: 1,0:07:30.39,0:07:30.40,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}代表乌克兰，因为什么
+Dialogue: 1,0:07:30.40,0:07:33.99,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}代表乌克兰，因为所发生的事情，土地很少，但是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k88}happened, {\kt88\k32}very {\kt120\k32}little {\kt152\k32}land {\kt184\k88}is, {\kt272\k56}but {\kt328\k31}a
+Dialogue: 1,0:07:33.99,0:07:34.00,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}发生了，土地很少，但是
+Dialogue: 1,0:07:34.00,0:07:36.07,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}发生了，土地很少，但有一百万人，数量巨大\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k40}million {\kt40\k0}people, {\kt40\k64}a {\kt104\k64}tremendous {\kt168\k0}number {\kt168\k39}of
+Dialogue: 1,0:07:36.08,0:07:38.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}数百万人，大量人员死亡。他们正在失去他们的\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}people {\kt32\k24}are {\kt56\k64}dead. {\kt120\k24}They're {\kt144\k40}losing {\kt184\k23}their
+Dialogue: 1,0:07:38.15,0:07:38.16,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}人们死了。他们正在失去他们的
+Dialogue: 1,0:07:38.16,0:07:40.71,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}人们死了。他们正在失去男性人口。乌克兰本来可以有\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k48}male {\kt48\k0}population. {\kt48\k160}Ukraine {\kt208\k16}could {\kt224\k16}have {\kt240\k15}had
+Dialogue: 1,0:07:40.72,0:07:42.79,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}男性人口。如果乌克兰早就可以解决这件事了\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}this {\kt16\k24}thing {\kt40\k0}settled {\kt40\k56}a {\kt96\k0}long {\kt96\k40}time {\kt136\k48}ago {\kt184\k23}if
+Dialogue: 1,0:07:42.80,0:07:44.71,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这件事早就解决了如果你愿意听我的话，这件事很久以前就解决了。你呢\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}you {\kt16\k0}would {\kt16\k32}have {\kt48\k0}listened {\kt48\k40}to {\kt88\k64}me. {\kt152\k16}And {\kt168\k23}you
+Dialogue: 1,0:07:44.71,0:07:44.72,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}你会听我的。你呢
+Dialogue: 1,0:07:44.72,0:07:46.63,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}你会听我的。你还记得椭圆形办公室吗，他会\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}remember {\kt32\k16}the {\kt48\k40}Oval {\kt88\k64}Office, {\kt152\k0}he {\kt152\k0}would {\kt152\k39}have
+Dialogue: 1,0:07:46.63,0:07:46.64,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}记得椭圆形办公室，他会
+Dialogue: 1,0:07:46.64,0:07:49.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}记得椭圆形办公室，他早就解决了这个问题。或许\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}had {\kt0\k0}this {\kt0\k0}settled {\kt0\k0}a {\kt0\k0}long {\kt0\k0}time {\kt0\k232}ago. {\kt232\k31}Maybe
+Dialogue: 1,0:07:49.27,0:07:49.28,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这件事早就解决了。或许
+Dialogue: 1,0:07:49.28,0:07:51.35,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这件事早就解决了。也许齐林斯基是时候找人了\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}it's {\kt0\k0}time {\kt0\k80}for {\kt80\k0}Zilinski {\kt80\k72}to {\kt152\k24}get {\kt176\k31}somebody
+Dialogue: 1,0:07:51.35,0:07:51.36,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}是时候让齐林斯基找人了
+Dialogue: 1,0:07:51.36,0:07:53.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}现在是齐林斯基找其他人进行谈判的时候了。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}else {\kt0\k0}to {\kt0\k183}negotiate. >>
+Dialogue: 1,0:07:53.20,0:07:56.95,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}否则再协商。>> 这是坏兆头吗？\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k8}Is {\kt8\k0}it {\kt8\k24}a {\kt32\k32}bad {\kt64\k0}sign {\kt64\k0}for {\kt64\k168}a {\kt232\k143}bad >>
+Dialogue: 1,0:07:56.96,0:07:58.63,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 这对坏人来说是坏兆头 >> 对共和党人来说这是坏兆头吗\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Is {\kt0\k0}it {\kt0\k0}a {\kt0\k0}bad {\kt0\k0}sign {\kt0\k96}for {\kt96\k48}Republicans {\kt144\k23}that
+Dialogue: 1,0:07:58.63,0:07:58.64,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 对于共和党人来说这是一个坏兆头吗
+Dialogue: 1,0:07:58.64,0:08:00.71,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 您今天必须在堪萨斯州竞选对共和党人来说是一个坏兆头吗？\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}you {\kt0\k0}have {\kt0\k32}to {\kt32\k16}go {\kt48\k40}campaign {\kt88\k24}in {\kt112\k40}Kansas {\kt152\k55}today? >>
+Dialogue: 1,0:08:00.72,0:08:02.47,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}你今天要去堪萨斯州竞选吗？>> 不，我告诉你，我有一个男人叫\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}No. {\kt0\k48}I {\kt48\k0}tell {\kt48\k0}you, {\kt48\k0}I {\kt48\k0}have {\kt48\k80}a {\kt128\k16}man {\kt144\k31}named
+Dialogue: 1,0:08:02.48,0:08:05.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 不，我告诉你，我有一个叫罗杰的人，你很了解他。罗杰你很了\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Roger, {\kt0\k0}and {\kt0\k152}you {\kt152\k16}know {\kt168\k0}him {\kt168\k40}very {\kt208\k24}well. {\kt232\k47}Roger
+Dialogue: 1,0:08:05.28,0:08:08.23,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}解他。罗杰你很了解他。罗杰·马歇尔.他是一位出色的参议员。他是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k104}Marshall. {\kt104\k0}He's {\kt104\k48}a {\kt152\k72}fantastic {\kt224\k48}senator. {\kt272\k23}He's
+Dialogue: 1,0:08:08.24,0:08:11.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs56.8}马歇尔。他是一位出色的参议员。他是最好的之一。这是一场势均力敌的比赛。它\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}one {\kt0\k0}of {\kt0\k40}the {\kt40\k0}best. {\kt40\k0}It's {\kt40\k152}a {\kt192\k32}close {\kt224\k0}race. {\kt224\k55}It
+Dialogue: 1,0:08:11.04,0:08:12.71,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}最好的之一。这是一场势均力敌的比赛。不应该的。如你所知，我赢了\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}shouldn't {\kt0\k48}be. {\kt48\k0}As {\kt48\k0}you {\kt48\k0}know, {\kt48\k64}I {\kt112\k16}won {\kt128\k0}by {\kt128\k39}a
+Dialogue: 1,0:08:12.72,0:08:15.67,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}不应该。如你所知，我赢了很多，比如 25、30 分。我\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k40}tremendous {\kt40\k40}amount, {\kt80\k32}like {\kt112\k56}25, {\kt168\k32}30 {\kt200\k0}points. {\kt200\k95}I
+Dialogue: 1,0:08:15.68,0:08:18.63,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}数额巨大，比如25、30分。我赢了很多。堪萨斯\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}won {\kt0\k0}by {\kt0\k56}a {\kt56\k0}lot. {\kt56\k0}Kansas, {\kt56\k176}and {\kt232\k32}they {\kt264\k0}should {\kt264\k31}be
+Dialogue: 1,0:08:18.64,0:08:21.51,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}州，他们应该会赢很多。所以，呃，我去了\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}winning {\kt0\k0}by {\kt0\k0}a {\kt0\k80}lot. {\kt80\k72}So, {\kt152\k0}uh, {\kt152\k40}I {\kt192\k0}went {\kt192\k95}to >>
+Dialogue: 1,0:08:21.51,0:08:21.52,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}赢了很多。所以，呃，我去了
+Dialogue: 1,0:08:21.52,0:08:23.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}赢了很多。所以，呃，我首先去了>>。你想听他的吗？\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}first. {\kt0\k88}You {\kt88\k0}want {\kt88\k16}to {\kt104\k0}listen {\kt104\k0}to {\kt104\k63}him? >>
+Dialogue: 1,0:08:23.20,0:08:23.83,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 首先。你\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}Yes, {\kt24\k39}sir. >>
+Dialogue: 1,0:08:23.84,0:08:27.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}想听他的吗？>> 是的，先生。>> 我去了阿拉斯加，丹·\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}I {\kt0\k0}went {\kt0\k56}to {\kt56\k0}Alaska {\kt56\k136}and {\kt192\k40}Dan {\kt232\k0}Sullivan {\kt232\k72}is {\kt304\k71}up.
+Dialogue: 1,0:08:27.60,0:08:32.63,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}沙利文起来了。我去了俄亥俄州，约翰起来了。我去了德克\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}I {\kt0\k0}went {\kt0\k120}to {\kt120\k136}Ohio, {\kt256\k0}John {\kt256\k0}is {\kt256\k0}up. {\kt256\k200}I {\kt456\k0}went {\kt456\k47}to
+Dialogue: 1,0:08:32.64,0:08:36.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}萨斯州，肯·帕克斯顿到目前为止还在。而我\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Texas {\kt0\k96}and {\kt96\k32}Ken {\kt128\k0}Paxton {\kt128\k0}is {\kt128\k0}up {\kt128\k160}so {\kt288\k48}far. {\kt336\k0}And {\kt336\k31}I
+Dialogue: 1,0:08:36.31,0:08:36.32,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}德克萨斯州和肯帕克斯顿到目前为止。而我
+Dialogue: 1,0:08:36.32,0:08:38.58,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}德克萨斯州和肯帕克斯顿到目前为止。我还去了很多其他地方，无论什么地方。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}went {\kt0\k32}to {\kt32\k24}many {\kt56\k24}other {\kt80\k96}places, {\kt176\k50}wherever.
+Dialogue: 1,0:08:41.36,0:08:44.63,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}无论我走到哪里，他们似乎都起来了，而我\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k40}Wherever {\kt40\k32}I {\kt72\k96}go, {\kt168\k24}they {\kt192\k24}seem {\kt216\k16}to {\kt232\k8}be {\kt240\k48}up {\kt288\k24}and {\kt312\k15}I
+Dialogue: 1,0:08:44.64,0:08:46.63,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}无论我走到哪里，他们似乎都在奋起，我举办了有史以来最大规模的集会\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}have {\kt16\k16}the {\kt32\k32}biggest {\kt64\k48}rallies {\kt112\k64}anybody's {\kt176\k23}ever
+Dialogue: 1,0:08:46.63,0:08:46.64,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}举行有史以来规模最大的集会
+Dialogue: 1,0:08:46.64,0:08:49.83,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}举行有史以来最盛大的集会。呃，他们挤满了房子。我们有\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k96}seen. {\kt96\k72}Uh {\kt168\k32}they're {\kt200\k40}packed {\kt240\k48}houses. {\kt288\k0}We {\kt288\k31}have
+Dialogue: 1,0:08:49.83,0:08:49.84,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}看到了。呃，他们挤满了房子。我们有
+Dialogue: 1,0:08:49.84,0:08:52.55,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}看到了。呃，他们挤满了房子。今天我们有成千上万的人\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}thousands {\kt0\k80}and {\kt80\k56}thousands {\kt136\k16}of {\kt152\k32}people {\kt184\k87}today
+Dialogue: 1,0:08:52.55,0:08:52.56,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}今天有成千上万的人
+Dialogue: 1,0:08:52.56,0:08:54.39,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}今天，屋外有成千上万的人。他们正在播出\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}and {\kt24\k0}beyond {\kt24\k48}the {\kt72\k0}house. {\kt72\k56}They're {\kt128\k55}broadcast
+Dialogue: 1,0:08:54.39,0:08:54.40,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}以及房子之外。他们正在播出
+Dialogue: 1,0:08:54.40,0:08:57.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}以及房子之外。他们到处转播。我的集会正在进行\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}all {\kt16\k0}over. {\kt16\k128}And {\kt144\k0}my {\kt144\k72}rallies {\kt216\k24}are {\kt240\k16}having {\kt256\k31}a
+Dialogue: 1,0:08:57.27,0:08:57.28,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}遍。我的集会正在进行
+Dialogue: 1,0:08:57.28,0:08:59.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}遍。我的集会正在产生巨大的影响和积极的影响\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}huge {\kt24\k0}impact {\kt24\k0}and {\kt24\k88}a {\kt112\k48}positive {\kt160\k32}impact {\kt192\k0}on {\kt192\k39}the
+Dialogue: 1,0:08:59.59,0:08:59.60,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}产生了巨大的影响和积极的影响
+Dialogue: 1,0:08:59.60,0:09:02.23,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}对共和党产生巨大的影响和积极的影响。我要去堪萨斯\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k56}Republican {\kt56\k80}party. {\kt136\k32}I'm {\kt168\k0}going {\kt168\k40}to {\kt208\k55}Kansas
+Dialogue: 1,0:09:02.24,0:09:05.67,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}共和党。我要去堪萨斯州，因为我非常想去那里。和\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}because {\kt0\k64}I {\kt64\k16}want {\kt80\k24}it {\kt104\k0}by {\kt104\k40}a {\kt144\k0}lot. {\kt144\k0}and {\kt144\k199}the
+Dialogue: 1,0:09:05.68,0:09:07.75,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}因为我非常想要它。和伟大的参议员，他是一位伟大的参议员。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k40}great {\kt40\k0}senator {\kt40\k56}and {\kt96\k0}he's {\kt96\k40}a {\kt136\k24}great {\kt160\k47}senator.
+Dialogue: 1,0:09:07.76,0:09:09.83,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}伟大的参议员，他就是一位伟大的参议员。罗杰·马歇尔，他是最好的之一\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k48}Roger {\kt48\k0}Marshall, {\kt48\k104}he's {\kt152\k0}one {\kt152\k0}of {\kt152\k40}the {\kt192\k15}best
+Dialogue: 1,0:09:09.84,0:09:14.23,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}罗杰·马歇尔，他是最好的参议员之一。他是，嗯，我想他是绑着的或者\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}senators. {\kt0\k200}He's {\kt200\k0}um {\kt200\k136}I {\kt336\k0}think {\kt336\k40}he's {\kt376\k40}tied {\kt416\k23}or
+Dialogue: 1,0:09:14.23,0:09:14.24,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}参议员。他是，嗯，我想他是绑着的或者
+Dialogue: 1,0:09:14.24,0:09:15.99,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}参议员。根据民意调查，我认为他是平手或领先一点。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}up {\kt0\k0}by {\kt0\k56}a {\kt56\k8}little {\kt64\k32}bit {\kt96\k0}according {\kt96\k48}to {\kt144\k31}polls.
+Dialogue: 1,0:09:16.00,0:09:17.99,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}根据民意调查，略有上升。你看，民意调查都\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Look, {\kt0\k0}the {\kt0\k0}polls {\kt0\k80}are {\kt80\k64}fake. {\kt144\k24}But {\kt168\k31}according
+Dialogue: 1,0:09:18.00,0:09:20.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}是假的。但根据民意调查，所以我想确定罗杰\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}to {\kt0\k72}polls, {\kt72\k0}so {\kt72\k0}I {\kt72\k56}want {\kt128\k8}to {\kt136\k16}make {\kt152\k0}sure {\kt152\k63}Roger
+Dialogue: 1,0:09:20.16,0:09:22.71,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}去民意调查，所以我想确保罗杰·马歇尔得到它。罗杰·马歇尔是一个\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k40}Marshall {\kt40\k0}gets {\kt40\k0}it. {\kt40\k0}Roger {\kt40\k168}Marshall {\kt208\k0}is {\kt208\k47}a
+Dialogue: 1,0:09:22.71,0:09:22.72,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}马歇尔明白了。罗杰·马歇尔是一个
+Dialogue: 1,0:09:22.72,0:09:25.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}马歇尔明白了。罗杰·马歇尔是一位伟大的人，也是一位伟大的参议员。所以\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}great {\kt32\k0}man {\kt32\k0}and {\kt32\k0}he's {\kt32\k0}a {\kt32\k0}great {\kt32\k0}senator. {\kt32\k239}So
+Dialogue: 1,0:09:25.43,0:09:25.44,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}伟大的人，他是一位伟大的参议员。所以
+Dialogue: 1,0:09:25.44,0:09:26.87,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}伟大的人，他是一位伟大的参议员。这就是我要去的原因。我认为那是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}that's {\kt24\k0}why {\kt24\k0}I'm {\kt24\k0}going. {\kt24\k0}I {\kt24\k96}think {\kt120\k23}that's
+Dialogue: 1,0:09:26.88,0:09:27.11,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这就是我要去的原因。我认为那很好。
+Dialogue: 1,0:09:27.11,0:09:27.12,English,,0,0,0,,{\an5\pos(959,952.5)}{\rEnglish\fs48}{\kt0\k1}fine.
+Dialogue: 1,0:09:27.12,0:09:29.51,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}美好的。>> 你认为为什么会这样\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}fine. >> {\kt0\k8}Why {\kt8\k8}do {\kt16\k8}you {\kt24\k8}think {\kt32\k8}it's {\kt40\k199}so
+Dialogue: 1,0:09:29.52,0:09:32.23,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 你为什么觉得它这么好？
+Dialogue: 1,0:09:32.23,0:09:32.24,English,,0,0,0,,{\an5\pos(959,952.5)}{\rEnglish\fs48}{\kt0\k1}good?
+Dialogue: 1,0:09:32.24,0:09:33.30,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}好的？>> 是的，我们分享。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}good? >> {\kt0\k24}Yeah, {\kt24\k32}we {\kt56\k50}share.
+Dialogue: 1,0:09:36.96,0:09:38.55,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我们非常感激。我们付出了很多\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k8}We {\kt8\k40}appreciate {\kt48\k16}a {\kt64\k24}lot. {\kt88\k24}We've {\kt112\k24}given {\kt136\k16}a {\kt152\k7}lot
+Dialogue: 1,0:09:38.56,0:09:39.75,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我们非常感激。我们为乌克兰付出了很多。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}to {\kt24\k95}Ukraine. >>
+Dialogue: 1,0:09:39.76,0:09:41.35,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}到乌克兰。>> 你知道吗？我们付出了很多\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}You {\kt16\k8}know {\kt24\k0}what? {\kt24\k0}We've {\kt24\k0}given {\kt24\k0}a {\kt24\k0}lot {\kt24\k135}to
+Dialogue: 1,0:09:41.36,0:09:44.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 你知道吗？我们为乌克兰付出了很多。他们没有给我们任何东西。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k96}Ukraine. {\kt96\k0}They've {\kt96\k64}given {\kt160\k0}nothing {\kt160\k56}to {\kt216\k79}us.
+Dialogue: 1,0:09:44.32,0:09:47.11,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}乌克兰。他们没有给我们任何东西。请记住这一点。我们已经给了数百个\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}Remember {\kt32\k0}that. {\kt32\k0}We've {\kt32\k176}given {\kt208\k48}hundreds {\kt256\k23}of
+Dialogue: 1,0:09:47.12,0:09:50.39,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}请记住这一点。我们已经捐赠了数千亿美元。我给了标枪队\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}billions {\kt0\k72}of {\kt72\k104}dollars. {\kt176\k32}I {\kt208\k32}gave {\kt240\k32}the {\kt272\k55}Javelins
+Dialogue: 1,0:09:50.39,0:09:50.40,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}数十亿美元。我给了标枪队
+Dialogue: 1,0:09:50.40,0:09:52.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}数十亿美元。当他被淘汰时，我把标枪队给了乌克兰。那是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}to {\kt0\k56}Ukraine {\kt56\k24}when {\kt80\k16}he {\kt96\k24}knocked {\kt120\k0}out. {\kt120\k40}That {\kt160\k15}was
+Dialogue: 1,0:09:52.16,0:09:55.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}当他击倒乌克兰时。那是我。奥巴马给了他枕头。你知道这\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k88}me. {\kt88\k0}Obama {\kt88\k80}gave {\kt168\k16}him {\kt184\k0}pillows. {\kt184\k0}You {\kt184\k0}know {\kt184\k143}the
+Dialogue: 1,0:09:55.44,0:09:57.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}个表达方式，奥巴马给了他床单，然后\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}expression, {\kt0\k0}Obama {\kt0\k0}gave {\kt0\k152}him {\kt152\k40}sheets {\kt192\k23}and
+Dialogue: 1,0:09:57.59,0:09:57.60,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}表达，奥巴马给了他床单和
+Dialogue: 1,0:09:57.60,0:10:00.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}表情，奥巴马给了他床单和枕头。特朗普给了他注射\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k88}pillows. {\kt88\k0}Trump {\kt88\k0}gave {\kt88\k0}him {\kt88\k96}the {\kt184\k56}jab. {\kt240\k15}So
+Dialogue: 1,0:10:00.16,0:10:02.47,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}疫苗。所以别告诉我乌克兰的事。我们已经给了\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}don't {\kt24\k0}tell {\kt24\k32}me {\kt56\k0}about {\kt56\k0}Ukraine. {\kt56\k0}We've {\kt56\k175}given
+Dialogue: 1,0:10:02.48,0:10:04.79,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}别告诉我乌克兰的事。我们为乌克兰付出了很多。他们给了我们\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}a {\kt0\k0}lot {\kt0\k0}to {\kt0\k0}Ukraine. {\kt0\k0}They've {\kt0\k0}given {\kt0\k231}us
+Dialogue: 1,0:10:04.79,0:10:04.80,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}很多去乌克兰。他们给了我们
+Dialogue: 1,0:10:04.80,0:10:05.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}很多去乌克兰。他们什么也没给我们。
+Dialogue: 1,0:10:05.43,0:10:05.44,English,,0,0,0,,{\an5\pos(959,952.5)}{\rEnglish\fs48}{\kt0\k1}nothing.
+Dialogue: 1,0:10:05.44,0:10:07.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}没有什么。>> 共和党人说你会\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}nothing. >> {\kt0\k56}Republicans {\kt56\k104}are {\kt160\k16}saying {\kt176\k24}you're {\kt200\k8}going {\kt208\k7}to
+Dialogue: 1,0:10:07.60,0:10:09.91,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 共和党人说你要把钱投给特朗普先生。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}put {\kt16\k24}money {\kt40\k16}in {\kt56\k175}Mr. >>
+Dialogue: 1,0:10:09.91,0:10:09.92,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}给先生存钱
+Dialogue: 1,0:10:09.92,0:10:12.63,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}向先生投入资金 >> 俄罗斯本可以提供更多帮\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k40}Russia {\kt40\k16}could {\kt56\k24}have {\kt80\k32}done {\kt112\k24}way {\kt136\k0}more {\kt136\k88}to {\kt224\k47}help.
+Dialogue: 1,0:10:12.64,0:10:14.63,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}助。你说俄罗斯本可以做得更多\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}You {\kt24\k0}said {\kt24\k0}Russia {\kt24\k0}could {\kt24\k0}have {\kt24\k0}done {\kt24\k0}way {\kt24\k175}more
+Dialogue: 1,0:10:14.64,0:10:17.83,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}你说如果伊朗愿意的话，俄罗斯可以采取更多措施来帮助伊朗。俄罗斯\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}to {\kt0\k56}help {\kt56\k32}Iran {\kt88\k16}if {\kt104\k24}they {\kt128\k0}wanted. {\kt128\k191}Russia >>
+Dialogue: 1,0:10:17.84,0:10:19.91,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}如果他们愿意的话可以帮助伊朗。俄罗斯>> 俄罗斯本可\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Russia {\kt0\k0}could {\kt0\k0}have {\kt0\k80}done {\kt80\k24}a {\kt104\k0}lot {\kt104\k103}more.
+Dialogue: 1,0:10:19.92,0:10:21.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}以做得更多。这是正确的。俄罗斯本来可以做\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}That's {\kt24\k0}right. {\kt24\k0}Russia {\kt24\k0}could {\kt24\k0}have {\kt24\k0}done {\kt24\k143}a
+Dialogue: 1,0:10:21.60,0:10:24.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这是正确的。如果你能说的话，俄罗斯本可以提供更多帮助\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}lot {\kt0\k0}more {\kt0\k0}to {\kt0\k0}help {\kt0\k0}if {\kt0\k0}you {\kt0\k0}could {\kt0\k256}put {\kt256\k15}it
+Dialogue: 1,0:10:24.31,0:10:24.32,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}如果你可以的话，还有很多帮助
+Dialogue: 1,0:10:24.32,0:10:26.39,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}如果你能直言不讳的话，还有更多帮助。俄罗斯本可以做很多事情\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}bluntly. {\kt0\k0}Russia {\kt0\k0}could {\kt0\k0}have {\kt0\k0}done {\kt0\k0}a {\kt0\k207}lot
+Dialogue: 1,0:10:26.39,0:10:26.40,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}直白地说。俄罗斯本可以做很多事情
+Dialogue: 1,0:10:26.40,0:10:28.39,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}直白地说。俄罗斯本可以采取更多措施来帮助伊朗。俄罗斯做得非常\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}more {\kt0\k0}to {\kt0\k0}help {\kt0\k112}Iran. {\kt112\k0}Russia's {\kt112\k64}done {\kt176\k23}very
+Dialogue: 1,0:10:28.39,0:10:28.40,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}更多地帮助伊朗。俄罗斯做得非常
+Dialogue: 1,0:10:28.40,0:10:31.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}更多地帮助伊朗。俄罗斯为伊朗做的事情很少。中国本来可以做一个\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}little {\kt16\k0}for {\kt16\k120}Iran. {\kt136\k0}China {\kt136\k0}could {\kt136\k0}have {\kt136\k0}done {\kt136\k143}a
+Dialogue: 1,0:10:31.19,0:10:31.20,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}对于伊朗来说，影响不大。中国本来可以做一个
+Dialogue: 1,0:10:31.20,0:10:33.11,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs52.4}对于伊朗来说，影响不大。中国本可以为他做更多的事情。他们已经完成了，我也完成了\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}lot {\kt0\k0}more {\kt0\k56}for {\kt56\k48}him. {\kt104\k0}They've {\kt104\k48}done {\kt152\k24}and {\kt176\k15}I
+Dialogue: 1,0:10:33.11,0:10:33.12,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}对他来说还有更多。他们已经完成了，我也完成了
+Dialogue: 1,0:10:33.12,0:10:35.91,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}对他来说还有更多。他们已经做到了，我记得当中国没有这样做时\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}remember {\kt32\k40}that {\kt72\k0}when {\kt72\k72}China {\kt144\k72}does {\kt216\k32}not {\kt248\k31}that
+Dialogue: 1,0:10:35.91,0:10:35.92,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}请记住，当中国不这样做时
+Dialogue: 1,0:10:35.92,0:10:39.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}请记住，当中国没有那么多，也许几乎没有，但非常\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k88}much, {\kt88\k0}maybe {\kt88\k88}nothing {\kt176\k96}almost, {\kt272\k0}but {\kt272\k55}very
+Dialogue: 1,0:10:39.19,0:10:39.20,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}很多，也许几乎没有，但是非常
+Dialogue: 1,0:10:39.20,0:10:41.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}很多，也许几乎什么都没有，但对伊朗和俄罗斯来说几乎没有什么作用\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}little {\kt0\k0}for {\kt0\k0}Iran {\kt0\k0}and {\kt0\k0}Russia {\kt0\k0}does {\kt0\k207}very
+Dialogue: 1,0:10:41.27,0:10:41.28,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}对伊朗和俄罗斯来说影响不大
+Dialogue: 1,0:10:41.28,0:10:44.71,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}对伊朗没有什么帮助，俄罗斯对伊朗也没有什么帮助，我认为这是一个\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}little {\kt0\k0}for {\kt0\k0}Iran, {\kt0\k184}I {\kt184\k0}view {\kt184\k72}that {\kt256\k32}as {\kt288\k0}being {\kt288\k55}a
+Dialogue: 1,0:10:44.71,0:10:44.72,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}对伊朗来说影响不大，我认为这是一个
+Dialogue: 1,0:10:44.72,0:10:47.91,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}对伊朗来说影响不大，我认为这是非常积极的\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}very {\kt32\k287}positive
+Dialogue: 1,0:10:47.91,0:10:47.92,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}非常积极
+Dialogue: 1,0:10:47.92,0:10:52.07,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}每天都很积极。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k415}daily.
+Dialogue: 1,0:10:52.08,0:10:52.71,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}准确吗？>> 我\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}Is {\kt16\k16}that {\kt32\k31}accurate? >>
+Dialogue: 1,0:10:52.72,0:10:54.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}感觉很好。我感觉很好。我\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}I {\kt16\k16}feel {\kt32\k24}good. {\kt56\k24}I {\kt80\k16}feel {\kt96\k24}good. {\kt120\k16}I {\kt136\k8}mean, {\kt144\k15}I
+Dialogue: 1,0:10:54.32,0:10:56.87,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}的意思是，我认为这是一个假民意调查。呃，\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}think {\kt0\k64}I {\kt64\k8}think {\kt72\k16}it's {\kt88\k8}a {\kt96\k24}fake {\kt120\k104}poll. {\kt224\k31}Uh,
+Dialogue: 1,0:10:56.88,0:10:59.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}看，我进行了一项民意调查，结果我落后了\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}look, {\kt0\k64}I {\kt64\k24}had {\kt88\k0}one {\kt88\k64}poll {\kt152\k0}where {\kt152\k48}I {\kt200\k16}was {\kt216\k24}down {\kt240\k31}by
+Dialogue: 1,0:10:59.60,0:11:02.79,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}听着，我进行了一项民意调查，结果我落后了3 位，而我赢了 20 位\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k64}three {\kt64\k0}and {\kt64\k48}I {\kt112\k0}won {\kt112\k48}by {\kt160\k159}20
+Dialogue: 1,0:11:02.79,0:11:02.80,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}三，我赢了 20
+Dialogue: 1,0:11:02.80,0:11:04.63,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}3，我以 20 的优势获胜，民意调查者有\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}and {\kt16\k24}the {\kt40\k0}person {\kt40\k0}that {\kt40\k72}was {\kt112\k8}the {\kt120\k48}pollster {\kt168\k15}had
+Dialogue: 1,0:11:04.64,0:11:08.23,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}而负责民意调查的人也不得不耻辱地辞职。所以，呃，你知道，\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}to {\kt24\k24}quit {\kt48\k24}in {\kt72\k120}disgrace. {\kt192\k0}So, {\kt192\k128}uh, {\kt320\k24}you {\kt344\k15}know,
+Dialogue: 1,0:11:08.24,0:11:10.63,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}耻辱地退出。所以，呃，你知道，其中之一。我不依赖民意\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}one {\kt16\k16}of {\kt32\k16}those {\kt48\k0}things. {\kt48\k112}I {\kt160\k16}don't {\kt176\k24}rely {\kt200\k0}on {\kt200\k39}the
+Dialogue: 1,0:11:10.64,0:11:12.71,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}调查，但民意调查还是有一定意义的。但一个\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}polls, {\kt24\k24}but {\kt48\k0}polls {\kt48\k64}mean {\kt112\k48}something. {\kt160\k0}But {\kt160\k47}a
+Dialogue: 1,0:11:12.72,0:11:14.71,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}民意调查，但民意调查还是有一定意义的。但\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}lot {\kt0\k0}of {\kt0\k0}the {\kt0\k64}polls {\kt64\k16}are {\kt80\k72}rigged, {\kt152\k32}just {\kt184\k15}like
+Dialogue: 1,0:11:14.72,0:11:17.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}很多民意调查都被操纵了，就像记者被操纵一样。我可以说出\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}the {\kt32\k0}journalists {\kt32\k0}are {\kt32\k0}rigged. {\kt32\k168}I {\kt200\k24}could {\kt224\k63}name
+Dialogue: 1,0:11:17.60,0:11:19.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}记者被操纵了。我可以说出我正在这里寻找的其中六个的名字。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}six {\kt0\k48}of {\kt48\k0}them {\kt48\k32}that {\kt80\k16}I'm {\kt96\k32}looking {\kt128\k16}right {\kt144\k23}here.
+Dialogue: 1,0:11:19.28,0:11:21.11,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我正在这里寻找其中的六个。你们是被操纵的记者。很多的\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}You're {\kt0\k56}rigged {\kt56\k0}journalists. {\kt56\k0}A {\kt56\k0}lot {\kt56\k0}of {\kt56\k127}the
+Dialogue: 1,0:11:21.12,0:11:22.95,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}你们是被操纵的记者。很多民意调查都被操纵了。不是你们所有人，但是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}polls {\kt0\k0}are {\kt0\k80}rigged. {\kt80\k16}Not {\kt96\k0}all {\kt96\k0}of {\kt96\k0}you, {\kt96\k87}but
+Dialogue: 1,0:11:22.95,0:11:22.96,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}民意调查被操纵。不是你们所有人，但是
+Dialogue: 1,0:11:22.96,0:11:25.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}民意调查被操纵。不是所有人，但我也能说出一些好的人的名字。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}there's {\kt24\k0}some {\kt24\k32}good {\kt56\k0}ones {\kt56\k40}I {\kt96\k0}can {\kt96\k40}name {\kt136\k95}also.
+Dialogue: 1,0:11:25.28,0:11:27.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我也可以说出一些好的。但很多民意\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}But {\kt0\k0}a {\kt0\k0}lot {\kt0\k0}of {\kt0\k0}the {\kt0\k0}polls {\kt0\k0}are {\kt0\k168}rigged. {\kt168\k24}A {\kt192\k7}lot
+Dialogue: 1,0:11:27.28,0:11:29.83,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}调查都被操纵了。很多呃民意调查者，看看什么\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}of {\kt0\k0}the {\kt0\k72}uh {\kt72\k0}pollsters, {\kt72\k144}look {\kt216\k16}at {\kt232\k23}what
+Dialogue: 1,0:11:29.84,0:11:32.71,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}呃民意调查者，看看爱荷华州发生的事情，一位民意调查者说\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}happened {\kt0\k56}in {\kt56\k0}Iowa {\kt56\k0}where {\kt56\k0}a {\kt56\k216}pollster {\kt272\k15}said
+Dialogue: 1,0:11:32.71,0:11:32.72,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}发生在爱荷华州，一位民意测验专家说
+Dialogue: 1,0:11:32.72,0:11:34.87,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}发生在爱荷华州，民意调查专家说我将失去爱荷华州，他们\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}that {\kt0\k0}I {\kt0\k56}was {\kt56\k0}going {\kt56\k16}to {\kt72\k0}lose {\kt72\k0}Iowa {\kt72\k120}and {\kt192\k23}they
+Dialogue: 1,0:11:34.87,0:11:34.88,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我将失去爱荷华州，而他们
+Dialogue: 1,0:11:34.88,0:11:38.87,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我将输掉爱荷华州，但他们最终以近 20 分的优势获胜。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}ended {\kt24\k16}up {\kt40\k0}winning {\kt40\k48}by {\kt88\k0}almost {\kt88\k72}20 {\kt160\k239}points. >>
+Dialogue: 1,0:11:38.88,0:11:41.51,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}最终以近20分的优势获胜。>> 你知道吗？她 顺便说一句，她\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}You {\kt0\k0}know {\kt0\k64}what? {\kt64\k0}She {\kt64\k0}And {\kt64\k0}by {\kt64\k80}the {\kt144\k88}way, {\kt232\k31}she
+Dialogue: 1,0:11:41.52,0:11:43.51,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 你知道吗？顺便说一句，她知道自己在做什么。那是一个\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}knew {\kt0\k0}what {\kt0\k0}she {\kt0\k72}was {\kt72\k0}doing. {\kt72\k0}That {\kt72\k0}was {\kt72\k127}a
+Dialogue: 1,0:11:43.51,0:11:43.52,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}知道她在做什么。那是一个
+Dialogue: 1,0:11:43.52,0:11:47.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}知道她在做什么。这是一笔不正当的交易\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}crooked {\kt0\k0}that {\kt0\k0}was {\kt0\k144}a {\kt144\k40}crooked {\kt184\k183}deal >>
+Dialogue: 1,0:11:47.19,0:11:47.20,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}不正当 那是一笔不正当的交易
+Dialogue: 1,0:11:47.20,0:11:49.75,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}不诚实，这是一笔不诚实的交易>>因为直到那时，多年来她一直\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}because {\kt0\k40}up {\kt40\k32}until {\kt72\k104}then {\kt176\k24}for {\kt200\k0}years, {\kt200\k0}she {\kt200\k55}was
+Dialogue: 1,0:11:49.75,0:11:49.76,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 因为直到那时，多年来她一直
+Dialogue: 1,0:11:49.76,0:11:51.35,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 因为多年来，她总是正确地称呼我。我正要去\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k40}always {\kt40\k32}calling {\kt72\k16}me {\kt88\k0}correctly. {\kt88\k0}I {\kt88\k0}was {\kt88\k71}going
+Dialogue: 1,0:11:51.36,0:11:54.39,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}总是正确地称呼我。我本来会赢很多。我取得了一场伟大的胜利\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}to {\kt16\k0}win {\kt16\k0}by {\kt16\k0}a {\kt16\k0}lot. {\kt16\k0}I {\kt16\k0}had {\kt16\k184}a {\kt200\k48}great {\kt248\k0}win {\kt248\k55}in
+Dialogue: 1,0:11:54.39,0:11:54.40,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}赢得很多。我取得了一场伟大的胜利
+Dialogue: 1,0:11:54.40,0:11:56.79,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}赢得很多。我在爱荷华州取得了一场伟大的胜利，她说我会输掉\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Iowa {\kt0\k0}and {\kt0\k0}she {\kt0\k0}said {\kt0\k0}I {\kt0\k0}was {\kt0\k0}going {\kt0\k0}to {\kt0\k0}lose {\kt0\k239}by
+Dialogue: 1,0:11:56.79,0:11:56.80,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}爱荷华州，她说我会输
+Dialogue: 1,0:11:56.80,0:11:59.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}爱荷华州和她说我会以四分之差输掉比赛，而我却以近 20 分的优势获胜。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}four {\kt0\k0}and {\kt0\k0}I {\kt0\k0}won {\kt0\k0}by {\kt0\k0}almost {\kt0\k0}20. {\kt0\k0}That {\kt0\k0}was {\kt0\k279}a
+Dialogue: 1,0:11:59.59,0:11:59.60,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}4 分，我以近 20 分获胜。那是
+Dialogue: 1,0:11:59.60,0:12:00.42,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}4 分，我以将近 20 分获胜。这是一笔不正当的交易​​。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}crooked {\kt0\k82}deal.
+Dialogue: 1,0:12:04.08,0:12:06.39,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 关于法国的法国进程\N{\fs10}\h\N{\rEnglish\fs48}>> {\kt0\k24}On {\kt24\k16}the {\kt40\k32}French {\kt72\k96}proess {\kt168\k16}on {\kt184\k16}the {\kt200\k31}French
+Dialogue: 1,0:12:06.40,0:12:08.23,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 关于法国流程 关于法国流程，您有什么想对您说的吗\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k48}process, {\kt48\k24}what's {\kt72\k16}your {\kt88\k32}message {\kt120\k24}to {\kt144\k0}you {\kt144\k39}the
+Dialogue: 1,0:12:08.23,0:12:08.24,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}流程，您想向您传达什么信息
+Dialogue: 1,0:12:08.24,0:12:09.67,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}在这个过程中，您想对法国的年轻人说些什么？\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}young {\kt24\k24}people {\kt48\k32}in {\kt80\k32}France {\kt112\k16}who {\kt128\k15}are
+Dialogue: 1,0:12:09.67,0:12:09.68,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}法国的年轻人是
+Dialogue: 1,0:12:09.68,0:12:11.91,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}法国年轻人抗议儿童？\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k56}protesting {\kt56\k167}kids? >>
+Dialogue: 1,0:12:11.92,0:12:13.83,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}抗议的孩子？>> 好吧，法国是一个很悲伤的国家\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Well, {\kt0\k0}the {\kt0\k88}France {\kt88\k8}is {\kt96\k24}a {\kt120\k24}very {\kt144\k47}sad
+Dialogue: 1,0:12:13.84,0:12:16.39,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 法国的情况非常悲惨。法国发生了什么事？\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}situation. {\kt0\k96}What's {\kt96\k0}happening {\kt96\k0}in {\kt96\k159}France?
+Dialogue: 1,0:12:16.40,0:12:18.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}情况。法国发生了什么事？因为法国正在发生的事情\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Because {\kt0\k0}what's {\kt0\k0}happening {\kt0\k0}in {\kt0\k152}France {\kt152\k23}has
+Dialogue: 1,0:12:18.16,0:12:21.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}因为法国发生的事情与移民有关，与学校\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}to {\kt16\k8}do {\kt24\k56}with {\kt80\k128}immigration, {\kt208\k32}not {\kt240\k64}schools, {\kt304\k39}not
+Dialogue: 1,0:12:21.60,0:12:24.95,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}无关，与任何事情无关。这是移民。我告诉\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k88}anything. {\kt88\k0}It's {\kt88\k96}immigration. {\kt184\k24}And {\kt208\k24}I {\kt232\k103}told
+Dialogue: 1,0:12:24.96,0:12:27.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}任何事物。这是移民。我告诉马克龙总统：“关闭你的\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k56}President {\kt56\k56}Mcronone, "{\kt112\k56}Close {\kt168\k0}up {\kt168\k39}your
+Dialogue: 1,0:12:27.03,0:12:27.04,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}马克龙总统，“关闭你的
+Dialogue: 1,0:12:27.04,0:12:28.87,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}马克龙总统：“关闭你们的边界。”我第一次告诉他\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}borders." {\kt0\k0}I {\kt0\k80}told {\kt80\k0}him {\kt80\k48}the {\kt128\k16}first {\kt144\k16}time {\kt160\k23}I
+Dialogue: 1,0:12:28.88,0:12:31.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}边界。”我第一次见到他时就告诉了他，那是几年前我第一次见到他。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}met {\kt0\k72}him, {\kt72\k32}which {\kt104\k24}was {\kt128\k32}years {\kt160\k0}ago {\kt160\k56}in {\kt216\k0}my {\kt216\k39}first
+Dialogue: 1,0:12:31.43,0:12:31.44,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}遇见他，那是几年前我第一次见到他
+Dialogue: 1,0:12:31.44,0:12:33.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}几年前我在第一个任期内遇见了他，“关闭你的边界。你\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}term, "{\kt0\k0}Close {\kt0\k0}up {\kt0\k0}your {\kt0\k200}borders. {\kt200\k15}You're
+Dialogue: 1,0:12:33.59,0:12:33.60,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}术语，“关闭你的边界。你是
+Dialogue: 1,0:12:33.60,0:12:35.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}“关闭你的边界。你只会遇到麻烦。”和\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}going {\kt0\k16}to {\kt16\k16}have {\kt32\k24}nothing {\kt56\k24}but {\kt80\k0}trouble." {\kt80\k79}And
+Dialogue: 1,0:12:35.19,0:12:35.20,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}除了麻烦之外什么也没有。”并且
+Dialogue: 1,0:12:35.20,0:12:37.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}除了麻烦之外什么也没有。”他们遇到了很多麻烦。他们让\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}they've {\kt32\k0}got {\kt32\k32}a {\kt64\k8}lot {\kt72\k0}of {\kt72\k112}trouble. {\kt184\k24}They {\kt208\k31}let
+Dialogue: 1,0:12:37.59,0:12:37.60,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他们有很多麻烦。他们让
+Dialogue: 1,0:12:37.60,0:12:39.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他们有很多麻烦。他们允许那些不允许的人进入他们的国家\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}people {\kt24\k40}into {\kt64\k24}their {\kt88\k32}country {\kt120\k24}that {\kt144\k23}don't
+Dialogue: 1,0:12:39.27,0:12:39.28,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}人们进入他们的国家却没有
+Dialogue: 1,0:12:39.28,0:12:40.71,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}不爱自己国家的人进入自己的国家。他们不爱\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}love {\kt0\k0}their {\kt0\k0}country. {\kt0\k0}They {\kt0\k128}don't {\kt128\k15}love
+Dialogue: 1,0:12:40.71,0:12:40.72,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}热爱他们的国家。他们不爱
+Dialogue: 1,0:12:40.72,0:12:42.63,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}热爱他们的国家。他们不喜欢他们的建筑。他们不爱自己的\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}their {\kt24\k0}buildings. {\kt24\k0}They {\kt24\k0}don't {\kt24\k144}love {\kt168\k23}their
+Dialogue: 1,0:12:42.63,0:12:42.64,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他们的建筑物。他们不爱自己的
+Dialogue: 1,0:12:42.64,0:12:45.35,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他们的建筑物。他们不热爱他们的艺术。我说，第一次见面\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}art. {\kt0\k0}And {\kt0\k120}I {\kt120\k0}said, {\kt120\k0}the {\kt120\k0}first {\kt120\k0}time {\kt120\k0}I {\kt120\k151}met
+Dialogue: 1,0:12:45.36,0:12:47.99,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}艺术。我说，我第一次见到马克龙时，我说，“你必须闭嘴\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Mcronone, {\kt0\k0}I {\kt0\k0}said, "{\kt0\k0}You {\kt0\k0}got {\kt0\k0}to {\kt0\k0}close {\kt0\k263}up
+Dialogue: 1,0:12:47.99,0:12:48.00,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}马克龙，我说，“你必须闭嘴
+Dialogue: 1,0:12:48.00,0:12:50.47,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}马克龙，我说，“你必须关闭你的边界。你会毁了\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}your {\kt0\k0}your {\kt0\k0}borders. {\kt0\k0}You're {\kt0\k0}going {\kt0\k216}to {\kt216\k31}ruin
+Dialogue: 1,0:12:50.47,0:12:50.48,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}你的边界。你会毁掉的
+Dialogue: 1,0:12:50.48,0:12:52.23,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}你的边界。你会毁了你的国家。”他们也毁了他们的国家\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}your {\kt0\k0}country." {\kt0\k0}And {\kt0\k120}they've {\kt120\k0}ruined {\kt120\k55}their
+Dialogue: 1,0:12:52.24,0:12:54.79,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}你的国家。”他们毁了他们的国家。要得到它会很难\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}country. {\kt0\k0}It's {\kt0\k0}going {\kt0\k184}to {\kt184\k8}be {\kt192\k16}hard {\kt208\k16}to {\kt224\k16}get {\kt240\k15}it
+Dialogue: 1,0:12:54.79,0:12:54.80,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}国家。将会很难得到它
+Dialogue: 1,0:12:54.80,0:12:56.47,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}国家。想要拿回来会很困\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}back, {\kt0\k56}but {\kt56\k0}hopefully {\kt56\k72}France {\kt128\k24}will {\kt152\k15}come
+Dialogue: 1,0:12:56.48,0:12:59.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}难，但希望法国能回来了，但希望法国能回来\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k311}back.
+Dialogue: 1,0:12:59.60,0:13:01.91,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 你了解 Alina 的真相了吗？\N{\fs10}\h\N{\rEnglish\fs48}>> {\kt0\k16}Have {\kt16\k16}you {\kt32\k16}gotten {\kt48\k24}to {\kt72\k16}the {\kt88\k32}bottom {\kt120\k24}of {\kt144\k87}Alina's
+Dialogue: 1,0:13:01.92,0:13:03.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 你查清了阿丽娜对里克·伦内尔的指控的真相了吗？\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k40}claims {\kt40\k24}against {\kt64\k32}Rick {\kt96\k71}Rennell? >>
+Dialogue: 1,0:13:03.60,0:13:04.07,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}针对里克·伦内\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}Say {\kt16\k31}it. >>
+Dialogue: 1,0:13:04.08,0:13:05.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}尔的索赔？>> 说吧。>> 你到阿丽娜的底部了吗\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Have {\kt0\k24}you {\kt24\k0}gone {\kt24\k0}to {\kt24\k0}the {\kt24\k0}bottom {\kt24\k72}of {\kt96\k39}Alina
+Dialogue: 1,0:13:05.44,0:13:06.95,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 你查清了阿丽娜·霍比特人对瑞克·雷尔的指控了吗？\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Hobbit's {\kt0\k0}claims {\kt0\k0}against {\kt0\k112}Rick {\kt112\k39}Rel? >>
+Dialogue: 1,0:13:06.96,0:13:08.39,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}霍比特人对瑞克·雷尔的指控？>>\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}No, {\kt16\k16}I {\kt32\k8}don't {\kt40\k8}know {\kt48\k16}what {\kt64\k24}she's {\kt88\k40}claiming. {\kt128\k15}I
+Dialogue: 1,0:13:08.40,0:13:09.67,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}不，我不知道她在说什么。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}know {\kt16\k24}they're {\kt40\k8}having {\kt48\k24}a {\kt72\k8}little {\kt80\k0}bit {\kt80\k32}of {\kt112\k15}a
+Dialogue: 1,0:13:09.68,0:13:11.75,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我知道他们有一点不和。不管是那种方式，\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k64}feud. {\kt64\k48}Whatever {\kt112\k8}is {\kt120\k24}that {\kt144\k63}way, >>
+Dialogue: 1,0:13:11.75,0:13:11.76,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}世仇。不管是那种方式，
+Dialogue: 1,0:13:11.76,0:13:13.75,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}世仇。不管怎样，>>总统先生，共和党人很担心\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}Mr. {\kt24\k96}President {\kt120\k40}Republicans {\kt160\k16}are {\kt176\k23}worried
+Dialogue: 1,0:13:13.75,0:13:13.76,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 总统先生 共和党人很担心
+Dialogue: 1,0:13:13.76,0:13:23.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 总统先生 共和党人担心\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k951}that
+Dialogue: 1,0:13:23.28,0:13:24.26,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}你 300 美元\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k48}you ${\kt48\k50}300
+Dialogue: 1,0:13:28.64,0:13:32.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}总统先生 总统先生\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}Mr. {\kt32\k96}President {\kt128\k32}Mr. {\kt160\k207}President
+Dialogue: 1,0:13:32.32,0:13:39.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}600。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k671}600.
+Dialogue: 1,0:13:39.04,0:13:42.07,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}你有什么想法？嗯，我告诉过\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}What {\kt24\k16}are {\kt40\k24}your {\kt64\k136}thoughts? {\kt200\k32}Well, {\kt232\k24}I {\kt256\k47}told
+Dialogue: 1,0:13:42.08,0:13:44.39,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}你有什么想法？好吧，我告诉了许多领导人，你们的移民\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}many {\kt32\k16}of {\kt48\k24}those {\kt72\k0}leaders, {\kt72\k96}your {\kt168\k63}immigration
+Dialogue: 1,0:13:44.39,0:13:44.40,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}许多领导人，你的移民
+Dialogue: 1,0:13:44.40,0:13:46.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}对于这些领导人中的许多人来说，您的移民将会给您带来巨大的影响\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}is {\kt24\k8}going {\kt32\k16}to {\kt48\k32}cause {\kt80\k24}you {\kt104\k24}a {\kt128\k47}tremendous
+Dialogue: 1,0:13:46.15,0:13:46.16,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}将会给你带来巨大的
+Dialogue: 1,0:13:46.16,0:13:48.55,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}会给你在欧洲、法国带来巨大的问题\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}amount {\kt0\k48}of {\kt48\k64}problems {\kt112\k32}in {\kt144\k32}Europe, {\kt176\k24}in {\kt200\k39}France
+Dialogue: 1,0:13:48.55,0:13:48.56,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}欧洲和法国存在大量问题
+Dialogue: 1,0:13:48.56,0:13:50.87,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}欧洲、法国和欧洲都存在大量问题。我是对的。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}and {\kt0\k0}in {\kt0\k120}Europe. {\kt120\k16}And {\kt136\k24}I've {\kt160\k16}been {\kt176\k55}right.
+Dialogue: 1,0:13:50.88,0:13:53.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}在欧洲。我是对的。这就是移民问题。这些都是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}That's {\kt24\k0}an {\kt24\k88}immigration {\kt112\k80}problem. {\kt192\k0}These {\kt192\k47}are
+Dialogue: 1,0:13:53.28,0:13:55.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这就是移民问题。这些人来到这里并树立了榜样\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}people {\kt24\k24}that {\kt48\k0}come {\kt48\k32}and {\kt80\k0}have {\kt80\k40}an {\kt120\k0}example {\kt120\k55}in
+Dialogue: 1,0:13:55.03,0:13:55.04,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}前来并有榜样的人
+Dialogue: 1,0:13:55.04,0:13:57.11,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}来到法国的人们有一个例子，那里的情况非常糟糕。他们不\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k40}France {\kt40\k16}where {\kt56\k16}it's {\kt72\k16}so {\kt88\k72}bad. {\kt160\k32}They {\kt192\k15}don't
+Dialogue: 1,0:13:57.12,0:13:59.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}法国，那里的情况太糟糕了。他们不爱国家。他们不爱自己的\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}love {\kt16\k24}the {\kt40\k0}country. {\kt40\k0}They {\kt40\k112}don't {\kt152\k16}love {\kt168\k23}their
+Dialogue: 1,0:13:59.03,0:13:59.04,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}热爱国家。他们不爱自己的
+Dialogue: 1,0:13:59.04,0:14:00.63,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}热爱国家。他们不热爱他们的艺术。他们\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}art. {\kt0\k0}They {\kt0\k0}don't {\kt0\k0}love {\kt0\k120}their {\kt120\k39}buildings.
+Dialogue: 1,0:14:00.63,0:14:00.64,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}不
+Dialogue: 1,0:14:00.64,0:14:02.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}喜欢他们的建筑。他们不爱他们的人民。和\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}They {\kt0\k0}don't {\kt0\k0}love {\kt0\k0}their {\kt0\k0}people. {\kt0\k167}And
+Dialogue: 1,0:14:02.32,0:14:03.91,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他们不爱他们的人民。他们自己也引发了骚乱。这\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}they've {\kt24\k24}got {\kt48\k0}themselves {\kt48\k64}a {\kt112\k32}riot. {\kt144\k15}This
+Dialogue: 1,0:14:03.92,0:14:06.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他们自己惹上了骚乱。这与学校\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}isn't {\kt32\k40}about {\kt72\k0}schools. {\kt72\k0}This {\kt72\k120}is {\kt192\k31}about
+Dialogue: 1,0:14:06.15,0:14:06.16,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}无
+Dialogue: 1,0:14:06.16,0:14:08.07,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}关。这是关于移民的。这些人\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}immigration. {\kt0\k0}And {\kt0\k0}these {\kt0\k0}are {\kt0\k0}people {\kt0\k191}that
+Dialogue: 1,0:14:08.08,0:14:09.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}移民。这些人即将到来。他们\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}are {\kt16\k40}coming. {\kt56\k16}They're {\kt72\k32}taking {\kt104\k0}over {\kt104\k47}the
+Dialogue: 1,0:14:09.60,0:14:11.99,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}正在接管这个国家。他犯了一个错误。而我\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}country. {\kt0\k112}and {\kt112\k16}he {\kt128\k0}made {\kt128\k32}a {\kt160\k0}mistake. {\kt160\k0}And {\kt160\k79}I
+Dialogue: 1,0:14:12.00,0:14:15.67,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}国家。他犯了一个错误。我告诉普京，我告诉其他人，我告诉普京，我也告诉\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k88}told {\kt88\k0}Putin {\kt88\k0}and {\kt88\k0}I {\kt88\k152}told {\kt240\k80}others, {\kt320\k24}I {\kt344\k23}told
+Dialogue: 1,0:14:15.68,0:14:17.51,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}其他人，我告诉普京与俄罗斯有关\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k40}Putin {\kt40\k0}having {\kt40\k40}to {\kt80\k16}do {\kt96\k16}with {\kt112\k48}Russia {\kt160\k23}on
+Dialogue: 1,0:14:17.51,0:14:17.52,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}普京与俄罗斯的关系
+Dialogue: 1,0:14:17.52,0:14:20.07,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}普京在另一个话题上与俄罗斯有关系，但我们讨论了它。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k40}another {\kt40\k80}subject, {\kt120\k24}but {\kt144\k16}we {\kt160\k0}talked {\kt160\k48}about {\kt208\k47}it.
+Dialogue: 1,0:14:20.08,0:14:22.23,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}另一个话题，但我们讨论过。我告诉马克龙，我告诉了所有这些\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}I {\kt0\k48}told {\kt48\k0}Macron, {\kt48\k0}I {\kt48\k104}told {\kt152\k0}all {\kt152\k0}of {\kt152\k63}these
+Dialogue: 1,0:14:22.24,0:14:24.23,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我告诉马克龙，我告诉所有这些领导人，你们最好注意你们的边界\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}leaders, {\kt0\k88}you {\kt88\k32}better {\kt120\k0}watch {\kt120\k40}your {\kt160\k39}borders
+Dialogue: 1,0:14:24.23,0:14:24.24,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}领导们，你们最好注意你们的边界
+Dialogue: 1,0:14:24.24,0:14:26.39,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}领导人，你们最好注意你们的边界，因为你们的国家正在被\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}because {\kt0\k64}your {\kt64\k0}countries {\kt64\k80}are {\kt144\k71}being
+Dialogue: 1,0:14:26.40,0:14:28.79,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}因为你们的国家正在被摧毁。你知道谁同意\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}destroyed. {\kt0\k0}And {\kt0\k152}you {\kt152\k8}know {\kt160\k24}who {\kt184\k0}agrees {\kt184\k55}with
+Dialogue: 1,0:14:28.80,0:14:31.35,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}被毁了。你知道谁同意我的观点吗？你们所认识的一些领导者\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k88}me? {\kt88\k0}Some {\kt88\k0}of {\kt88\k0}the {\kt88\k0}leaders {\kt88\k0}that {\kt88\k0}you {\kt88\k167}people
+Dialogue: 1,0:14:31.35,0:14:31.36,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我？你们所认识的一些领导者
+Dialogue: 1,0:14:31.36,0:14:32.02,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我？有些领导你们人民不喜欢。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}don't {\kt16\k50}like.
+Dialogue: 1,0:14:34.56,0:14:36.95,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 总统先生，暴力事件也发生在\N{\fs10}\h\N{\rEnglish\fs48}>> {\kt0\k32}Mr. {\kt32\k48}President, {\kt80\k16}the {\kt96\k64}violence {\kt160\k24}was {\kt184\k32}also {\kt216\k23}in
+Dialogue: 1,0:14:36.96,0:14:39.91,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 总统先生，本周末意大利也发生了暴力事件。你也是如此\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k40}Italy {\kt40\k40}during {\kt80\k32}this {\kt112\k96}weekend. {\kt208\k48}So {\kt256\k24}did {\kt280\k15}you
+Dialogue: 1,0:14:39.91,0:14:39.92,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这个周末的意大利。你也是如此
+Dialogue: 1,0:14:39.92,0:14:42.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这个周末的意大利。那么你看到了吗？你在意大利的反应是什么\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}see {\kt16\k40}that? {\kt56\k32}What's {\kt88\k24}your {\kt112\k0}reaction {\kt112\k0}in {\kt112\k111}Italy
+Dialogue: 1,0:14:42.16,0:14:43.91,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}看到了吗？意大利米兰有何反应\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}in {\kt16\k159}Milan
+Dialogue: 1,0:14:43.91,0:14:43.92,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}在米兰
+Dialogue: 1,0:14:43.92,0:14:45.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}法国米兰暴力事件？\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k40}violence {\kt40\k24}of {\kt64\k47}France? >>
+Dialogue: 1,0:14:45.04,0:14:47.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}法国的暴力？>> 这与你观察意大利时的情况有关\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}It {\kt24\k16}has {\kt40\k16}to {\kt56\k24}do {\kt80\k24}with {\kt104\k0}when {\kt104\k32}you {\kt136\k16}look {\kt152\k0}at {\kt152\k47}Italy
+Dialogue: 1,0:14:47.04,0:14:48.79,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 这与你观察意大利和法国有关，这与\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}and {\kt0\k0}France, {\kt0\k0}it {\kt0\k0}has {\kt0\k0}to {\kt0\k0}do {\kt0\k175}with
+Dialogue: 1,0:14:48.79,0:14:48.80,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}和法国，这与
+Dialogue: 1,0:14:48.80,0:14:51.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}而法国，则与移民有关。我告诉他们这一切\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}immigration. {\kt0\k120}And {\kt120\k24}I {\kt144\k16}told {\kt160\k24}them {\kt184\k0}all {\kt184\k0}it {\kt184\k55}was
+Dialogue: 1,0:14:51.20,0:14:54.39,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}移民。我告诉他们这一切将会发生。那是一个呃那是一个\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}going {\kt0\k24}to {\kt24\k0}happen. {\kt24\k128}That {\kt152\k16}is {\kt168\k56}a {\kt224\k56}uh {\kt280\k24}that's {\kt304\k15}a
+Dialogue: 1,0:14:54.40,0:14:57.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}将会发生。那是一个呃，一个等待爆炸的锅炉。这是一个非常\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k48}boiler {\kt48\k0}waiting {\kt48\k56}to {\kt104\k112}explode. {\kt216\k0}It's {\kt216\k40}a {\kt256\k23}very
+Dialogue: 1,0:14:57.19,0:14:57.20,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}锅炉等待爆炸。这是一个非常
+Dialogue: 1,0:14:57.20,0:14:59.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}锅炉等待爆炸。这是一件非常悲伤的事情。我们需要观察。我们\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}sad {\kt32\k0}thing {\kt32\k32}to {\kt64\k32}watch. {\kt96\k16}We {\kt112\k0}need {\kt112\k32}to {\kt144\k56}watch. {\kt200\k23}We
+Dialogue: 1,0:14:59.44,0:15:01.99,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}令人悲伤的事情。我们需要观察。我们关闭了边界。没有人进来并且\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}have {\kt24\k32}closed {\kt56\k56}borders. {\kt112\k40}Nobody {\kt152\k0}comes {\kt152\k0}in {\kt152\k103}and
+Dialogue: 1,0:15:01.99,0:15:02.00,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}边境已关闭。没有人进来并且
+Dialogue: 1,0:15:02.00,0:15:03.67,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}边境已关闭。没有人进来，我们要把所有的人都赶出去。全部\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}we're {\kt24\k0}getting {\kt24\k0}all {\kt24\k72}the {\kt96\k24}people {\kt120\k32}out. {\kt152\k15}All
+Dialogue: 1,0:15:03.67,0:15:03.68,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我们正在把所有人都救出来。全部
+Dialogue: 1,0:15:03.68,0:15:05.51,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我们正在把所有人都救出来。所有非法入境的人，\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}the {\kt0\k0}people {\kt0\k64}that {\kt64\k0}came {\kt64\k48}in {\kt112\k71}illegally,
+Dialogue: 1,0:15:05.52,0:15:07.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}那些非法入境的人，他们正在出来。发生了什么？\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}they're {\kt32\k0}coming {\kt32\k88}out. {\kt120\k24}What {\kt144\k31}happened?
+Dialogue: 1,0:15:07.28,0:15:08.79,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他们出来了。发生了什么？因为他们让人们进来，但他们没有\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}because {\kt32\k16}they {\kt48\k0}let {\kt48\k0}people {\kt48\k64}in, {\kt112\k24}they {\kt136\k15}didn't
+Dialogue: 1,0:15:08.80,0:15:11.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}因为他们让人进来，却没有让他们出去，而且他们是按着门进来的\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}get {\kt0\k0}them {\kt0\k0}out, {\kt0\k0}and {\kt0\k0}they {\kt0\k0}came {\kt0\k184}in {\kt184\k24}by {\kt208\k15}the
+Dialogue: 1,0:15:11.03,0:15:11.04,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}把他们救出来，然后他们就进来了
+Dialogue: 1,0:15:11.04,0:15:14.07,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}把他们赶出去，然后数以百万计的人进来了。老实说，他们是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}millions. {\kt0\k160}And {\kt160\k0}honestly, {\kt160\k143}they're
+Dialogue: 1,0:15:14.07,0:15:14.08,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}百万。老实说，他们是
+Dialogue: 1,0:15:14.08,0:15:15.67,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}百万。老实说，他们已经是不同的国家了 10\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k40}different {\kt40\k40}countries {\kt80\k0}than {\kt80\k40}they {\kt120\k16}were {\kt136\k23}10
+Dialogue: 1,0:15:15.67,0:15:15.68,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}与以前不同的国家 10
+Dialogue: 1,0:15:15.68,0:15:18.07,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}与10年前相比，不同的国家。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}years {\kt16\k223}ago. >>
+Dialogue: 1,0:15:18.08,0:15:19.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}几年前。>> 你认为你能够\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Do {\kt0\k32}you {\kt32\k8}think {\kt40\k0}you're {\kt40\k0}going {\kt40\k40}to {\kt80\k8}be {\kt88\k0}able {\kt88\k23}to
+Dialogue: 1,0:15:19.20,0:15:20.95,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 你认为接下来你能与朝鲜会面吗\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}get {\kt0\k40}that {\kt40\k0}meeting {\kt40\k48}with {\kt88\k24}North {\kt112\k40}Korea {\kt152\k23}next
+Dialogue: 1,0:15:20.95,0:15:20.96,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}接下来与朝鲜会面
+Dialogue: 1,0:15:20.96,0:15:22.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}下个月在中国与朝鲜会面吗？\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}month {\kt0\k40}in {\kt40\k95}China? >>
+Dialogue: 1,0:15:22.32,0:15:23.78,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}在中国一个月？>>哦，我不知道。我不知道。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Oh, {\kt0\k40}I {\kt40\k8}don't {\kt48\k16}know. {\kt64\k16}I {\kt80\k16}don't {\kt96\k50}know.
+Dialogue: 1,0:15:26.40,0:15:28.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 我相处 我和他相处得很\N{\fs10}\h\N{\rEnglish\fs48}>> {\kt0\k16}I {\kt16\k16}get {\kt32\k24}along {\kt56\k24}I {\kt80\k16}get {\kt96\k24}along {\kt120\k16}with {\kt136\k16}him {\kt152\k23}very
+Dialogue: 1,0:15:28.16,0:15:30.47,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 我相处得很好 我和金正恩相处得很好。我相处\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}well {\kt16\k24}with {\kt40\k24}Kim {\kt64\k0}Jong-un. {\kt64\k0}I {\kt64\k0}get {\kt64\k0}along {\kt64\k167}with
+Dialogue: 1,0:15:30.47,0:15:30.48,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}与金正恩相处得很好。我相处
+Dialogue: 1,0:15:30.48,0:15:33.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}与金正恩相处得很好。我和他相处得很好。呃我不确定\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}him {\kt0\k0}very {\kt0\k88}well. {\kt88\k40}And {\kt128\k64}uh {\kt192\k32}I'm {\kt224\k16}not {\kt240\k8}sure {\kt248\k23}that
+Dialogue: 1,0:15:33.19,0:15:33.20,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他很好。呃我不确定
+Dialogue: 1,0:15:33.20,0:15:35.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他很好。呃，我不确定是否有人要求会面，但我的\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k56}anybody's {\kt56\k32}asking {\kt88\k8}for {\kt96\k16}a {\kt112\k24}meeting, {\kt136\k72}but {\kt208\k31}my
+Dialogue: 1,0:15:35.59,0:15:35.60,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}有人要求见面，但我的
+Dialogue: 1,0:15:35.60,0:15:38.10,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}有人要求会面，但我和金正恩的关系非常好。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}relationship {\kt0\k0}with {\kt0\k120}Kim {\kt120\k40}Jong {\kt160\k0}is {\kt160\k40}very {\kt200\k50}good.
+Dialogue: 1,0:15:44.80,0:15:46.71,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 你想见凯尔西·罗德里格斯吗\N{\fs10}\h\N{\rEnglish\fs48}>> {\kt0\k16}Would {\kt16\k16}you {\kt32\k16}like {\kt48\k16}to {\kt64\k24}see {\kt88\k40}Kelsey {\kt128\k63}Rodriguez
+Dialogue: 1,0:15:46.72,0:15:48.79,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs37.2}>> 你想看到凯尔西·罗德里格斯 (Kelsey Rodriguez) 在一场比赛中对阵玛丽亚·科里娜·马查多 (Maria Corina Machado)\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}facing {\kt32\k40}Maria {\kt72\k40}Corina {\kt112\k56}Machado {\kt168\k16}in {\kt184\k23}a
+Dialogue: 1,0:15:48.79,0:15:48.80,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}面对玛丽亚·科里娜·马查多
+Dialogue: 1,0:15:48.80,0:15:50.50,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}在委内瑞拉总统选举中面对玛丽亚·科里娜·马查多？\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k56}presidential {\kt56\k0}election {\kt56\k64}in {\kt120\k50}Venezuela?
+Dialogue: 1,0:15:54.16,0:15:56.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 是的，总统先生。嗯，你是什么\N{\fs10}\h\N{\rEnglish\fs48}>> {\kt0\k32}Yes, {\kt32\k32}Mr. {\kt64\k40}President. {\kt104\k40}Um, {\kt144\k24}what {\kt168\k16}are {\kt184\k15}your
+Dialogue: 1,0:15:56.16,0:15:58.47,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 是的，总统先生。嗯，你对参议员艾丽莎·拉丁有何看法\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}thoughts {\kt32\k32}on {\kt64\k48}Senator {\kt112\k64}Alisa {\kt176\k55}Latin
+Dialogue: 1,0:15:58.47,0:15:58.48,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}对参议员艾丽莎·拉丁的看法
+Dialogue: 1,0:15:58.48,0:16:00.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}对参议员艾丽莎拉丁建议民主党立场的看法\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k48}suggesting {\kt48\k32}that {\kt80\k56}Democrats {\kt136\k31}stand
+Dialogue: 1,0:16:00.15,0:16:00.16,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}建议民主党坚持
+Dialogue: 1,0:16:00.16,0:16:02.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}暗示民主党人容忍共和党领导人卖淫\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k80}prostitutions {\kt80\k24}of {\kt104\k48}Republican {\kt152\k63}leaders
+Dialogue: 1,0:16:02.32,0:16:04.39,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}共和党领导人的卖淫应该会吓跑年轻的保守派\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}should {\kt24\k40}scare {\kt64\k32}young {\kt96\k88}conservatives {\kt184\k23}away
+Dialogue: 1,0:16:04.39,0:16:04.40,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}应该吓跑年轻的保守派
+Dialogue: 1,0:16:04.40,0:16:05.27,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}应该吓退年轻的保守派人士参与其中吗？\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}from {\kt24\k24}getting {\kt48\k39}involved? >>
+Dialogue: 1,0:16:05.28,0:16:06.47,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}参与其中？>> 嗯，我认为他们所做的是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}Well, {\kt16\k16}I {\kt32\k0}think {\kt32\k32}what {\kt64\k16}they've {\kt80\k16}done {\kt96\k23}is
+Dialogue: 1,0:16:06.48,0:16:10.55,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 嗯，我认为他们所做的就是将政府武器化，这是一种低下的生活，\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k64}weaponize {\kt64\k0}government {\kt64\k144}is {\kt208\k48}a {\kt256\k32}low {\kt288\k119}life,
+Dialogue: 1,0:16:10.56,0:16:13.67,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}武器化政府是一种低下的生活，毁掉她的国家，只是摧毁了她的状态，只是毁了\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k48}ruining {\kt48\k88}her {\kt136\k24}her {\kt160\k64}state, {\kt224\k40}just {\kt264\k47}destroying
+Dialogue: 1,0:16:13.68,0:16:16.47,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}毁掉她的状态，毁掉她的状态。但他们正在做的是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}her {\kt0\k104}state. {\kt104\k0}But {\kt104\k56}what {\kt160\k24}they're {\kt184\k0}doing {\kt184\k95}is
+Dialogue: 1,0:16:16.48,0:16:19.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}她的状态。但他们所做的确实阻止了人们去\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k104}really {\kt104\k72}discouraging {\kt176\k0}people {\kt176\k56}from {\kt232\k23}going
+Dialogue: 1,0:16:19.03,0:16:19.04,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}真的让人不敢去
+Dialogue: 1,0:16:19.04,0:16:21.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}确实阻碍了人们从政。不，他们已经武器化了\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}into {\kt32\k56}politics. {\kt88\k0}No, {\kt88\k80}they've {\kt168\k71}weaponized
+Dialogue: 1,0:16:21.43,0:16:21.44,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}进入政治。不，他们已经武器化了
+Dialogue: 1,0:16:21.44,0:16:22.95,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}进入政治。不，他们已经把政府武器化给民主党了。就是这样\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k40}government {\kt40\k0}for {\kt40\k80}Democrats. {\kt120\k0}That's {\kt120\k31}what
+Dialogue: 1,0:16:22.95,0:16:22.96,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}民主党政府。就是这样
+Dialogue: 1,0:16:22.96,0:16:23.70,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}民主党政府。这就是他们所做的。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}they've {\kt0\k74}done.
+Dialogue: 1,0:16:26.56,0:16:28.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}西班牙裔投票。你打算如何投票\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k56}Hispanic {\kt56\k32}vote. {\kt88\k8}How {\kt96\k8}are {\kt104\k24}you {\kt128\k0}going {\kt128\k16}to {\kt144\k31}vote
+Dialogue: 1,0:16:28.32,0:16:31.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}西班牙裔投票。今天您打算如何对西班牙裔选票进行投票？\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}about {\kt0\k64}Hispanic {\kt64\k48}votes {\kt112\k159}today?
+Dialogue: 1,0:16:31.04,0:16:34.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}关于今天的西班牙裔选票？西班牙裔比任何共和党人都拥有更多\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k56}Hispanics {\kt56\k96}have {\kt152\k32}more {\kt184\k24}than {\kt208\k40}any {\kt248\k63}Republican
+Dialogue: 1,0:16:34.16,0:16:37.83,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}西班牙裔比历史上任何共和党人都多。我得到了巨大的\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}in {\kt24\k80}history. {\kt104\k24}I {\kt128\k72}got {\kt200\k167}tremendous >>
+Dialogue: 1,0:16:37.84,0:16:39.35,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}历史上。我得到了巨大的>>共和党人一直在节节败退\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Republicans {\kt0\k72}have {\kt72\k8}been {\kt80\k32}losing {\kt112\k24}ground {\kt136\k15}for
+Dialogue: 1,0:16:39.35,0:16:39.36,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 共和党在选举中不断节节败退
+Dialogue: 1,0:16:39.36,0:16:40.07,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 共和党人一直在为你想要的东西而节节败退。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}what {\kt0\k32}you {\kt32\k39}want. >>
+Dialogue: 1,0:16:40.08,0:16:41.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}你想要什么。>> 不，我认为\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}No, {\kt0\k24}I {\kt24\k16}think {\kt40\k16}they're {\kt56\k24}good. {\kt80\k16}And {\kt96\k24}I {\kt120\k15}think
+Dialogue: 1,0:16:41.44,0:16:43.91,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}它们很好。我认为每次集会都是对的\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k40}every {\kt40\k32}every {\kt72\k0}time {\kt72\k0}I {\kt72\k48}have {\kt120\k16}a {\kt136\k88}rally {\kt224\k23}right
+Dialogue: 1,0:16:43.91,0:16:43.92,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}每次我有一次集会的时候
+Dialogue: 1,0:16:43.92,0:16:45.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}每次我现在举行集会，如你所知，你知道我在哪里\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}now, {\kt16\k0}as {\kt16\k32}you {\kt48\k24}know, {\kt72\k16}you {\kt88\k8}know {\kt96\k16}where {\kt112\k15}I'm
+Dialogue: 1,0:16:45.19,0:16:45.20,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}现在，如你所知，你知道我在哪里
+Dialogue: 1,0:16:45.20,0:16:47.67,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}现在，如你所知，你知道我要去堪萨斯州哪里，对吗？我们有\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}going {\kt0\k48}to {\kt48\k0}Kansas, {\kt48\k0}right? {\kt48\k136}And {\kt184\k0}we {\kt184\k63}have
+Dialogue: 1,0:16:47.68,0:16:50.87,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}去堪萨斯，对吗？我们有罗杰·马奇，你想确保他\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k48}Roger {\kt48\k0}March {\kt48\k0}and {\kt48\k0}you {\kt48\k0}want {\kt48\k224}to {\kt272\k8}make {\kt280\k16}sure {\kt296\k23}he
+Dialogue: 1,0:16:50.88,0:16:52.63,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}罗杰·马奇和你想确保他获胜。他是一位伟大的参议员。我只想\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}wins. {\kt24\k0}He's {\kt24\k40}a {\kt64\k16}great {\kt80\k0}senator. {\kt80\k64}I {\kt144\k0}just {\kt144\k31}want
+Dialogue: 1,0:16:52.64,0:16:55.35,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}获胜。他是一位伟大的参议员。我只是想确认一下我去过的每一个地方\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}to {\kt0\k0}make {\kt0\k0}sure {\kt0\k120}every {\kt120\k32}place {\kt152\k32}I've {\kt184\k24}gone {\kt208\k63}to
+Dialogue: 1,0:16:55.35,0:16:55.36,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}确保我去过的每一个地方
+Dialogue: 1,0:16:55.36,0:16:57.91,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}确保我去过的每个地方他们都表现良好。所以这意味着\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}they're {\kt24\k32}doing {\kt56\k112}well. {\kt168\k24}So {\kt192\k16}that {\kt208\k40}means {\kt248\k7}the
+Dialogue: 1,0:16:57.91,0:16:57.92,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他们做得很好。所以这意味着
+Dialogue: 1,0:16:57.92,0:17:00.63,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他们做得很好。这意味着总统将与总统交谈\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k64}president {\kt64\k32}will {\kt96\k0}talk {\kt96\k32}to {\kt128\k143}President
+Dialogue: 1,0:17:00.64,0:17:03.99,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}总统将与乌克兰总统谈论乌克兰问题。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k96}Ukrainian {\kt96\k0}talking {\kt96\k128}about {\kt224\k111}Ukraine. >>
+Dialogue: 1,0:17:04.00,0:17:05.99,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}乌克兰人谈论乌克兰。>> 我不会这样做，但到目前为止我认为他是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}I {\kt16\k24}wouldn't {\kt40\k24}do {\kt64\k0}but {\kt64\k56}so {\kt120\k0}far {\kt120\k0}I {\kt120\k56}think {\kt176\k23}he's
+Dialogue: 1,0:17:06.00,0:17:08.07,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 我不会这样做，但到目前为止我认为他对乌克兰非常公平。他没有\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}been {\kt16\k24}very {\kt40\k24}fair {\kt64\k0}with {\kt64\k0}Ukraine. {\kt64\k72}He {\kt136\k71}hasn't
+Dialogue: 1,0:17:08.08,0:17:09.75,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}对乌克兰非常公平。他并没有太多参与，同样\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}been {\kt0\k48}very {\kt48\k16}much {\kt64\k0}involved {\kt64\k0}and {\kt64\k88}the {\kt152\k15}same
+Dialogue: 1,0:17:09.75,0:17:09.76,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}非常投入并且同样
+Dialogue: 1,0:17:09.76,0:17:11.75,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}非常积极地参与其中，与俄罗斯也是如此。他们还没有接近\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}with {\kt16\k88}Russia. {\kt104\k16}They {\kt120\k0}haven't {\kt120\k48}been {\kt168\k31}nearly
+Dialogue: 1,0:17:11.75,0:17:11.76,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}与俄罗斯。他们还没有接近
+Dialogue: 1,0:17:11.76,0:17:13.83,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}与俄罗斯。他们还没有达到应有的水平。而我\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}what {\kt0\k48}they {\kt48\k0}could {\kt48\k0}have {\kt48\k0}been. {\kt48\k0}And {\kt48\k159}I
+Dialogue: 1,0:17:13.83,0:17:13.84,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他们本来可以是什么。而我
+Dialogue: 1,0:17:13.84,0:17:15.70,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}他们本来可以是什么。我很欣赏这一点。他们知道我很欣赏。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}appreciate {\kt0\k0}that. {\kt0\k0}They {\kt0\k0}know {\kt0\k136}I {\kt136\k50}appreciate.
+Dialogue: 1,0:17:20.40,0:17:22.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}你让他们暂时呆在下面\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}You {\kt24\k16}let {\kt40\k24}them {\kt64\k24}stay {\kt88\k24}under {\kt112\k24}the {\kt136\k39}temporary
+Dialogue: 1,0:17:22.16,0:17:24.42,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}你让他们处于临时保护状态，直到战争之手。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k48}protected {\kt48\k56}status {\kt104\k0}until {\kt104\k56}the {\kt160\k16}war {\kt176\k50}hand.
+Dialogue: 1,0:17:30.80,0:17:30.95,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}做\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k15}Do
+Dialogue: 1,0:17:30.95,0:17:30.96,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}做\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k1}Do
+Dialogue: 1,0:17:30.96,0:17:32.23,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 您对联邦有任何更新吗\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Do >> {\kt0\k8}you {\kt8\k8}have {\kt16\k16}any {\kt32\k32}update {\kt64\k24}to {\kt88\k8}the {\kt96\k31}federal
+Dialogue: 1,0:17:32.24,0:17:33.83,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 您对联邦对诺兰之死的调查有何最新进展？\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k56}investigation {\kt56\k0}into {\kt56\k32}the {\kt88\k16}death {\kt104\k16}of {\kt120\k39}Nolan?
+Dialogue: 1,0:17:33.84,0:17:35.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}诺兰之死调查？好吧，你前一周告诉我\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Well, {\kt0\k72}you {\kt72\k16}told {\kt88\k0}me {\kt88\k24}the {\kt112\k16}other {\kt128\k16}week {\kt144\k15}that
+Dialogue: 1,0:17:35.44,0:17:37.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}好吧，你上周告诉我联邦调查局正在\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}the {\kt16\k64}FBI {\kt80\k16}looking {\kt96\k0}at {\kt96\k32}the {\kt128\k31}FBI
+Dialogue: 1,0:17:37.04,0:17:38.47,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}调查联邦调查局正在看联邦调
+Dialogue: 1,0:17:38.47,0:17:38.48,English,,0,0,0,,{\an5\pos(959,952.5)}{\rEnglish\fs48}{\kt0\k1}investigation.
+Dialogue: 1,0:17:38.48,0:17:40.15,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}查局正在调查联邦调查局的调查。>> 先生\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k84}investigation. >> {\kt84\k83}Mr.
+Dialogue: 1,0:17:40.15,0:17:40.16,English,,0,0,0,,{\an5\pos(959,952.5)}{\rEnglish\fs48}>> {\kt0\k1}Mr.
+Dialogue: 1,0:17:40.16,0:17:41.38,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 总统先生，你为什么\N{\fs10}\h\N{\rEnglish\fs48}>> {\kt0\k0}Mr. {\kt0\k48}President, {\kt48\k16}why {\kt64\k8}are {\kt72\k50}you
+Dialogue: 1,0:17:44.72,0:17:47.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我们如何看待欧洲的未来？作为\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k8}how {\kt8\k16}do {\kt24\k16}we {\kt40\k32}see {\kt72\k32}the {\kt104\k32}future {\kt136\k24}of {\kt160\k80}Europe? {\kt240\k31}As
+Dialogue: 1,0:17:47.44,0:17:50.55,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我们如何看待欧洲的未来？众所周知，如果欧洲不这样做，欧洲就会陷入困境\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}we {\kt16\k0}know, {\kt16\k104}Europe {\kt120\k16}is {\kt136\k56}in {\kt192\k24}if {\kt216\k40}Europe {\kt256\k55}doesn't
+Dialogue: 1,0:17:50.55,0:17:50.56,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我们知道，如果欧洲不这样做，欧洲就会陷入困境
+Dialogue: 1,0:17:50.56,0:17:53.51,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}我们知道，如果欧洲不关闭边界并带来\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}close {\kt32\k24}its {\kt56\k112}borders {\kt168\k80}and {\kt248\k0}bring {\kt248\k47}the
+Dialogue: 1,0:17:53.52,0:17:55.43,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}关闭边境，把罪犯赶出去。就像那些人一样\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k48}criminals {\kt48\k48}out. {\kt96\k0}Like {\kt96\k40}the {\kt136\k16}people {\kt152\k24}that {\kt176\k15}are
+Dialogue: 1,0:17:55.43,0:17:55.44,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}犯罪分子出来。就像那些人一样
+Dialogue: 1,0:17:55.44,0:17:58.55,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}犯罪分子出来。就像抗议的人们一样，欧洲已经完蛋了。欧洲\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}protesting, {\kt0\k0}Europe {\kt0\k160}is {\kt160\k0}finished. {\kt160\k151}Europe
+Dialogue: 1,0:17:58.56,0:18:00.47,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}抗议，欧洲就完蛋了。欧洲必须像我一样关闭边界\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}has {\kt16\k0}to {\kt16\k0}close {\kt16\k0}its {\kt16\k0}borders {\kt16\k136}like {\kt152\k24}I've {\kt176\k15}been
+Dialogue: 1,0:18:00.48,0:18:03.11,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}必须关闭边境，就像我十年来一直告诉他们的那样。他们必须\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}telling {\kt24\k24}them {\kt48\k64}for {\kt112\k24}10 {\kt136\k80}years. {\kt216\k16}They {\kt232\k0}have {\kt232\k31}to
+Dialogue: 1,0:18:03.12,0:18:04.95,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}告诉他们10年了。他们必须关闭边界，他\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}close {\kt32\k0}their {\kt32\k0}borders {\kt32\k0}and {\kt32\k0}they {\kt32\k0}have {\kt32\k151}to
+Dialogue: 1,0:18:04.96,0:18:06.55,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}们必须带走仇恨自己国家的人\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}take {\kt0\k0}people {\kt0\k72}that {\kt72\k0}hate {\kt72\k48}their {\kt120\k39}countries
+Dialogue: 1,0:18:06.55,0:18:06.56,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}带走那些憎恨自己国家的人
+Dialogue: 1,0:18:06.56,0:18:08.95,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}把那些憎恨自己国家的人赶出去，否则他们就完蛋了。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k104}out {\kt104\k32}because {\kt136\k48}otherwise {\kt184\k0}they're {\kt184\k55}finished.
+Dialogue: 1,0:18:08.96,0:18:11.11,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}出去，因为否则他们就完了。他们将没有\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}They {\kt24\k24}will {\kt48\k0}not {\kt48\k24}have {\kt72\k16}a {\kt88\k0}chance {\kt88\k56}to {\kt144\k71}survive.
+Dialogue: 1,0:18:11.12,0:18:13.03,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}机会生存。当我看着法国，当你看着\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}When {\kt24\k16}I {\kt40\k16}look {\kt56\k24}at {\kt80\k48}France, {\kt128\k24}when {\kt152\k8}you {\kt160\k16}look {\kt176\k15}at
+Dialogue: 1,0:18:13.04,0:18:15.35,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}当我看法国，当你看意大利，当你看所有的动荡\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Italy, {\kt0\k0}when {\kt0\k0}you {\kt0\k0}look {\kt0\k104}at {\kt104\k0}all {\kt104\k80}the {\kt184\k47}turmoil
+Dialogue: 1,0:18:15.35,0:18:15.36,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}意大利，当你看到所有的动荡
+Dialogue: 1,0:18:15.36,0:18:18.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}意大利，当你看到所有的骚乱和仇恨时，你会发现这与学校无关。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}and {\kt0\k40}the {\kt40\k96}hatred, {\kt136\k0}that's {\kt136\k48}not {\kt184\k32}about {\kt216\k79}school.
+Dialogue: 1,0:18:18.32,0:18:19.99,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}还有仇恨，这与学校无关。这是关于\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}That's {\kt0\k0}about {\kt0\k96}people {\kt96\k24}coming {\kt120\k0}into {\kt120\k47}the
+Dialogue: 1,0:18:20.00,0:18:21.91,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}人们进入仇恨这个国家的国家。他们\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}countries {\kt0\k0}that {\kt0\k0}hate {\kt0\k104}the {\kt104\k0}country. {\kt104\k87}They
+Dialogue: 1,0:18:21.92,0:18:23.91,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}仇恨国家的国家。他们讨厌\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}hate {\kt0\k40}the {\kt40\k0}building. {\kt40\k64}They {\kt104\k0}hate {\kt104\k0}the {\kt104\k95}people.
+Dialogue: 1,0:18:23.92,0:18:26.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这座建筑。他们憎恨人民。他们讨\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}They {\kt0\k0}hate {\kt0\k64}the {\kt64\k175}art.
+Dialogue: 1,0:18:26.32,0:18:27.91,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}厌艺术。他们必须关\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}They {\kt0\k0}have {\kt0\k0}to {\kt0\k0}close {\kt0\k0}their {\kt0\k0}borders {\kt0\k159}and
+Dialogue: 1,0:18:27.92,0:18:30.26,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}闭边境他们必须带走那些坏人。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}they {\kt0\k0}have {\kt0\k0}to {\kt0\k64}take {\kt64\k96}those {\kt160\k0}bad {\kt160\k74}people.
+Dialogue: 1,0:18:33.60,0:18:36.55,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}>> 谢谢您，先生。她是民主党参议员\N{\fs10}\h\N{\rEnglish\fs48}>> {\kt0\k16}Thank {\kt16\k24}you, {\kt40\k40}sir. {\kt80\k96}Senator, {\kt176\k24}a {\kt200\k80}Democrat, {\kt280\k15}she
+Dialogue: 1,0:18:36.56,0:18:38.63,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs47.6}>> 谢谢您，先生。 Senator, a Democrat, she says she wants there to be prosecutions\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}says {\kt0\k48}she {\kt48\k24}wants {\kt72\k24}there {\kt96\k8}to {\kt104\k24}be {\kt128\k79}prosecutions
+Dialogue: 1,0:18:38.63,0:18:38.64,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}说她希望起诉
+Dialogue: 1,0:18:38.64,0:18:41.35,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}说她希望对共和党人进行起诉以吓唬说\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}of {\kt16\k0}Republicans {\kt16\k112}to {\kt128\k88}scare {\kt216\k55}says
+Dialogue: 1,0:18:41.36,0:18:43.83,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}吓唬共和党人说保守派不要陷入地狱\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k56}conservatives {\kt56\k24}from {\kt80\k16}going {\kt96\k0}into {\kt96\k128}a {\kt224\k0}hell {\kt224\k23}of
+Dialogue: 1,0:18:43.84,0:18:47.99,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}保守派不要陷入一种说法的地狱。所以洛廷说有\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}a {\kt16\k80}saying. {\kt96\k72}So {\kt168\k120}Lotin {\kt288\k24}said {\kt312\k0}that {\kt312\k103}there
+Dialogue: 1,0:18:47.99,0:18:48.00,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}一句话。所以洛廷说有
+Dialogue: 1,0:18:48.00,0:18:50.39,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}一句话。所以洛廷说应该起诉，以吓唬人\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}should {\kt0\k0}be {\kt0\k128}prosecutions {\kt128\k32}in {\kt160\k0}order {\kt160\k0}to {\kt160\k79}scare
+Dialogue: 1,0:18:50.40,0:18:53.99,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}应该起诉，以吓唬人们不要从政。那是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}people {\kt0\k0}from {\kt0\k0}going {\kt0\k216}into {\kt216\k120}politics. {\kt336\k23}That's
+Dialogue: 1,0:18:53.99,0:18:54.00,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}人们从政。那是
+Dialogue: 1,0:18:54.00,0:18:55.75,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}人们从政。这是民主党人，他们就是这么做的。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}a {\kt0\k72}Democrat {\kt72\k0}and {\kt72\k40}that's {\kt112\k16}what {\kt128\k24}they {\kt152\k23}do.
+Dialogue: 1,0:18:55.76,0:18:57.19,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}民主党人就是这么做的。这就是他们所擅\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}That's {\kt24\k16}all {\kt40\k24}they're {\kt64\k8}good {\kt72\k0}at. {\kt72\k0}And {\kt72\k71}you
+Dialogue: 1,0:18:57.19,0:18:57.20,English,,0,0,0,,{\an5\pos(959,952.5)}{\rEnglish\fs48}{\kt0\k1}know
+Dialogue: 1,0:18:57.20,0:18:58.87,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}长的。你知道吗？这就是为什么他们得到他们的\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}what? {\kt0\k88}That's {\kt88\k0}why {\kt88\k40}they're {\kt128\k24}getting {\kt152\k15}their
+Dialogue: 1,0:18:58.87,0:18:58.88,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}什么？这就是为什么他们得到他们的
+Dialogue: 1,0:18:58.88,0:18:59.86,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}什么？这就是为什么他们被踢屁股的原因。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k48}asses {\kt48\k50}kicked.
+Dialogue: 1,0:19:14.96,0:19:17.35,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}高尔夫球。你有一个高尔夫球场多少钱\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k96}golf. {\kt96\k16}How {\kt112\k16}much {\kt128\k8}do {\kt136\k16}you {\kt152\k8}have {\kt160\k16}a {\kt176\k32}golf {\kt208\k31}course
+Dialogue: 1,0:19:17.36,0:19:19.67,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}高尔夫球。你现在有一个高尔夫球场多少钱？它很旧了。累了。它是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k16}right {\kt16\k72}now? {\kt88\k24}It's {\kt112\k32}old. {\kt144\k24}It's {\kt168\k40}tired. {\kt208\k23}It's
+Dialogue: 1,0:19:19.67,0:19:19.68,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}现在？它很旧了。累了。它是
+Dialogue: 1,0:19:19.68,0:19:21.99,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}现在？它很旧了。累了。它被殴打了。没用的。\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}beaten {\kt32\k0}up. {\kt32\k48}It's {\kt80\k151}useless.
+Dialogue: 1,0:19:22.00,0:19:24.63,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}被殴打。没用的。没做太多生意。我们想做\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}Doesn't {\kt0\k48}do {\kt48\k24}much {\kt72\k120}business. {\kt192\k24}We {\kt216\k16}want {\kt232\k16}to {\kt248\k15}do
+Dialogue: 1,0:19:24.64,0:19:26.31,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}没做太多生意。我们想为华盛顿做一些伟大的事情。是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k32}something {\kt32\k32}great {\kt64\k24}for {\kt88\k56}Washington. {\kt144\k23}We're
+Dialogue: 1,0:19:26.31,0:19:26.32,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这对华盛顿来说是一件伟大的事情。是
+Dialogue: 1,0:19:26.32,0:19:27.99,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}这对华盛顿来说是一件伟大的事情。我们基本上要打造一个更好的高尔夫球场\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}going {\kt0\k24}to {\kt24\k48}basically {\kt72\k0}build {\kt72\k40}a {\kt112\k0}better {\kt112\k55}golf
+Dialogue: 1,0:19:28.00,0:19:30.55,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}基本上会建造一个更好的高尔夫球场你可以称之为翻新。它\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k64}course. {\kt64\k16}You {\kt80\k16}can {\kt96\k16}call {\kt112\k0}it {\kt112\k32}a {\kt144\k88}renovation. {\kt232\k23}It
+Dialogue: 1,0:19:30.56,0:19:32.87,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}课程。你可以称之为翻新。它应该很简单，而且是一些东西\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}should {\kt24\k8}be {\kt32\k32}very {\kt64\k88}simple {\kt152\k0}and {\kt152\k0}it's {\kt152\k79}something
+Dialogue: 1,0:19:32.87,0:19:32.88,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}应该很简单，就是这样
+Dialogue: 1,0:19:32.88,0:19:34.47,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}应该很简单，而且是内政部的事\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k24}that {\kt24\k32}the {\kt56\k32}Department {\kt88\k16}of {\kt104\k40}Interior {\kt144\k15}is
+Dialogue: 1,0:19:34.47,0:19:34.48,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}内政部是
+Dialogue: 1,0:19:34.48,0:19:36.79,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}内政部有权这样做。绝对地。他们想要的一切\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}allowed {\kt0\k0}to {\kt0\k80}do. {\kt80\k104}Absolutely. {\kt184\k16}All {\kt200\k16}they {\kt216\k15}want
+Dialogue: 1,0:19:36.79,0:19:36.80,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}允许做。绝对地。他们想要的一切
+Dialogue: 1,0:19:36.80,0:19:38.55,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}允许做。绝对地。他们只想修复自己的财产。它是\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}to {\kt0\k0}do {\kt0\k40}is {\kt40\k0}fix {\kt40\k48}up {\kt88\k24}their {\kt112\k0}property. {\kt112\k63}It's
+Dialogue: 1,0:19:38.55,0:19:38.56,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}要做的就是修复他们的财产。它是
+Dialogue: 1,0:19:38.56,0:19:40.87,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}要做的就是修复他们的财产。它被允许被破坏，糟糕，\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}been {\kt0\k0}allowed {\kt0\k64}to {\kt64\k16}get {\kt80\k32}run {\kt112\k72}down, {\kt184\k47}bad,
+Dialogue: 1,0:19:40.87,0:19:40.88,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}被允许摔倒，糟糕，
+Dialogue: 1,0:19:40.88,0:19:43.59,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}被允许变得破旧、糟糕、危险、肮脏、糟糕，而且它正在发生\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k56}dangerous, {\kt56\k48}dirty, {\kt104\k0}lousy, {\kt104\k0}and {\kt104\k0}it's {\kt104\k167}going
+Dialogue: 1,0:19:43.60,0:19:47.48,Chinese,,0,0,0,,{\an5\pos(959,952.5)}{\fs57.6}危险、肮脏、糟糕，但它将成为最伟大的事情之一\N{\fs10}\h\N{\rEnglish\fs48}{\kt0\k0}to {\kt0\k48}be {\kt48\k0}one {\kt48\k24}of {\kt72\k0}the {\kt72\k316}great
