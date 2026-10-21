@@ -12,3 +12,6 @@ build/
 output/**/*.mp4
 output/**/*.webm
 output/**/*.m4a
+
+# Local scratch directory for download tooling and logs.
+.work/
