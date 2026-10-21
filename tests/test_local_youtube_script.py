@@ -12,7 +12,7 @@ SPEC.loader.exec_module(youtube_srt)
 
 
 def without_karaoke_tags(value):
-    return re.sub(r"\{\\kf\d+\}", "", value)
+    return re.sub(r"\{\\kt\d+\\k\d+\}", "", value)
 
 
 def test_video_id_url_variants():
@@ -47,7 +47,7 @@ def test_ass_uses_chinese_above_english_with_chinese_1_2x_size():
     assert "Style: CaptionBox,Arial,1,&H66000000," in result
     assert ",1,2,1,5,0,0,0,1" in result
     assert result.count("Dialogue: ") == 3
-    assert "Dialogue: 1,0:00:01.00,0:00:02.00,Chinese" in result
+    assert "Dialogue: 1,0:00:00.85,0:00:02.00,Chinese" in result
     assert "Style: CaptionFacet,Arial,1,&HD9FFFFFF," in result
     assert "Dialogue: 0,0:00:00.00,0:00:02.00,CaptionFacet" in result
     assert (
@@ -56,7 +56,7 @@ def test_ass_uses_chinese_above_english_with_chinese_1_2x_size():
     ) in result
     assert (
         r"{\an5\pos(959,952.5)}{\fs57.6}你好\N{\fs10}\h\N"
-        r"{\rEnglish\fs48}{\kf100}Hello"
+        r"{\rEnglish\fs48}{\kt15\k100}Hello"
     ) in result
     assert "Style: English,Arial,48,&H00FFD700,&H00FFFFFF," in result
 
@@ -69,7 +69,7 @@ def test_ass_highlights_english_words_in_sequence():
 
     result = youtube_srt.build_ass(chinese, english)
 
-    assert r"{\rEnglish\fs48}{\kf100}Hello {\kf100}world!" in result
+    assert r"{\rEnglish\fs48}{\kt15\k100}Hello {\kt115\k100}world!" in result
     assert result.count("MarginV") == 2
 
 
@@ -176,7 +176,8 @@ def test_cinema_preset_places_english_above_chinese_and_supports_custom_box():
         r"{\an7\pos(100,800)\p1}m 0 0 l 1700 0 1700 200 0 200 0 0{\p0}"
     ) in result
     assert (
-        r"{\an5\pos(950,900)}{\rEnglish\fs48}{\kf50}Primary {\kf50}school"
+        r"{\an5\pos(950,900)}{\rEnglish\fs48}{\kt15\k50}Primary "
+        r"{\kt65\k50}school"
         r"\N{\fs10}\h\N{\rChinese\fs57.6}小学生"
     ) in result
 
@@ -245,7 +246,7 @@ def test_ass_reconstructs_overlapping_rolling_captions_as_single_lines():
     assert "今天下午，工作组将召开会议" not in result
     assert "This afternoon, the task force will meet" not in result
     assert "will meet" in without_karaoke_tags(result)
-    assert "Dialogue: 1,0:00:01.00,0:00:02.00" in result
+    assert "Dialogue: 1,0:00:00.85,0:00:02.00" in result
     assert "Dialogue: 1,0:00:02.00,0:00:05.00" in result
 
 
@@ -293,15 +294,15 @@ def test_ass_rolls_overlapping_youtube_caption_window_into_one_line():
         for line in result.splitlines()
         if line.startswith("Dialogue: 1,")
     }
-    assert "0:00:04.16" in events
+    assert "0:00:04.01" in events
     assert "0:00:06.16" not in events
     assert "0:00:08.72" in events
-    assert "Dialogue: 1,0:00:04.16,0:00:08.72" in events["0:00:04.16"]
+    assert "Dialogue: 1,0:00:04.01,0:00:08.72" in events["0:00:04.01"]
     assert (
         "Ladies and gentlemen, the President of the United States, "
         "Donald J. Trump, and"
-    ) in without_karaoke_tags(events["0:00:04.16"])
-    assert "女士们先生们，美国总统唐纳德·特朗普和" in events["0:00:04.16"]
+    ) in without_karaoke_tags(events["0:00:04.01"])
+    assert "女士们先生们，美国总统唐纳德·特朗普和" in events["0:00:04.01"]
     assert "Dialogue: 1,0:00:08.72,0:00:13.00" in events["0:00:08.72"]
     assert "Ladies and gentlemen" not in events["0:00:08.72"]
     assert "First Lady Melania Trump." in without_karaoke_tags(events["0:00:08.72"])
@@ -623,6 +624,73 @@ def test_ass_uses_vtt_word_timestamps_instead_of_uniform_estimate():
     ]
 
 
+def test_ass_word_highlights_follow_vtt_pronunciation_timestamps():
+    english = youtube_srt.parse_vtt(
+        "WEBVTT\n\n"
+        "00:00:01.000 --> 00:00:03.000\n"
+        "<00:00:01.200>Hello <00:00:01.800>world!\n"
+    )
+    chinese = youtube_srt.parse_vtt(
+        "WEBVTT\n\n"
+        "00:00:01.000 --> 00:00:03.000\n你好\n"
+    )
+
+    result = youtube_srt.build_ass(chinese, english)
+    english_line = next(
+        line for line in result.splitlines() if line.startswith("Dialogue: 1,")
+    )
+
+    assert english_line.startswith("Dialogue: 1,0:00:00.85,0:00:03.00,")
+    assert r"{\kt35\k60}Hello {\kt95\k120}world!" in english_line
+    assert r"\kf" not in english_line
+
+
+def test_ass_keeps_word_timing_when_serializing_rolling_vtt_cues():
+    cues = youtube_srt.parse_vtt(
+        "WEBVTT\n\n"
+        "00:00:01.000 --> 00:00:03.000\n"
+        "<00:00:01.100>Hello <00:00:01.500>there\n\n"
+        "00:00:02.000 --> 00:00:03.000\n"
+        "<00:00:02.100>Hello there <00:00:02.500>today\n"
+    )
+
+    serialized = youtube_srt._serialize_same_end_cues(cues)
+    result = youtube_srt.build_ass(
+        youtube_srt.parse_vtt(
+            "WEBVTT\n\n00:00:01.000 --> 00:00:03.000\n你好\n"
+        ),
+        cues,
+    )
+    english_line = next(
+        line for line in result.splitlines() if line.startswith("Dialogue: 1,")
+    )
+
+    assert [cue["text"] for cue in serialized] == ["Hello there", "today"]
+    assert [timing["start"] for timing in serialized[0]["word_timings"]] == [1.1, 1.5]
+    assert [timing["start"] for timing in serialized[1]["word_timings"]] == [2.5]
+    assert r"{\kt25\k40}Hello {\kt65\k50}there" in english_line
+    assert r"{\kt50\k50}today" in result
+
+
+def test_ass_advances_caption_start_without_overlapping_previous_caption():
+    english = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:01,500\nFirst\n\n"
+        "2\n00:00:02,000 --> 00:00:03,000\nSecond\n\n"
+    )
+    chinese = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:01,500\n第一句\n\n"
+        "2\n00:00:02,000 --> 00:00:03,000\n第二句\n\n"
+    )
+
+    result = youtube_srt.build_ass(chinese, english)
+    dialogues = [
+        line for line in result.splitlines() if line.startswith("Dialogue: 1,")
+    ]
+
+    assert dialogues[0].startswith("Dialogue: 1,0:00:00.85,0:00:01.50,")
+    assert dialogues[1].startswith("Dialogue: 1,0:00:01.85,0:00:03.00,")
+
+
 def test_ass_skips_later_splits_after_vtt_timings_assign_all_words():
     cues = youtube_srt.parse_vtt(
         "WEBVTT\n\n"
@@ -718,9 +786,9 @@ def test_ass_preserves_vtt_start_and_trims_stale_inline_timed_tail():
         if "First Lady Melania Trump." in without_karaoke_tags(line)
     )
 
-    assert first_caption.startswith("Dialogue: 1,0:00:03.96,")
+    assert first_caption.startswith("Dialogue: 1,0:00:03.81,")
     assert ",0:01:05.63," not in last_caption
-    assert last_caption.startswith("Dialogue: 1,0:00:08.64,0:00:10.30,")
+    assert last_caption.startswith("Dialogue: 1,0:00:08.63,0:00:10.30,")
     assert not any(
         line.startswith("Dialogue: 1,0:00:10.22,0:00:10.30,")
         for line in dialogues

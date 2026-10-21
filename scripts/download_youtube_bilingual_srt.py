@@ -49,6 +49,7 @@ BOX_STYLES = {
     "solid-color": {"color": "#708496", "opacity": 1, "edge": "#D9E7F5"},
 }
 ENGLISH_HIGHLIGHT_COLOR = "#00D7FF"
+ASS_CAPTION_LEAD_SECONDS = 0.15
 
 
 def video_id_from_url(value: str) -> str:
@@ -396,7 +397,14 @@ def ass_escape_text(value: str) -> str:
     return "".join(parts)
 
 
-def ass_karaoke_text(value: str, duration: float) -> str:
+def ass_karaoke_text(
+    value: str,
+    duration: float,
+    *,
+    start: float = 0,
+    fallback_start: float | None = None,
+    word_timings: Sequence[dict | None] | None = None,
+) -> str:
     body = ass_escape_text(value)
     word_spans = []
     cursor = 0
@@ -415,13 +423,70 @@ def ass_karaoke_text(value: str, duration: float) -> str:
         return body
 
     total_centiseconds = max(0, round(duration * 100))
-    base_duration, remainder = divmod(total_centiseconds, len(word_spans))
+    fallback_centiseconds = round(
+        max(0, min(duration, (fallback_start if fallback_start is not None else start) - start))
+        * 100
+    )
+    fallback_duration = total_centiseconds - fallback_centiseconds
+    starts = [
+        fallback_centiseconds
+        + round(fallback_duration * index / len(word_spans))
+        for index in range(len(word_spans))
+    ]
+    if word_timings:
+        timings = list(word_timings[:len(starts)])
+        timings.extend([None] * (len(starts) - len(timings)))
+        for index, timing in enumerate(timings):
+            if timing is not None:
+                starts[index] = round(
+                    max(0, min(duration, timing["start"] - start)) * 100
+                )
+        known = [
+            index for index, timing in enumerate(timings) if timing is not None
+        ]
+        if known:
+            for index in range(len(starts)):
+                if timings[index] is not None:
+                    continue
+                before = [known_index for known_index in known if known_index < index]
+                after = [known_index for known_index in known if known_index > index]
+                if before and after:
+                    left, right = before[-1], after[0]
+                    starts[index] = round(
+                        starts[left]
+                        + (starts[right] - starts[left]) * (index - left) / (right - left)
+                    )
+                elif after:
+                    right = after[0]
+                    starts[index] = fallback_centiseconds + round(
+                        (starts[right] - fallback_centiseconds)
+                        * (index + 1)
+                        / (right + 1)
+                    )
+                elif before:
+                    left = before[-1]
+                    remaining = len(starts) - 1 - left
+                    starts[index] = (
+                        starts[left]
+                        + round((total_centiseconds - starts[left]) * (index - left) / remaining)
+                        if remaining
+                        else starts[left]
+                    )
+    starts = [
+        max(0, min(total_centiseconds, start_time))
+        for start_time in starts
+    ]
+    for index in range(1, len(starts)):
+        starts[index] = max(starts[index], starts[index - 1])
+
     result = []
     cursor = 0
     for index, (start, end) in enumerate(word_spans):
-        word_duration = base_duration + (index < remainder)
+        word_start = starts[index]
+        next_start = starts[index + 1] if index + 1 < len(starts) else total_centiseconds
+        word_duration = max(0, next_start - word_start)
         result.append(body[cursor:start])
-        result.append(f"{{\\kf{word_duration}}}")
+        result.append(f"{{\\kt{word_start}\\k{word_duration}}}")
         result.append(body[start:end])
         cursor = end
     result.append(body[cursor:])
@@ -538,6 +603,32 @@ def _rolling_word_spans(text: str) -> list[re.Match[str]]:
             plain_text,
         )
     )
+
+
+def _word_timings_for_text(
+    text: str, cues: Sequence[dict]
+) -> list[dict | None]:
+    target_words = _rolling_word_spans(text)
+    target_tokens = [word.group().casefold() for word in target_words]
+    timings: list[dict | None] = [None] * len(target_words)
+    for cue in cues:
+        cue_timings = cue.get("word_timings", [])
+        if not cue_timings:
+            continue
+        cue_words = _rolling_word_spans(cue["text"])
+        cue_tokens = [word.group().casefold() for word in cue_words]
+        matcher = SequenceMatcher(None, target_tokens, cue_tokens, autojunk=False)
+        for target_index, cue_index, size in matcher.get_matching_blocks():
+            for offset in range(size):
+                timing_index = cue_index + offset
+                if timing_index >= len(cue_timings):
+                    continue
+                target_word_index = target_index + offset
+                candidate = cue_timings[timing_index]
+                previous = timings[target_word_index]
+                if previous is None or candidate["start"] < previous["start"]:
+                    timings[target_word_index] = candidate
+    return timings
 
 
 def _vtt_word_cut(
@@ -778,11 +869,14 @@ def _serialize_same_end_cues(
                     text = _append_rolling_text(prefix, text, separator=separator)
                 segment_end_ms = boundary_ms
                 if text and segment_end_ms > segment_start_ms:
+                    segment_start = segment_start_ms / 1000
+                    segment_end = segment_end_ms / 1000
                     group_segments.append({
                         **group[0],
-                        "start": segment_start_ms / 1000,
-                        "end": segment_end_ms / 1000,
+                        "start": segment_start,
+                        "end": segment_end,
                         "text": text,
+                        "word_timings": _word_timings_for_text(text, group),
                     })
                 segment_start_ms = boundary_ms
 
@@ -933,11 +1027,14 @@ def _serialize_same_end_cues(
                     )
             segment_end_ms = boundary_ms
             if segment_text and segment_end_ms > segment_start_ms:
+                segment_start = segment_start_ms / 1000
+                segment_end = segment_end_ms / 1000
                 serialized.append({
                     **group[0],
-                    "start": segment_start_ms / 1000,
-                    "end": segment_end_ms / 1000,
+                    "start": segment_start,
+                    "end": segment_end,
                     "text": segment_text,
+                    "word_timings": _word_timings_for_text(segment_text, group),
                 })
             previous_cut = cut
             segment_start_ms = boundary_ms
@@ -1055,6 +1152,7 @@ def build_ass(
     last_caption_time = max(cue["end"] for cue in cues)
     box_end = max(last_caption_time, video_duration or 0)
     events = []
+    last_caption_end: float | None = None
 
     def append_box_events(start: float, end: float) -> None:
         events.append(
@@ -1110,6 +1208,12 @@ def build_ass(
         )
         visible_lines = [line for line in order if line[1]]
         style = "English" if visible_lines[0][0] == "english" else "Chinese"
+        event_start = max(
+            0,
+            start - ASS_CAPTION_LEAD_SECONDS,
+            last_caption_end if last_caption_end is not None else 0,
+        )
+        english_word_timings = _word_timings_for_text(english, active)
         body = ""
         for line_index, (language, text, size) in enumerate(visible_lines):
             if line_index:
@@ -1124,13 +1228,19 @@ def build_ass(
                 body += "{"
             body += f"\\fs{size:g}" + "}"
             body += (
-                ass_karaoke_text(text, end - start)
+                ass_karaoke_text(
+                    text,
+                    end - event_start,
+                    start=event_start,
+                    fallback_start=start,
+                    word_timings=english_word_timings,
+                )
                 if language == "english"
                 else ass_escape_text(text)
             )
         body = f"{{\\an5\\pos({area_center_x:g},{area_center_y:g})}}" + body
         event = {
-            "start": start,
+            "start": event_start,
             "end": end,
             "layer": 1,
             "style": style,
@@ -1145,6 +1255,7 @@ def build_ass(
             events[-1]["end"] = end
         else:
             events.append(event)
+        last_caption_end = end
 
     events.sort(key=lambda event: (event["start"], event["layer"]))
     return "\n".join(
