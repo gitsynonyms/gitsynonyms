@@ -259,13 +259,17 @@ def _without_rolling_cues(cues: Sequence[dict]) -> list[dict]:
     ordered = sorted(cues, key=lambda cue: cue["start"])
     result = []
     for index, cue in enumerate(ordered):
+        if cue["end"] - cue["start"] <= MIN_CUE_DURATION:
+            # YouTube's rolling captions include 10 ms stub cues that only repeat
+            # the previous line; they would flash for a single frame if serialized.
+            continue
         end = min(
             cue["end"],
             ordered[index + 1]["start"] if index + 1 < len(ordered) else cue["end"],
         )
         if end > cue["start"]:
             result.append({**cue, "end": end})
-    return result
+    return result or list(ordered)
 
 
 def _single_caption_line(text: str) -> str:
@@ -280,33 +284,73 @@ def _single_caption_line(text: str) -> str:
     return separator.join(lines)
 
 
+CUE_PAIR_TOLERANCE = 0.5
+MIN_CUE_DURATION = 0.05
+
+
 def _pair_same_end_cues(
     first: Sequence[dict], second: Sequence[dict]
 ) -> tuple[list[tuple[dict, dict]], list[dict], list[dict]]:
-    second_by_end: dict[int, list[tuple[int, dict]]] = {}
-    for index, cue in enumerate(second):
-        end_ms = round(cue["end"] * 1000)
-        second_by_end.setdefault(end_ms, []).append((index, cue))
+    """Pair cues that describe the same moment in both tracks.
 
+    YouTube's machine-translated tracks reuse the source segmentation but drift by
+    a few milliseconds, so requiring identical end times leaves every cue unpaired
+    and produces two single-language cues instead of one bilingual cue.
+    """
     pairs = []
     paired_first = set()
     paired_second = set()
     for first_index, cue in enumerate(first):
-        candidates = second_by_end.get(round(cue["end"] * 1000), [])
-        candidates = [item for item in candidates if item[0] not in paired_second]
-        if candidates:
-            second_index, match = min(
-                candidates, key=lambda item: abs(item[1]["start"] - cue["start"])
-            )
-            pairs.append((cue, match))
+        start = float(cue["start"])
+        end = float(cue["end"])
+        best_index = None
+        best_key = None
+        for second_index, match in enumerate(second):
+            if second_index in paired_second:
+                continue
+            match_start = float(match["start"])
+            match_end = float(match["end"])
+            end_delta = abs(match_end - end)
+            if end_delta > CUE_PAIR_TOLERANCE:
+                continue
+            # Prefer the cue that covers the same span: YouTube's rolling captions
+            # carry 10 ms stub cues whose end times also match the translated track.
+            overlap = min(end, match_end) - max(start, match_start)
+            key = (-round(overlap, 3), round(end_delta, 3), round(abs(match_start - start), 3))
+            if best_key is None or key < best_key:
+                best_index, best_key = second_index, key
+        if best_index is not None:
+            pairs.append((cue, second[best_index]))
             paired_first.add(first_index)
-            paired_second.add(second_index)
+            paired_second.add(best_index)
 
     return (
         pairs,
         [cue for index, cue in enumerate(first) if index not in paired_first],
         [cue for index, cue in enumerate(second) if index not in paired_second],
     )
+
+
+def _trim_rolling_repeats(segments: list[dict]) -> None:
+    """Drop the cumulative prefix YouTube repeats when a caption window rolls.
+
+    The auto-generated track re-sends the previous words with each new cue, so a
+    plain merge shows the same sentence growing across several cues. Persisting
+    captions and cue text carrying markup are left untouched.
+    """
+    previous = {"top": "", "bottom": ""}
+    for segment in segments:
+        for key in ("top", "bottom"):
+            current = segment[key]
+            earlier = previous[key]
+            if not earlier or not current or "<" in current or "<" in earlier:
+                continue
+            if current.strip() == earlier.strip():
+                continue
+            stripped = _remove_rolling_prefix(earlier, current)
+            if stripped.strip():
+                segment[key] = stripped
+        previous = {"top": segment["top"], "bottom": segment["bottom"]}
 
 
 def align_and_merge(
@@ -365,6 +409,7 @@ def align_and_merge(
 
     segments.extend(timeline_segments)
     segments.sort(key=lambda segment: (segment["start"], segment["end"]))
+    _trim_rolling_repeats(segments)
     blocks = []
     for index, segment in enumerate(segments, 1):
         start = format_timestamp(segment["start"])

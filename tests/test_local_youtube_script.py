@@ -540,6 +540,22 @@ def test_merge_pairs_cues_with_the_same_end_time_into_two_lines():
     )
 
 
+def test_merge_pairs_cues_whose_end_times_drift_by_a_few_milliseconds():
+    chinese = youtube_srt.parse_srt(
+        "1\n00:34:19,919 --> 00:34:21,760\n你按自己喜欢的方式处理了吗？\n\n"
+    )
+    english = youtube_srt.parse_srt(
+        "1\n00:34:19,919 --> 00:34:21,750\nDo you have them the way you like them?\n\n"
+    )
+
+    merged = youtube_srt.align_and_merge(chinese, english)
+
+    assert merged == (
+        "1\n00:34:19,919 --> 00:34:21,760\n"
+        "你按自己喜欢的方式处理了吗？\nDo you have them the way you like them?\n"
+    )
+
+
 def test_language_preference_is_case_insensitive():
     assert youtube_srt.pick_language({"en": [], "en-orig": []}, ["en-orig", "en"]) == "en-orig"
     assert youtube_srt.pick_language({"zh-Hans": []}, ["zh-hans"]) == "zh-Hans"

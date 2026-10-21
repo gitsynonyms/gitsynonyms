@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0b1020">
+    <title>总统与副总统声明 · 双语字幕包</title>
+    <link rel="stylesheet" href="styles.css?v=caption-preview-v6">
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <p class="eyebrow">GITSYNONYMS · CAPTION PACKAGE</p>
+        <h1>总统与副总统声明 · 双语字幕包</h1>
+        <p class="intro">原片：<em>President Trump and Vice President JD Vance Make an Announcement</em>（The White House，2026-10-20，1:42:05）。中文字幕来自 YouTube 自动翻译轨（zh-Hans），英文来自自动生成原声轨（en-orig）；两条轨道按时间对齐，未经人工校对。</p>
+        <nav class="page-nav" aria-label="主导航">
+          <a href="./">字幕生成</a>
+          <a href="settings.html">字幕设置 <span aria-hidden="true">↗</span></a>
+          <a class="active" href="watch.html">成品字幕</a>
+        </nav>
+      </header>
+
+      <section class="panel" aria-labelledby="source-title">
+        <h2 id="source-title">原片</h2>
+        <div class="video-frame">
+          <iframe
+            src="https://www.youtube-nocookie.com/embed/IQKChHxD9e8"
+            title="President Trump and Vice President JD Vance Make an Announcement"
+            allow="accelerometer; encrypted-media; picture-in-picture; web-share"
+            allowfullscreen
+            loading="lazy"></iframe>
+        </div>
+        <p class="hint">有声内容从 00:34:19 开始，此前为直播等待画面；字幕包的时间轴与原片一致。</p>
+      </section>
+
+      <section class="panel" aria-labelledby="files-title">
+        <h2 id="files-title">字幕文件</h2>
+        <ul class="media-list">
+          <li>
+            <a href="media/IQKChHxD9e8.zh-en.ass">ASS</a>
+            <span class="hint">1756 条双语字幕：中文金色在上、英文白色在下并逐词高亮，含全程可见的磨砂玻璃背景框，可直接播放或用于刻录。</span>
+          </li>
+          <li>
+            <a href="media/IQKChHxD9e8.zh-en.srt">SRT</a>
+            <span class="hint">纯文本双语字幕，UTF-8 BOM + CRLF，兼容大多数播放器与上传平台。</span>
+          </li>
+          <li>
+            <a href="media/IQKChHxD9e8.zh-en.vtt">WebVTT</a>
+            <span class="hint">网页播放器使用的双语轨道。</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="panel" aria-labelledby="burn-title">
+        <h2 id="burn-title">刻录成硬字幕视频</h2>
+        <p class="hint">下载原片后，用一条 FFmpeg 命令即可把 ASS 烧进画面；字号与背景框会随分辨率等比缩放。</p>
+        <pre class="command">ffmpeg -i source.mp4 -vf "subtitles='IQKChHxD9e8.zh-en.ass'" -c:v libx264 -crf 20 -c:a copy burned.mp4</pre>
+        <p class="hint">也可以用仓库脚本一步完成下载、对齐与刻录（先安装 <code>yt-dlp</code> 与 FFmpeg）；<code>--burn-max-height 480</code> 会把成片压到适合网页分发的体积：</p>
+        <pre class="command">python scripts/download_youtube_bilingual_srt.py "https://www.youtube.com/watch?v=IQKChHxD9e8" --burn-in --burn-max-height 480 --global-quality 30 --burn-preset veryfast</pre>
+      </section>
+
+      <footer>
+        字幕来源与时间轴由 YouTube 提供，本页只做对齐与样式渲染，不代表官方译本；自动翻译可能存在错译。需要更高质量的版本时，请提供原片文件或在本机运行上面的刻录命令。
+      </footer>
+    </main>
+  </body>
+</html>
