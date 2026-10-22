@@ -1074,6 +1074,26 @@ def test_parse_srv3_reads_word_starts():
     ]
 
 
+def test_parse_srv2_reads_word_runs():
+    cues = youtube_srt.parse_srv2(
+        '<?xml version="1.0" encoding="utf-8" ?><timedtext>'
+        '<text t="719" d="5120" w="1">Hello</text>'
+        '<text t="1040" d="4799" w="1" append="1"> everybody.</text>'
+        '<text t="2639" d="4881" w="1">I&#39;m</text>'
+        '<text t="2879" d="4641" w="1" append="1"> going</text>'
+        "</timedtext>"
+    )
+
+    assert [(cue["start"], cue["end"], cue["text"]) for cue in cues] == [
+        (0.719, 5.839, "Hello everybody."),
+        (2.639, 7.52, "I'm going"),
+    ]
+    assert cues[0]["word_timings"] == [
+        {"start": 0.719, "end": 1.04, "text": "Hello"},
+        {"start": 1.04, "end": 5.839, "text": "everybody"},
+    ]
+
+
 def test_parse_ttml_reads_cue_level_timing():
     cues = youtube_srt.parse_ttml(
         '<tt xmlns="http://www.w3.org/ns/ttml"><body><div>'

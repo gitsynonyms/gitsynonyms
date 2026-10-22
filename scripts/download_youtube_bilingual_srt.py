@@ -414,6 +414,80 @@ def parse_srv3(content: str) -> list[dict]:
     return result
 
 
+def parse_srv2(content: str) -> list[dict]:
+    """Parse YouTube's srv2 caption format, a flat list of timed text runs.
+
+    A run without ``append`` starts a caption; the following ``append`` runs
+    extend it. Each run carries its own start, so the words of a caption keep
+    the timing YouTube reported for them.
+    """
+    try:
+        root = ET.fromstring(content)
+    except ET.ParseError as error:
+        raise ValueError(f"Invalid srv2 caption file: {error}") from error
+    runs: list[dict] = []
+    for node in root.iter():
+        if node.tag.split("}")[-1] != "text":
+            continue
+        try:
+            start = float(node.get("t", 0)) / 1000
+            duration = float(node.get("d", 0)) / 1000
+        except (TypeError, ValueError):
+            continue
+        text = "".join(node.itertext())
+        runs.append(
+            {
+                "start": start,
+                "end": start + duration,
+                "text": text,
+                "append": node.get("append") == "1",
+            }
+        )
+    result = []
+    group: list[dict] = []
+    for run in runs:
+        if not run["append"] and group:
+            result.append(_caption_from_runs(group))
+            group = []
+        group.append(run)
+    if group:
+        result.append(_caption_from_runs(group))
+    if not result:
+        raise ValueError("srv2 caption file has no valid cues.")
+    return [cue for cue in result if cue is not None]
+
+
+def _caption_from_runs(runs: Sequence[dict]) -> dict | None:
+    """Build one caption from the timed runs that make it up."""
+    if not runs:
+        return None
+    start = runs[0]["start"]
+    end = runs[0]["end"]
+    text = "".join(run["text"] for run in runs)
+    if not text.strip():
+        return None
+    segments: list[tuple[float, float, str]] = []
+    for index, run in enumerate(runs):
+        if not run["text"].strip():
+            continue
+        following = next(
+            (later["start"] for later in runs[index + 1:] if later["text"].strip()),
+            end,
+        )
+        segments.append((run["start"], min(following, end), run["text"]))
+    cue = {
+        "start": start,
+        "end": end,
+        "text": text,
+        "start_timestamp": format_timestamp(start),
+        "end_timestamp": format_timestamp(end),
+    }
+    words = _word_timings_from_segments(text, segments)
+    if words:
+        cue["word_timings"] = words
+    return cue
+
+
 def parse_srv1(content: str) -> list[dict]:
     """Parse YouTube's srv1 caption format."""
     try:
@@ -532,13 +606,14 @@ CAPTION_FORMATS = ("vtt", "srt", "ttml", "srv3", "srv2", "srv1", "json3")
 CAPTION_PARSERS = {
     "json3": parse_json3,
     "srv3": parse_srv3,
+    "srv2": parse_srv2,
     "srv1": parse_srv1,
     "vtt": parse_vtt,
     "ttml": parse_ttml,
     "srt": parse_srt,
 }
 # Formats ordered from the most precise timing data to the least precise.
-CAPTION_PRECISION_ORDER = ("json3", "srv3", "srv1", "vtt", "ttml", "srt")
+CAPTION_PRECISION_ORDER = ("json3", "srv3", "srv2", "srv1", "vtt", "ttml", "srt")
 
 
 def parse_caption_file(path: Path) -> list[dict]:
