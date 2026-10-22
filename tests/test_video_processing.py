@@ -388,7 +388,7 @@ def test_main_reports_a_missing_manifest(tmp_path, capsys):
 
 def test_main_requires_both_paths_without_a_manifest(capsys):
     assert video_processing.main(["--video", "source.mp4"]) == 1
-    assert "--video and --subtitle" in capsys.readouterr().err
+    assert "either --subtitle or --caption-dir" in capsys.readouterr().err
 
 
 def test_render_log_deduplicates_font_noise_and_counts_missing_glyphs():
@@ -508,3 +508,237 @@ def test_preview_may_not_collide_with_the_burn_output(tmp_path, monkeypatch):
         assert "same file" in str(error)
     else:
         raise AssertionError("colliding outputs must fail")
+
+
+def make_caption_dir(tmp_path, video_id="TEST"):
+    folder = tmp_path / "captions"
+    folder.mkdir(exist_ok=True)
+    english = {
+        "events": [
+            {
+                "tStartMs": 1000,
+                "dDurationMs": 2000,
+                "segs": [{"utf8": "Hello"}, {"utf8": " world", "tOffsetMs": 500}],
+            }
+        ]
+    }
+    chinese = {
+        "events": [
+            {
+                "tStartMs": 1000,
+                "dDurationMs": 2000,
+                "segs": [{"utf8": "\u4f60\u597d"}, {"utf8": "\u4e16\u754c", "tOffsetMs": 500}],
+            }
+        ]
+    }
+    (folder / f"{video_id}.en.en-orig.json3").write_text(json.dumps(english), encoding="utf-8")
+    (folder / f"{video_id}.en.en-orig.srt").write_text(
+        "1\n00:00:01,000 --> 00:00:03,000\nHello world\n", encoding="utf-8"
+    )
+    (folder / f"{video_id}.en.zh-Hans.json3").write_text(json.dumps(chinese), encoding="utf-8")
+    (folder / f"{video_id}.en.zh-Hans.srt").write_text(
+        "1\n00:00:01,000 --> 00:00:03,000\n\u4f60\u597d\u4e16\u754c\n", encoding="utf-8"
+    )
+    return folder
+
+
+def frame_stack(width, height, count, banner):
+    data = bytearray()
+    split = height // 2
+    for frame in range(count):
+        for y in range(height):
+            for x in range(width):
+                if y < split:
+                    data.append((x * 7 + y * 13 + frame * 29) % 256)
+                elif banner:
+                    data.append(255 if (x // 5 + y // 3) % 2 == 0 else 0)
+                else:
+                    data.append((x * 11 + y * 17 + frame * 31) % 256)
+    return bytes(data)
+
+
+def test_caption_region_scales_with_the_video():
+    assert video_processing.caption_region(1920, 1080) == (66, 882, 1786, 140)
+    assert video_processing.caption_region(640, 360) == (22, 294, 594, 46)
+
+
+def test_analyze_frame_stack_detects_a_static_banner():
+    data = frame_stack(40, 20, 10, banner=True)
+
+    result = video_processing.analyze_frame_stack(data, 40, 20, 10)
+
+    assert result["detected"] is True
+    assert result["caption"]["static_edge_ratio"] > result["control"]["static_edge_ratio"]
+    assert result["samples"] == 10
+
+
+def test_analyze_frame_stack_ignores_moving_picture_edges():
+    data = frame_stack(40, 20, 10, banner=False)
+
+    result = video_processing.analyze_frame_stack(data, 40, 20, 10)
+
+    assert result["detected"] is False
+    assert result["caption"]["static_edge_ratio"] < 0.012
+
+
+def test_analyze_frame_stack_needs_three_samples():
+    data = frame_stack(20, 10, 2, banner=True)
+
+    result = video_processing.analyze_frame_stack(data, 20, 10, 5)
+
+    assert result["detected"] is False
+    assert result["samples"] == 2
+    assert "too few" in result["reason"]
+
+
+def test_manifest_caption_dir_selects_the_fused_pipeline(tmp_path):
+    (tmp_path / "TEST.source.mp4").write_bytes(b"video")
+    make_caption_dir(tmp_path)
+    manifest = write_manifest(
+        tmp_path,
+        video_id="TEST",
+        video="TEST.source.mp4",
+        caption_dir="captions",
+        languages=["zh-Hans", "en-orig"],
+        output_dir="out",
+        preview=True,
+    )
+
+    selection = video_processing.selection_from_manifest(manifest)
+
+    out = (tmp_path / "out").resolve()
+    assert selection.caption_dir == (tmp_path / "captions").resolve()
+    assert selection.languages == ("zh-Hans", "en-orig")
+    assert selection.ass_output == out / "bilingual_precise_Chinese-English.ass"
+    assert selection.subtitle == selection.ass_output
+    assert selection.timing_report == out / "TIMING.json"
+
+
+def make_caption_selection(tmp_path):
+    out = tmp_path / "out"
+    return video_processing.Selection(
+        video=tmp_path / "TEST.source.mp4",
+        subtitle=out / "bilingual_precise_Chinese-English.ass",
+        output=out / "Burned_Bilingual_TEST.mp4",
+        video_id="TEST",
+        output_dir=out,
+        caption_dir=make_caption_dir(tmp_path),
+        languages=("zh-Hans", "en-orig"),
+        ass_output=out / "bilingual_precise_Chinese-English.ass",
+        timing_report=out / "TIMING.json",
+    )
+
+
+def test_caption_dir_auto_adds_the_presidential_blue_box_for_a_banner(tmp_path, monkeypatch):
+    selection = make_caption_selection(tmp_path)
+    selection.video.write_bytes(b"video")
+    install_fake_ffmpeg(monkeypatch, tmp_path)
+    monkeypatch.setattr(
+        video_processing,
+        "extract_banner_frames",
+        lambda *args, **kwargs: (frame_stack(40, 20, 10, True), 40, 20, 10),
+    )
+
+    report = video_processing.process(selection, video_processing.BurnOptions(check_fonts=False))
+
+    assert report["status"] == "burned"
+    assert report["captions"]["box"]["mode"] == "presidential-blue"
+    assert report["captions"]["box"]["source"] == "auto"
+    assert report["captions"]["tracks"]["en-orig"]["primary_format"] == "json3"
+    ass = selection.ass_output.read_text(encoding="utf-8")
+    assert "CaptionBox" in ass
+    assert "Style: CaptionBox,Arial,1,&H2647160F," in ass
+    timing = json.loads(selection.timing_report.read_text(encoding="utf-8"))
+    assert timing["timebase"] == "nanosecond"
+    assert timing["tracks"]["en-orig"]["cues"][0]["start_ns"] == 1_000_000_000
+    assert timing["tracks"]["en-orig"]["cues"][0]["word_timings"][1]["start_ns"] == 1_500_000_000
+    assert report["inputs"]["captions"]
+    precision = selection.ass_output.with_name(
+        selection.ass_output.stem + ".en-orig.precision.vtt"
+    )
+    assert "00:00:01.000 --> 00:00:03.000" in precision.read_text(encoding="utf-8")
+    assert report["captions"]["precision_vtt"]["en-orig"]["resolution"] == "1 ms"
+
+
+def test_caption_dir_clean_source_has_no_box(tmp_path, monkeypatch):
+    selection = make_caption_selection(tmp_path)
+    selection.video.write_bytes(b"video")
+    install_fake_ffmpeg(monkeypatch, tmp_path)
+    monkeypatch.setattr(
+        video_processing,
+        "extract_banner_frames",
+        lambda *args, **kwargs: (frame_stack(40, 20, 10, False), 40, 20, 10),
+    )
+
+    report = video_processing.process(selection, video_processing.BurnOptions(check_fonts=False))
+
+    assert report["captions"]["box"]["mode"] == "none"
+    assert "CaptionBox" not in selection.ass_output.read_text(encoding="utf-8")
+
+
+def test_caption_dir_reuses_a_fresh_burn(tmp_path, monkeypatch):
+    selection = make_caption_selection(tmp_path)
+    selection.video.write_bytes(b"video")
+    install_fake_ffmpeg(monkeypatch, tmp_path)
+    monkeypatch.setattr(
+        video_processing,
+        "extract_banner_frames",
+        lambda *args, **kwargs: (frame_stack(40, 20, 10, False), 40, 20, 10),
+    )
+
+    first = video_processing.process(selection, video_processing.BurnOptions(check_fonts=False))
+    second = video_processing.process(selection, video_processing.BurnOptions(check_fonts=False))
+
+    assert first["status"] == "burned"
+    assert second["status"] == "reused"
+    assert second["burn"]["command"] is None
+    assert second["captions"]["box"]["mode"] == "none"
+
+
+def test_caption_box_can_be_forced(tmp_path):
+    info = {
+        "duration_seconds": 4.0,
+        "video": {"width": 640, "height": 360},
+    }
+    on = video_processing.choose_caption_box(
+        tmp_path / "v.mp4", info, video_processing.BurnOptions(caption_box="on"), "ffmpeg"
+    )
+    off = video_processing.choose_caption_box(
+        tmp_path / "v.mp4", info, video_processing.BurnOptions(caption_box="off"), "ffmpeg"
+    )
+
+    assert on["mode"] == "presidential-blue"
+    assert on["source"] == "forced-on"
+    assert off["mode"] == "none"
+    assert off["source"] == "forced-off"
+
+
+def test_failed_banner_detection_falls_back_to_the_box(tmp_path, monkeypatch):
+    def fail(*_args, **_kwargs):
+        raise RuntimeError("decoder unavailable")
+
+    monkeypatch.setattr(video_processing, "detect_banner", fail)
+    info = {"duration_seconds": 4.0, "video": {"width": 640, "height": 360}}
+
+    decision = video_processing.choose_caption_box(
+        tmp_path / "v.mp4", info, video_processing.BurnOptions(caption_box="auto"), "ffmpeg"
+    )
+
+    assert decision["mode"] == "presidential-blue"
+    assert decision["source"] == "auto-fallback"
+    assert "decoder unavailable" in decision["error"]
+
+
+def test_box_opacity_is_validated(tmp_path, monkeypatch):
+    selection = make_selection(tmp_path)
+    install_fake_ffmpeg(monkeypatch, tmp_path)
+
+    try:
+        video_processing.process(
+            selection,
+            video_processing.BurnOptions(check_fonts=False, box_opacity=1.5),
+        )
+    except ValueError as error:
+        assert "Box opacity" in str(error)
+    else:
+        raise AssertionError("an out-of-range opacity must fail")

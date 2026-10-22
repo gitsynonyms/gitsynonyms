@@ -393,7 +393,8 @@ def parse_srv3(content: str) -> list[dict]:
             if not text:
                 continue
             try:
-                child_start = float(child.get("t", 0)) / 1000
+                # srv3 timestamps on <s> are offsets from the paragraph start.
+                child_start = start + float(child.get("t", 0)) / 1000
             except (TypeError, ValueError):
                 child_start = start
             starts.append(child_start)
@@ -1498,7 +1499,7 @@ def build_ass(
         raise ValueError("Font size must be positive and Chinese font scale must be between 0.5 and 3.")
     if caption_order not in {"chinese-first", "english-first"}:
         raise ValueError("Caption order must be 'chinese-first' or 'english-first'.")
-    if box_style not in BOX_STYLES:
+    if box_style not in {*BOX_STYLES, "none"}:
         raise ValueError(f"Unsupported subtitle box style: {box_style!r}")
     if video_duration is not None and (
         not math.isfinite(video_duration) or video_duration < 0
@@ -1524,7 +1525,7 @@ def build_ass(
     highlight_ass_color = ass_color(ENGLISH_HIGHLIGHT_COLOR)
     shadow_ass_color = ass_color(shadow_color, opacity=35)
     box_ass_color = ass_color(box_color, opacity=round(box_opacity * 100))
-    box_edge_color = ass_color(BOX_STYLES[box_style]["edge"], opacity=24)
+    box_edge_color = ass_color(BOX_STYLES.get(box_style, BOX_STYLES["glass-diamond"])["edge"], opacity=24)
     facet_color = ass_color("#FFFFFF", opacity=15)
     first_font_size = max(1, round(second_font_size * first_font_scale, 1))
     area_width = area_right - area_left
@@ -1538,16 +1539,19 @@ def build_ass(
         "BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, "
         "Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding"
     )
-    styles = (
+    styles = [
         f"Style: Chinese,{first_font},{first_font_size:g},{first_ass_color},&H000000FF,"
         f"&H80000000,{shadow_ass_color},-1,0,0,0,100,100,0,0,1,2,1,5,0,0,0,1",
         f"Style: English,{second_font},{second_font_size},{highlight_ass_color},{second_ass_color},"
         f"&H80000000,{shadow_ass_color},0,0,0,0,100,100,0,0,1,2,1,5,0,0,0,1",
-        f"Style: CaptionBox,Arial,1,{box_ass_color},&H000000FF,"
-        f"&H00000000,{box_edge_color},0,0,0,0,100,100,0,0,1,1,0,7,0,0,0,1",
-        f"Style: CaptionFacet,Arial,1,{facet_color},&H000000FF,"
-        f"&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1",
-    )
+    ]
+    if box_style != "none":
+        styles += [
+            f"Style: CaptionBox,Arial,1,{box_ass_color},&H000000FF,"
+            f"&H00000000,{box_edge_color},0,0,0,0,100,100,0,0,1,1,0,7,0,0,0,1",
+            f"Style: CaptionFacet,Arial,1,{facet_color},&H000000FF,"
+            f"&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1",
+        ]
     first_group_signatures = {
         _cue_group_signature(group) for group in _rolling_cue_groups(first)
     }
@@ -1602,7 +1606,8 @@ def build_ass(
                 ),
             })
 
-    append_box_events(0, box_end)
+    if box_style != "none":
+        append_box_events(0, box_end)
     for start, end in zip(boundaries, boundaries[1:]):
         if end <= start:
             continue

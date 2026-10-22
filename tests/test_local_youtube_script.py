@@ -427,6 +427,17 @@ def test_qsv_burn_in_uses_requested_one_line_ffmpeg_quality_options(monkeypatch,
     assert command[command.index("-c:a") + 1] == "copy"
 
 
+def test_caption_box_can_be_disabled_for_a_clean_source():
+    cues = youtube_srt.parse_srt("1\n00:00:01,000 --> 00:00:02,000\ncaption\n\n")
+
+    result = youtube_srt.build_ass(cues, cues, box_style="none")
+
+    assert "CaptionBox" not in result
+    assert "CaptionFacet" not in result
+    assert result.count("Dialogue: ") == 1
+    assert "Dialogue: 1,0:00:01.00,0:00:02.00," in result
+
+
 def test_ass_caption_box_is_embedded_and_opacity_is_validated():
     cues = youtube_srt.parse_srt("1\n00:00:01,000 --> 00:00:02,000\ncaption\n\n")
     result = youtube_srt.build_ass(cues, cues)
@@ -1092,16 +1103,16 @@ def test_parse_srv3_reads_word_starts():
     cues = youtube_srt.parse_srv3(
         '<?xml version="1.0" encoding="utf-8"?>'
         '<timedtext format="3"><body>'
-        '<p t="1000" d="2000"><s t="1000">Hello</s><s t="1400"> everybody.</s></p>'
+        '<p t="719" d="5120"><s t="0">Hello</s><s t="321"> everybody.</s></p>'
         "</body></timedtext>"
     )
 
     assert [(cue["start"], cue["end"], cue["text"]) for cue in cues] == [
-        (1.0, 3.0, "Hello everybody.")
+        (0.719, 5.839, "Hello everybody.")
     ]
     assert cues[0]["word_timings"] == [
-        {"start": 1.0, "end": 1.4, "text": "Hello"},
-        {"start": 1.4, "end": 3.0, "text": "everybody"},
+        {"start": 0.719, "end": 1.04, "text": "Hello"},
+        {"start": 1.04, "end": 5.839, "text": "everybody"},
     ]
 
 

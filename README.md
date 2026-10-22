@@ -107,8 +107,9 @@ python3 scripts/video_processing.py \
   --output-dir output/2026-10-21_... --preview --poster
 ```
 
-A manifest names the chosen files; relative paths resolve against the manifest
-directory first and the current directory second:
+A manifest either points at an archive folder that holds YouTube's published
+caption formats (preferred) or at one prepared subtitle file. Relative paths
+resolve against the manifest directory first and the current directory second:
 
 ```json
 {
@@ -116,25 +117,77 @@ directory first and the current directory second:
   "title": "President Trump Participates in a Roundtable, Oct. 21, 2026",
   "event_date": "2026-10-21",
   "video": "../work/TLH3gXrPCTU.source.mp4",
-  "subtitles": {
-    "ass": "output/2026-10-21_.../bilingual_Chinese-English.ass",
-    "srt": "output/2026-10-21_.../bilingual_Chinese-English.srt"
-  },
+  "caption_dir": "output/2026-10-21_...",
+  "languages": ["zh-Hans", "en-orig"],
   "output_dir": "output/2026-10-21_...",
   "preview": true,
   "poster": true
 }
 ```
 
-The module prefers the styled ASS because it carries the layout, colors, and
-per-word timing, and falls back to SRT/VTT (rendered with libass defaults). It
-then:
+For the same job without a manifest:
+
+```bash
+python3 scripts/video_processing.py \
+  --video work/5YerQHGsX04.source.mp4 --video-id 5YerQHGsX04 \
+  --caption-dir output/2026-10-19_... \
+  --languages zh-Hans,en-orig --caption-box auto \
+  --output-dir output/2026-10-19_... --preview --poster
+```
+
+#### Seven-format timing fusion (subtitle timing office)
+
+With `caption_dir`, module 2 reads every published format for both languages
+(`vtt`, `srt`, `ttml`, `srv3`, `srv2`, `srv1`, `json3`) and fuses them:
+
+- `json3` is the primary per-word source (`tStartMs` + `tOffsetMs`). `srv3` and
+  `srv2` repeat the offsets as XML attributes and corroborate them; `srv1`,
+  `ttml`, `vtt`, and `srt` contribute cue boundaries. Cue boundaries use a
+  weighted median across all matching formats; word starts keep the json3
+  value and use the other formats only to fill gaps, because the XML formats
+  often group several words into one segment. `srv3` offsets are relative to
+  their paragraph (the parser previously treated them as absolute).
+- The fused timeline is kept in **integer nanoseconds**. YouTube's sources are
+  at best 1 ms, so the values are exact multiples of that resolution instead
+  of invented precision; integer math keeps the medians and sums lossless.
+- `TIMING.json` stores that nanosecond model with every cue, word, source list,
+  and disagreement report, plus the measured quantization error.
+- A per-language `*.precision.vtt` sidecar writes the same timeline at 1 ms,
+  the highest resolution a normal subtitle file preserves.
+- The styled ASS is generated from the fused tracks. **ASS cannot represent
+  sub-centisecond time**: libass accepts exactly two fractional digits, and we
+  verified at 1000 fps that `0:00:01.234` (or more digits) makes the entire
+  event disappear. The ASS therefore rounds every start/end to the nearest
+  10 ms; the maximum error is 5 ms and the measured error is recorded in
+  `BURN.json` and the ASS header. Video frames themselves are 33–40 ms at
+  25/30 fps, so this is also below the visible frame interval.
+
+| Representation | Resolution | Purpose |
+|---|---|---|
+| `TIMING.json` | 1 ns integers | lossless fused model and provenance |
+| `*.precision.vtt` | 1 ms | portable precise subtitles |
+| `bilingual_precise_*.ass` | 10 ms | styled burn-in (libass limit) |
+| burned MP4 | 33–40 ms | 25/30 fps frame timing |
+
+#### Caption box or clean text
+
+`--caption-box auto` samples the caption band (plus an equally tall control
+band above it) from the video, measures pixels that are both temporally static
+and high-gradient, and treats that pattern as a persistent banner. A banner
+gets the **semi-transparent presidential-blue** box (`--box-opacity`, default
+0.85); a clean source gets no box, so the subtitles sit directly on the picture
+with their outline and shadow. `--caption-box on` and `off` force either
+choice. The decision, metrics, thresholds, and sampled region are recorded in
+`BURN.json`; a failed detection falls back to the box so a banner can never
+make the captions unreadable. Long videos are sampled from keyframes only.
+
+The rest of the processing:
 
 1. probes the video with `ffprobe` and rejects files with no video stream or no
    duration;
-2. parses the subtitle with the repository's caption parsers, counts cues,
-   reports first/last cue and coverage, and warns when the captions run past the
-   end of the video (`--strict` makes that an error);
+2. inspects the generated subtitle, counts cues, reports first/last cue and
+   coverage, and warns when the captions run past the end of the video
+   (`--strict` makes that an error);
 3. reports the ASS font families and what fontconfig (`fc-match`) substitutes,
    and condenses libass's per-glyph warnings into one missing-glyph warning
    (`--strict-fonts` makes missing glyphs fatal);
@@ -146,13 +199,19 @@ then:
    poster frame;
 6. writes `BURN.json` next to the output with the status (`burned`, `reused`,
    `dry-run`, or `failed`), input/output SHA-256 hashes, stream metadata, cue
-   statistics, font substitutions, and the exact FFmpeg command. The publishing
-   module consumes this report instead of re-probing the files.
+   statistics, timing sources, banner metrics, font substitutions, and the
+   exact FFmpeg command. The publishing module consumes this report instead of
+   re-probing the files.
+
+Without `caption_dir`, the module burns the one prepared subtitle file that was
+supplied; in that mode the ASS layout (including any box) is already embedded
+and `--caption-box` does not alter it.
 
 Existing fresh outputs are reused unless `--force` is passed, so a retry does
-not re-encode a long video. `--dry-run` performs every validation and records
-the planned commands without running FFmpeg. The command exits `0` for
-`burned`/`reused`/`dry-run` and `1` for any validation or FFmpeg failure; a
+not re-encode a long video. `--dry-run` performs every validation, samples the
+caption band, and writes the generated subtitle hand-off, but records the
+planned render commands instead of encoding the video. The command exits `0`
+for `burned`/`reused`/`dry-run` and `1` for any validation or FFmpeg failure; a
 failed run still writes `BURN.json` with `"status": "failed"` and the error, and
 leaves neither a partial MP4 nor a `.part` file behind.
 

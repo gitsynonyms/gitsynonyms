@@ -49,12 +49,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
 import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Sequence
@@ -66,6 +67,7 @@ if str(SCRIPTS_DIR) not in sys.path:
 # Reuse the repository's caption parsers so a subtitle is read exactly the same
 # way here as it was written by the downloader.
 import download_youtube_bilingual_srt as captions  # noqa: E402
+import subtitle_timing  # noqa: E402
 
 MODULE_NAME = "module2-video-processing"
 MODULE_VERSION = "1.0"
@@ -85,6 +87,18 @@ OVERRUN_TOLERANCE = 0.5
 DURATION_TOLERANCE = 2.0
 SHA_CHUNK = 1024 * 1024
 
+# Caption area and play resolution shared with the ASS builder. The banner
+# detector samples exactly the band that the burned subtitles will cover.
+CAPTION_AREA = captions.CAPTION_AREA
+PLAY_RESOLUTION = captions.PLAY_RESOLUTION
+BANNER_SAMPLE_WIDTH = 448
+BANNER_MAX_SAMPLES = 120
+BANNER_STATIC_STD = 18
+BANNER_EDGE_THRESHOLD = 44
+BANNER_MIN_STATIC_EDGE_RATIO = 0.012
+BANNER_CONTROL_FACTOR = 1.5
+DEFAULT_BOX_OPACITY = 0.85
+
 
 @dataclass(frozen=True)
 class Selection:
@@ -100,6 +114,10 @@ class Selection:
     preview: Path | None = None
     poster: Path | None = None
     manifest: Path | None = None
+    caption_dir: Path | None = None
+    languages: tuple[str, ...] = ("zh-Hans", "en-orig")
+    ass_output: Path | None = None
+    timing_report: Path | None = None
 
 
 @dataclass(frozen=True)
@@ -113,6 +131,8 @@ class BurnOptions:
     strict_fonts: bool = False
     check_fonts: bool = True
     report: Path | None = None
+    caption_box: str = "auto"
+    box_opacity: float = DEFAULT_BOX_OPACITY
 
 
 def utc_now() -> str:
@@ -192,6 +212,31 @@ def _default_output(output_dir: Path, video_id: str) -> Path:
     return output_dir / f"Burned_Bilingual_{video_id}.mp4"
 
 
+def parse_languages(value: object) -> tuple[str, ...]:
+    """Validate the two caption language codes in visual order (top, bottom)."""
+    if isinstance(value, str):
+        items = [item.strip() for item in value.split(",") if item.strip()]
+    elif isinstance(value, (list, tuple)):
+        items = [str(item).strip() for item in value if str(item).strip()]
+    else:
+        raise ValueError("Languages must be a comma-separated string or a list.")
+    if len(items) != 2:
+        raise ValueError("Exactly two languages are required, in top-to-bottom order.")
+    for item in items:
+        if not re.fullmatch(r"[A-Za-z0-9_-]{2,20}", item):
+            raise ValueError(f"Invalid language code: {item!r}")
+    return tuple(items)
+
+
+def default_ass_output(output_dir: Path, languages: Sequence[str]) -> Path:
+    labels = "-".join(subtitle_timing.language_label(code) for code in languages)
+    return output_dir / f"bilingual_precise_{labels}.ass"
+
+
+def default_timing_report(output_dir: Path) -> Path:
+    return output_dir / "TIMING.json"
+
+
 def _optional_path(value: object, default: Path, bases: Sequence[Path], label: str) -> Path | None:
     if value in (None, False):
         return None
@@ -233,11 +278,6 @@ def selection_from_manifest(manifest_path: Path) -> Selection:
         stem = re.sub(r"\.(source|video|original)$", "", video.stem)
         video_id = _sanitize_video_id(stem)
 
-    subtitle_value = data.get("subtitles", data.get("subtitle"))
-    if subtitle_value is None:
-        raise ValueError("Selection manifest must name the subtitle file(s) under 'subtitles'.")
-    subtitle = _pick_subtitle(_subtitle_paths(subtitle_value, bases))
-
     output_dir_value = data.get("output_dir")
     output_dir = _resolve_output(str(output_dir_value), bases) if output_dir_value else video.parent
     output_value = data.get("output")
@@ -246,6 +286,38 @@ def selection_from_manifest(manifest_path: Path) -> Selection:
         if output_value
         else _default_output(output_dir, video_id)
     )
+
+    languages = parse_languages(data.get("languages") or ("zh-Hans", "en-orig"))
+    caption_value = data.get("caption_dir") or data.get("captions_dir") or data.get("captions")
+    caption_dir = None
+    if caption_value:
+        if not isinstance(caption_value, str):
+            raise ValueError("Selection caption directory must be a path string.")
+        caption_dir = _resolve_input(caption_value, bases)
+        if not caption_dir.is_dir():
+            raise ValueError(f"Selected caption directory not found: {caption_dir}")
+    ass_output = (
+        _resolve_output(str(data["ass_output"]), bases)
+        if data.get("ass_output")
+        else default_ass_output(output_dir, languages)
+    )
+    timing_report = (
+        _resolve_output(str(data["timing_report"]), bases)
+        if data.get("timing_report")
+        else default_timing_report(output_dir)
+    )
+    if caption_dir:
+        # The ASS is generated here from the seven published caption formats.
+        subtitle = ass_output
+    else:
+        subtitle_value = data.get("subtitles", data.get("subtitle"))
+        if subtitle_value is None:
+            raise ValueError(
+                "Selection manifest must name either 'caption_dir' or the subtitle file(s) "
+                "under 'subtitles'."
+            )
+        subtitle = _pick_subtitle(_subtitle_paths(subtitle_value, bases))
+
     preview = _optional_path(
         data.get("preview"),
         output.with_name(f"{output.stem}-540p.mp4"),
@@ -269,16 +341,17 @@ def selection_from_manifest(manifest_path: Path) -> Selection:
         preview=preview,
         poster=poster,
         manifest=manifest_path,
+        caption_dir=caption_dir,
+        languages=languages,
+        ass_output=ass_output if caption_dir else None,
+        timing_report=timing_report if caption_dir else None,
     )
 
 
 def selection_from_args(args: argparse.Namespace) -> Selection:
     video = Path(args.video).expanduser().resolve()
-    subtitle = Path(args.subtitle).expanduser().resolve()
     if not video.is_file():
         raise ValueError(f"Selected video file not found: {video}")
-    if not subtitle.is_file():
-        raise ValueError(f"Selected subtitle file not found: {subtitle}")
     stem = re.sub(r"\.(source|video|original)$", "", video.stem)
     video_id = _sanitize_video_id(args.video_id or stem)
     output_dir = Path(args.output_dir).expanduser().resolve() if args.output_dir else video.parent
@@ -287,6 +360,32 @@ def selection_from_args(args: argparse.Namespace) -> Selection:
         if args.output
         else _default_output(output_dir, video_id)
     )
+    languages = parse_languages(args.languages or "zh-Hans,en-orig")
+    caption_dir = Path(args.caption_dir).expanduser().resolve() if args.caption_dir else None
+    if caption_dir and not caption_dir.is_dir():
+        raise ValueError(f"Selected caption directory not found: {caption_dir}")
+    ass_output = (
+        Path(args.ass_output).expanduser().resolve()
+        if args.ass_output
+        else default_ass_output(output_dir, languages)
+    )
+    timing_report = (
+        Path(args.timing_report).expanduser().resolve()
+        if args.timing_report
+        else default_timing_report(output_dir)
+    )
+    if caption_dir:
+        if args.subtitle:
+            raise ValueError("Use either --caption-dir or --subtitle, not both.")
+        subtitle = ass_output
+    else:
+        if not args.subtitle:
+            raise ValueError("Provide --subtitle, or --caption-dir with the seven caption formats.")
+        subtitle = Path(args.subtitle).expanduser().resolve()
+        if not subtitle.is_file():
+            raise ValueError(f"Selected subtitle file not found: {subtitle}")
+        ass_output = None
+        timing_report = None
     preview = None
     if args.preview or args.preview_path:
         preview = (
@@ -312,6 +411,10 @@ def selection_from_args(args: argparse.Namespace) -> Selection:
         preview=preview,
         poster=poster,
         manifest=None,
+        caption_dir=caption_dir,
+        languages=languages,
+        ass_output=ass_output,
+        timing_report=timing_report,
     )
 
 
@@ -769,8 +872,12 @@ def validate_output_paths(selection: Selection) -> None:
         "output": selection.output,
         "preview": selection.preview,
         "poster": selection.poster,
+        "ASS": selection.ass_output,
+        "timing report": selection.timing_report,
     }
-    inputs = {"video": selection.video, "subtitle": selection.subtitle}
+    inputs = {"video": selection.video}
+    if selection.subtitle and selection.subtitle != selection.ass_output:
+        inputs["subtitle"] = selection.subtitle
     seen: dict[Path, str] = {}
     for label, path in outputs.items():
         if path is None:
@@ -818,6 +925,8 @@ def process(selection: Selection, options: BurnOptions) -> dict:
         "video": {},
         "subtitles": {},
         "fonts": {},
+        "captions": {},
+        "timing": {},
         "render": {},
         "burn": {},
         "outputs": {},
@@ -825,12 +934,30 @@ def process(selection: Selection, options: BurnOptions) -> dict:
     }
     try:
         validate_output_paths(selection)
+        if not 0 <= options.box_opacity <= 1:
+            raise ValueError("Box opacity must be between 0 and 1.")
         ffmpeg = tool_path("ffmpeg")
         if not ffmpeg:
             raise RuntimeError("ffmpeg is required for burn-in but was not found on PATH.")
         report["burn"]["tool"] = ffmpeg_version(ffmpeg)
 
         video_info = summarize_probe(probe_media(selection.video))
+        caption_sources: list[Path] = []
+        if selection.caption_dir is not None:
+            selection, caption_sources = prepare_captions(
+                selection, video_info, options, ffmpeg, report
+            )
+        else:
+            if options.caption_box != "auto":
+                report["warnings"].append(
+                    "The caption-box mode only applies to captions generated from a caption "
+                    "directory; the supplied ASS keeps its embedded layout."
+                )
+            report["captions"] = {
+                "mode": "embedded",
+                "box": {"mode": "embedded", "source": "supplied-ass"},
+                "ass": str(selection.subtitle),
+            }
         subtitle_info = inspect_subtitles(selection.subtitle, video_info["duration_seconds"])
         report["video"] = video_info
         report["subtitles"] = subtitle_info
@@ -838,6 +965,8 @@ def process(selection: Selection, options: BurnOptions) -> dict:
             "video": _file_record(selection.video),
             "subtitle": _file_record(selection.subtitle),
         }
+        if caption_sources:
+            report["inputs"]["captions"] = [_file_record(path) for path in caption_sources]
         if subtitle_info["overrun_seconds"] > OVERRUN_TOLERANCE:
             message = (
                 f"The subtitle runs {subtitle_info['overrun_seconds']:.3f} s past the end of "
@@ -870,10 +999,8 @@ def process(selection: Selection, options: BurnOptions) -> dict:
         )
         print(f"  output   : {selection.output}")
 
-        reused = (
-            _is_fresh(selection.output, [selection.video, selection.subtitle])
-            and not options.force
-        )
+        fresh_inputs = [selection.video, *(caption_sources or [selection.subtitle])]
+        reused = _is_fresh(selection.output, fresh_inputs) and not options.force
         if not reused:
             audio_mode = choose_audio_mode(selection.output, video_info["audio"])
             temp_output = selection.output.with_name(
@@ -1034,6 +1161,29 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--selection", type=Path, help="Selection manifest produced upstream.")
     parser.add_argument("--video", help="Selected video file (when no manifest is used).")
     parser.add_argument("--subtitle", help="Selected subtitle file (when no manifest is used).")
+    parser.add_argument(
+        "--caption-dir",
+        help="Folder holding the seven caption formats; module 2 builds the ASS from them.",
+    )
+    parser.add_argument(
+        "--languages",
+        default="zh-Hans,en-orig",
+        help="Two language codes in top-to-bottom order (default: zh-Hans,en-orig).",
+    )
+    parser.add_argument("--ass-output", help="Exact path of the generated precise ASS.")
+    parser.add_argument("--timing-report", help="Exact path of the nanosecond TIMING.json.")
+    parser.add_argument(
+        "--caption-box",
+        choices=("auto", "on", "off"),
+        default="auto",
+        help="Caption box: auto-detect a source banner, always on (presidential blue), or off.",
+    )
+    parser.add_argument(
+        "--box-opacity",
+        type=float,
+        default=DEFAULT_BOX_OPACITY,
+        help=f"Presidential-blue box opacity 0-1 (default: {DEFAULT_BOX_OPACITY}).",
+    )
     parser.add_argument("--video-id", help="Video id used in output names and the report.")
     parser.add_argument("--title", help="Event title recorded in the report.")
     parser.add_argument("--event-date", help="Event date in YYYY-MM-DD format.")
@@ -1090,8 +1240,10 @@ def main(argv: list[str] | None = None) -> int:
                 raise ValueError("Use either --selection or --video/--subtitle, not both.")
             selection = selection_from_manifest(args.selection)
         else:
-            if not args.video or not args.subtitle:
-                raise ValueError("Provide --selection, or both --video and --subtitle.")
+            if not args.video:
+                raise ValueError("Provide --video, or use --selection.")
+            if not args.subtitle and not args.caption_dir:
+                raise ValueError("Provide --video and either --subtitle or --caption-dir.")
             selection = selection_from_args(args)
         options = BurnOptions(
             encoder=args.encoder,
@@ -1103,12 +1255,345 @@ def main(argv: list[str] | None = None) -> int:
             strict_fonts=args.strict_fonts,
             check_fonts=not args.no_font_check,
             report=args.report,
+            caption_box=args.caption_box,
+            box_opacity=args.box_opacity,
         )
         process(selection, options)
         return 0
     except (OSError, ValueError, RuntimeError) as error:
         print(f"Error: {error}", file=sys.stderr)
         return 1
+
+
+
+
+def _even(value: float) -> int:
+    rounded = int(round(value))
+    return rounded - rounded % 2
+
+
+def caption_region(width: int, height: int) -> tuple[int, int, int, int]:
+    """Map the ASS caption area onto the actual video pixels."""
+    scale_x = width / PLAY_RESOLUTION[0]
+    scale_y = height / PLAY_RESOLUTION[1]
+    left = max(0, _even(CAPTION_AREA[0] * scale_x))
+    right = min(_even(width), _even(CAPTION_AREA[2] * scale_x))
+    top = max(0, _even(CAPTION_AREA[1] * scale_y))
+    bottom = min(_even(height), _even(CAPTION_AREA[3] * scale_y))
+    return left, top, max(2, right - left), max(2, bottom - top)
+
+
+def extract_banner_frames(
+    video: Path,
+    duration: float,
+    width: int,
+    height: int,
+    ffmpeg: str,
+) -> tuple[bytes, int, int, int]:
+    """Sample the caption band plus an equally tall control band above it."""
+    left, top, area_width, area_height = caption_region(width, height)
+    control_height = min(area_height, top)
+    crop_y = top - control_height
+    crop_height = min(height - crop_y, area_height + control_height)
+    if crop_height < 4 or area_width < 4:
+        raise RuntimeError("The video is too small to analyse the caption area.")
+    sample_width = max(16, min(BANNER_SAMPLE_WIDTH, area_width))
+    sample_height = max(4, _even(crop_height * sample_width / area_width))
+    split_row = int(round(control_height * sample_height / crop_height))
+    interval = max(1.0, duration / BANNER_MAX_SAMPLES)
+    command = [
+        ffmpeg,
+        "-hide_banner",
+        "-v",
+        "error",
+    ]
+    # Decoding every frame of a 30-minute 1080p video just to sample the caption
+    # band is wasteful; keyframes are enough for a temporal stability check.
+    if duration > 120:
+        command += ["-skip_frame", "nokey"]
+    command += [
+        "-i",
+        str(video),
+        "-vf",
+        f"fps=1/{interval:.6f},crop={area_width}:{crop_height}:{left}:{crop_y},"
+        f"scale={sample_width}:{sample_height}:flags=area,format=gray",
+        "-an",
+        "-f",
+        "rawvideo",
+        "-",
+    ]
+    try:
+        result = subprocess.run(command, check=True, capture_output=True)
+    except FileNotFoundError as error:
+        raise RuntimeError("ffmpeg is required for banner detection but was not found.") from error
+    except subprocess.CalledProcessError as error:
+        details = (error.stderr or b"").decode("utf-8", "replace").strip()
+        raise RuntimeError(f"ffmpeg could not sample the caption area: {details}") from error
+    return result.stdout, sample_width, sample_height, split_row
+
+
+def _region_metrics(
+    means: Sequence[float],
+    deviations: Sequence[float],
+    width: int,
+    height: int,
+    row_start: int,
+    row_end: int,
+) -> dict:
+    static_edge = 0
+    edges = 0
+    static = 0
+    total = 0
+    for y in range(row_start, row_end):
+        for x in range(width):
+            index = y * width + x
+            total += 1
+            right = means[index + 1] if x + 1 < width else means[index]
+            down = means[index + width] if y + 1 < height else means[index]
+            gradient = abs(means[index] - right) + abs(means[index] - down)
+            is_edge = gradient >= BANNER_EDGE_THRESHOLD
+            is_static = deviations[index] <= BANNER_STATIC_STD
+            if is_edge:
+                edges += 1
+            if is_static:
+                static += 1
+            if is_edge and is_static:
+                static_edge += 1
+    if not total:
+        return {
+            "static_edge_ratio": 0.0,
+            "edge_density": 0.0,
+            "static_ratio": 0.0,
+        }
+    return {
+        "static_edge_ratio": round(static_edge / total, 6),
+        "edge_density": round(edges / total, 6),
+        "static_ratio": round(static / total, 6),
+    }
+
+
+def analyze_frame_stack(data: bytes, width: int, height: int, split_row: int) -> dict:
+    """Find a persistent, high-contrast overlay in the caption band.
+
+    A banner is static across frames while the picture behind it moves, so its
+    pixels combine low temporal deviation with a strong spatial gradient. The
+    band above the captions is measured as a control: a clean scene may contain
+    static edges too, but not a localized static edge band.
+    """
+    frame_bytes = width * height
+    count = len(data) // frame_bytes if frame_bytes else 0
+    if count < 3:
+        return {
+            "detected": False,
+            "score": 0.0,
+            "samples": count,
+            "reason": "too few frames to compare; use --caption-box on/off",
+            "thresholds": {
+                "static_std": BANNER_STATIC_STD,
+                "edge_gradient": BANNER_EDGE_THRESHOLD,
+                "min_static_edge_ratio": BANNER_MIN_STATIC_EDGE_RATIO,
+                "control_factor": BANNER_CONTROL_FACTOR,
+            },
+        }
+    sums = [0.0] * frame_bytes
+    squares = [0.0] * frame_bytes
+    for frame in range(count):
+        base = frame * frame_bytes
+        for index in range(frame_bytes):
+            value = data[base + index]
+            sums[index] += value
+            squares[index] += value * value
+    means = [value / count for value in sums]
+    deviations = [
+        math.sqrt(max(0.0, squares[index] / count - means[index] ** 2))
+        for index in range(frame_bytes)
+    ]
+    caption = _region_metrics(means, deviations, width, height, split_row, height)
+    control = _region_metrics(means, deviations, width, height, 0, split_row)
+    control_edge = control["static_edge_ratio"]
+    baseline = max(BANNER_MIN_STATIC_EDGE_RATIO, control_edge * BANNER_CONTROL_FACTOR)
+    score = caption["static_edge_ratio"] / baseline if baseline else 0.0
+    detected = (
+        caption["static_edge_ratio"] >= BANNER_MIN_STATIC_EDGE_RATIO
+        and caption["edge_density"] >= 0.02
+        and (control_edge <= 0 or caption["static_edge_ratio"] >= control_edge * BANNER_CONTROL_FACTOR)
+    )
+    return {
+        "detected": bool(detected),
+        "score": round(score, 3),
+        "samples": count,
+        "caption": caption,
+        "control": control,
+        "thresholds": {
+            "static_std": BANNER_STATIC_STD,
+            "edge_gradient": BANNER_EDGE_THRESHOLD,
+            "min_static_edge_ratio": BANNER_MIN_STATIC_EDGE_RATIO,
+            "control_factor": BANNER_CONTROL_FACTOR,
+        },
+    }
+
+
+def detect_banner(
+    video: Path,
+    duration: float,
+    width: int,
+    height: int,
+    ffmpeg: str,
+) -> dict:
+    data, sample_width, sample_height, split_row = extract_banner_frames(
+        video, duration, width, height, ffmpeg
+    )
+    result = analyze_frame_stack(data, sample_width, sample_height, split_row)
+    result.update(
+        {
+            "sampled_region": {
+                "width": sample_width,
+                "height": sample_height,
+                "caption_rows": [split_row, sample_height],
+                "control_rows": [0, split_row],
+            },
+            "caption_area": {
+                "left": caption_region(width, height)[0],
+                "top": caption_region(width, height)[1],
+                "width": caption_region(width, height)[2],
+                "height": caption_region(width, height)[3],
+            },
+        }
+    )
+    return result
+
+
+def choose_caption_box(
+    video: Path,
+    video_info: dict,
+    options: BurnOptions,
+    ffmpeg: str,
+) -> dict:
+    """Decide between the semi-transparent presidential-blue box and clean text."""
+    if options.caption_box not in {"auto", "on", "off"}:
+        raise ValueError("Caption box mode must be auto, on, or off.")
+    if not 0 <= options.box_opacity <= 1:
+        raise ValueError("Box opacity must be between 0 and 1.")
+    if options.caption_box == "on":
+        return {
+            "mode": "presidential-blue",
+            "detected": True,
+            "source": "forced-on",
+            "metrics": None,
+        }
+    if options.caption_box == "off":
+        return {
+            "mode": "none",
+            "detected": False,
+            "source": "forced-off",
+            "metrics": None,
+        }
+    try:
+        metrics = detect_banner(
+            video,
+            video_info["duration_seconds"],
+            video_info["video"]["width"],
+            video_info["video"]["height"],
+            ffmpeg,
+        )
+    except RuntimeError as error:
+        # A failed detection must not leave the subtitle unreadable: fall back
+        # to the box and record why.
+        return {
+            "mode": "presidential-blue",
+            "detected": False,
+            "source": "auto-fallback",
+            "error": str(error),
+            "metrics": None,
+        }
+    return {
+        "mode": "presidential-blue" if metrics["detected"] else "none",
+        "detected": bool(metrics["detected"]),
+        "source": "auto",
+        "metrics": metrics,
+    }
+
+
+def prepare_captions(
+    selection: Selection,
+    video_info: dict,
+    options: BurnOptions,
+    ffmpeg: str,
+    report: dict,
+) -> tuple[Selection, list[Path]]:
+    """Fuse the seven formats into a precise ASS and its nanosecond sidecar."""
+    if selection.caption_dir is None or selection.ass_output is None or selection.timing_report is None:
+        raise ValueError("Caption-directory mode requires an ASS output and a timing report path.")
+    languages = selection.languages
+    if len(set(languages)) != 2:
+        raise ValueError("The two caption languages must be different.")
+    tracks = subtitle_timing.build_tracks(selection.caption_dir, selection.video_id, languages)
+    box = choose_caption_box(selection.video, video_info, options, ffmpeg)
+    content, stats = subtitle_timing.build_precise_ass(
+        tracks[languages[0]],
+        tracks[languages[1]],
+        box_style=box["mode"],
+        box_opacity=options.box_opacity,
+        video_duration=video_info["duration_seconds"],
+    )
+    selection.ass_output.parent.mkdir(parents=True, exist_ok=True)
+    selection.ass_output.write_text(content, encoding="utf-8")
+    subtitle_timing.write_timing_report(
+        selection.timing_report,
+        tracks,
+        video_id=selection.video_id,
+        video=selection.video,
+    )
+    precision_vtt = {}
+    for language, track in tracks.items():
+        path = selection.ass_output.with_name(
+            f"{selection.ass_output.stem}.{language}.precision.vtt"
+        )
+        precision_vtt[language] = subtitle_timing.write_precision_vtt(track, path)
+        precision_vtt[language].update(_file_record(path))
+    source_files = sorted(
+        {path for track in tracks.values() for path in (Path(item) for item in track["source_files"].values())}
+    )
+    report["captions"] = {
+        "mode": "fused",
+        "languages": list(languages),
+        "box": box,
+        "ass": str(selection.ass_output),
+        "timing_report": str(selection.timing_report),
+        "precision_vtt": precision_vtt,
+        "statistics": stats,
+        "tracks": {
+            language: {
+                "formats_used": track["formats_used"],
+                "primary_format": track["primary_format"],
+                "cue_count": track["cue_count"],
+                "conflicts": len(track["conflicts"]),
+                "source_files": track["source_files"],
+            }
+            for language, track in tracks.items()
+        },
+    }
+    report["timing"] = stats
+    print(
+        "  captions : "
+        + "; ".join(
+            f"{language}={track['primary_format']}+{len(track['formats_used']) - 1}"
+            for language, track in tracks.items()
+        )
+        + f" ({sum(track['cue_count'] for track in tracks.values())} cues)"
+    )
+    box_note = box["mode"]
+    if box["source"] == "auto":
+        box_note += f" (auto: banner={'yes' if box['detected'] else 'no'})"
+    elif box["source"] == "auto-fallback":
+        box_note += " (auto fallback: detection failed)"
+    print(f"  box      : {box_note}, opacity {options.box_opacity:g}")
+    print(f"  timing   : {selection.timing_report} (nanosecond -> ASS 10 ms)")
+    print(
+        "  precision: "
+        + ", ".join(f"{language} 1 ms WebVTT" for language in tracks)
+    )
+    return replace(selection, subtitle=selection.ass_output), source_files
 
 
 if __name__ == "__main__":
