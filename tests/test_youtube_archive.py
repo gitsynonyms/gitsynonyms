@@ -70,7 +70,7 @@ def test_fetch_transcript_defaults_to_yt_dlp_original_english_track(monkeypatch)
 
     def fake_download(url, video_id, language, kind, directory, sleep_seconds=56):
         downloaded.append((url, video_id, language, kind, sleep_seconds, directory))
-        return directory / "source.srt", expected
+        return directory / "source.srt", expected, [directory / "source.srt"]
 
     monkeypatch.setattr(youtube, "_download_yt_dlp_track", fake_download)
     result = youtube.fetch_transcript("https://youtu.be/IySF_8OArvw")
@@ -101,7 +101,7 @@ def test_fetch_transcript_uses_manual_track_only_when_no_automatic_track(monkeyp
         downloaded.append((language, kind, sleep_seconds))
         return Path("manual.srt"), [
             {"start": 0.0, "duration": 1.0, "text": "Manual fallback"}
-        ]
+        ], [Path("manual.srt")]
 
     monkeypatch.setattr(youtube, "_download_yt_dlp_track", fake_download)
     entries = youtube.fetch_transcript("IySF_8OArvw")
@@ -196,6 +196,7 @@ def test_find_track_is_case_insensitive():
 def test_archive_saves_separate_labeled_files(monkeypatch, tmp_path):
     monkeypatch.setattr(youtube.shutil, "which", lambda _: "yt-dlp.exe")
     original_tracks = {}
+    requested_formats = []
 
     def fake_run(arguments):
         if "--dump-single-json" in arguments:
@@ -208,17 +209,19 @@ def test_archive_saves_separate_labeled_files(monkeypatch, tmp_path):
             }
             return subprocess.CompletedProcess([], 0, json.dumps(metadata), "")
         language = arguments[arguments.index("--sub-langs") + 1]
-        assert "--convert-subs" in arguments
+        assert "--convert-subs" not in arguments
+        extension = arguments[arguments.index("--sub-format") + 1]
+        requested_formats.append((language, extension))
         if language == "zh-Hans":
             assert arguments[arguments.index("--sleep-subtitles") + 1] == "56"
         template = arguments[arguments.index("-o") + 1]
         file_path = template.replace("%(id)s", "IySF_8OArvw").replace(
             "%(language)s", language
-        ).replace("%(ext)s", "srt")
+        ).replace("%(ext)s", extension)
         text = "Hello" if language == "en" else "你好"
         with open(file_path, "w", encoding="utf-8") as output:
             output.write(f"1\n00:00:00,000 --> 00:00:01,000\n{text}\n\n")
-        original_tracks[language] = Path(file_path).read_bytes()
+        original_tracks[(language, extension)] = Path(file_path).read_bytes()
         return subprocess.CompletedProcess([], 0, "", "")
 
     monkeypatch.setattr(youtube, "_run_yt_dlp", fake_run)
@@ -229,6 +232,69 @@ def test_archive_saves_separate_labeled_files(monkeypatch, tmp_path):
     assert folder.name == "2026-10-15_president-trump-oct-15-2026_IySF_8OArvw"
     assert (folder / "auto-generated_English.srt").is_file()
     assert (folder / "auto-translated_Chinese-zh-Hans.srt").is_file()
-    assert (folder / "auto-generated_English.srt").read_bytes() == original_tracks["en"]
+    assert (folder / "auto-generated_English.srt").read_bytes() == original_tracks[("en", "srt")]
     bilingual = (folder / "auto-translated_Bilingual.srt").read_text(encoding="utf-8-sig")
     assert "你好\nHello" in bilingual
+    assert requested_formats == [("en", "srt"), ("zh-Hans", "srt")]
+
+
+def test_archive_keeps_every_published_caption_format(monkeypatch, tmp_path):
+    monkeypatch.setattr(youtube.shutil, "which", lambda _: "yt-dlp.exe")
+    requested_formats = []
+    formats = [
+        {"ext": "vtt"},
+        {"ext": "srt"},
+        {"ext": "ttml"},
+        {"ext": "srv3"},
+        {"ext": "srv2"},
+        {"ext": "srv1"},
+        {"ext": "json3"},
+    ]
+
+    def fake_run(arguments):
+        if "--dump-single-json" in arguments:
+            metadata = {
+                "id": "IySF_8OArvw",
+                "title": "President Trump, Oct. 15, 2026",
+                "upload_date": "20261015",
+                "subtitles": {},
+                "automatic_captions": {"en": formats, "zh-Hans": formats},
+            }
+            return subprocess.CompletedProcess([], 0, json.dumps(metadata), "")
+        language = arguments[arguments.index("--sub-langs") + 1]
+        extension = arguments[arguments.index("--sub-format") + 1]
+        requested_formats.append((language, extension))
+        template = arguments[arguments.index("-o") + 1]
+        file_path = template.replace("%(id)s", "IySF_8OArvw").replace(
+            "%(language)s", language
+        ).replace("%(ext)s", extension)
+        text = "Hello" if language == "en" else "你好"
+        with open(file_path, "w", encoding="utf-8") as output:
+            output.write(f"1\n00:00:00,000 --> 00:00:01,000\n{text}\n\n")
+        return subprocess.CompletedProcess([], 0, "", "")
+
+    monkeypatch.setattr(youtube, "_run_yt_dlp", fake_run)
+    folder = youtube.save_youtube_archive(
+        "https://www.youtube.com/watch?v=IySF_8OArvw", tmp_path
+    )
+
+    assert requested_formats == [
+        ("en", "vtt"),
+        ("en", "srt"),
+        ("en", "ttml"),
+        ("en", "srv3"),
+        ("en", "srv2"),
+        ("en", "srv1"),
+        ("en", "json3"),
+        ("zh-Hans", "vtt"),
+        ("zh-Hans", "srt"),
+        ("zh-Hans", "ttml"),
+        ("zh-Hans", "srv3"),
+        ("zh-Hans", "srv2"),
+        ("zh-Hans", "srv1"),
+        ("zh-Hans", "json3"),
+    ]
+    for extension in ("vtt", "srt", "ttml", "srv3", "srv2", "srv1", "json3"):
+        assert (folder / f"auto-generated_English.{extension}").is_file()
+        assert (folder / f"auto-translated_Chinese-zh-Hans.{extension}").is_file()
+

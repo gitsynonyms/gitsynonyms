@@ -87,7 +87,7 @@ def fetch_transcript(
         )
 
     with TemporaryDirectory(prefix="youtube-transcript-") as temp:
-        _, entries = _download_yt_dlp_track(
+        _, entries, _ = _download_yt_dlp_track(
             video_url, video_id, track, track_kind, Path(temp), sleep_seconds=0
         )
     return entries
@@ -335,6 +335,26 @@ def _find_track(candidates: Sequence[str], available: dict) -> str | None:
     return next((codes[code.lower()] for code in candidates if code.lower() in codes), None)
 
 
+CAPTION_FORMATS = ("vtt", "srt", "ttml", "srv3", "srv2", "srv1", "json3")
+
+
+def _track_formats(
+    manual_tracks: dict, automatic_tracks: dict, language: str
+) -> List[str]:
+    """List the caption formats YouTube publishes for one language."""
+    for tracks in (automatic_tracks, manual_tracks):
+        for code, entries in tracks.items():
+            if code.lower() != language.lower() or not entries:
+                continue
+            formats = []
+            for entry in entries:
+                if isinstance(entry, dict) and entry.get("ext"):
+                    formats.append(str(entry["ext"]))
+            if formats:
+                return formats
+    return []
+
+
 def _download_yt_dlp_track(
     video_url: str,
     video_id: str,
@@ -342,38 +362,58 @@ def _download_yt_dlp_track(
     source_kind: str,
     directory: Path,
     sleep_seconds: int = 56,
-) -> tuple[Path, List[dict]]:
+    formats: Sequence[str] | None = None,
+) -> tuple[Path, List[dict], List[Path]]:
+    """Download one caption track and keep every published format.
+
+    The SubRip track is returned for the generated SRT files; the other
+    formats are kept next to it so the archive holds the complete set.
+    """
     flag = "--write-subs" if source_kind == "manual" else "--write-auto-subs"
     template = str(directory / "%(id)s.%(language)s.%(ext)s")
-    _run_yt_dlp(
-        [
-            "--no-warnings",
-            "--skip-download",
-            "--retries",
-            "5",
-            "--sleep-subtitles",
-            str(sleep_seconds),
-            flag,
-            "--sub-langs",
-            language,
-            "--sub-format",
-            "srt/best",
-            "--convert-subs",
-            "srt",
-            "-o",
-            template,
-            video_url,
-        ]
-    )
+    requested = [
+        extension
+        for extension in CAPTION_FORMATS
+        if formats is None or extension in set(formats)
+    ]
+    if not requested:
+        requested = ["srt"]
+    for extension in requested:
+        _run_yt_dlp(
+            [
+                "--no-warnings",
+                "--skip-download",
+                "--retries",
+                "5",
+                "--sleep-subtitles",
+                str(sleep_seconds),
+                flag,
+                "--sub-langs",
+                language,
+                "--sub-format",
+                extension,
+                "-o",
+                template,
+                video_url,
+            ]
+        )
     candidates = [
         path
-        for path in directory.glob(f"{video_id}.{language}.*")
-        if path.is_file() and path.suffix.lower() == ".srt"
+        for path in directory.glob(f"{video_id}.*")
+        if path.is_file() and path.name.lower().endswith(f".{language.lower()}.srt")
     ]
     if not candidates:
         raise RuntimeError(f"yt-dlp completed but did not create a {language} subtitle file.")
     source_path = candidates[0]
-    return source_path, _parse_srt(source_path.read_text(encoding="utf-8-sig"))
+    downloaded = sorted(
+        path
+        for path in directory.glob(f"{video_id}.*")
+        if path.is_file()
+        and path.name.lower().endswith(
+            tuple(f".{language.lower()}.{extension}" for extension in CAPTION_FORMATS)
+        )
+    )
+    return source_path, _parse_srt(source_path.read_text(encoding="utf-8-sig")), downloaded
 
 
 def save_youtube_archive(
@@ -435,22 +475,41 @@ def save_youtube_archive(
 
     with TemporaryDirectory(prefix="youtube-captions-") as temp:
         temp_dir = Path(temp)
-        english_path, english = _download_yt_dlp_track(
-            video_url, video_id, english_code, english_kind, temp_dir, sleep_seconds=0
+        english_path, english, english_files = _download_yt_dlp_track(
+            video_url,
+            video_id,
+            english_code,
+            english_kind,
+            temp_dir,
+            sleep_seconds=0,
+            formats=_track_formats(manual_tracks, automatic_tracks, english_code),
         )
-        chinese_path, chinese = _download_yt_dlp_track(
+        chinese_path, chinese, chinese_files = _download_yt_dlp_track(
             video_url,
             video_id,
             chinese_code,
             chinese_kind,
             temp_dir,
             sleep_seconds=sleep_seconds,
+            formats=_track_formats(manual_tracks, automatic_tracks, chinese_code),
         )
         english_source = english_path.read_bytes()
         chinese_source = chinese_path.read_bytes()
+        english_formats = [(path, path.read_bytes()) for path in english_files]
+        chinese_formats = [(path, path.read_bytes()) for path in chinese_files]
 
     (folder / f"{english_kind}_English.srt").write_bytes(english_source)
     (folder / f"{chinese_kind}_Chinese-{chinese_code}.srt").write_bytes(chinese_source)
+    for path, payload in english_formats:
+        suffix = path.suffix.lower().lstrip(".")
+        if suffix == "srt":
+            continue
+        (folder / f"{english_kind}_English.{suffix}").write_bytes(payload)
+    for path, payload in chinese_formats:
+        suffix = path.suffix.lower().lstrip(".")
+        if suffix == "srt":
+            continue
+        (folder / f"{chinese_kind}_Chinese-{chinese_code}.{suffix}").write_bytes(payload)
     bilingual_kind = (
         "auto-translated"
         if chinese_kind == "auto-translated"
