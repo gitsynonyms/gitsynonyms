@@ -89,7 +89,7 @@ The settings page also provides instant cross-page synchronization, a subtitle p
 
 ### 最新成片
 
-`https://gitsynonyms.github.io/gitsynonyms/latest.html` 展示最近一次刻录的成片：540p 预览直接在页面播放，1080p 硬字幕 MP4 作为 GitHub Release 资源（标签 `roundtable-2026-10-21`）提供下载，双语 ASS/SRT/VTT 跟随站点发布。Release 资源不适合作为页面内嵌播放源（GitHub 以附件形式返回），因此预览文件保持在 100 MB 以内并提交到 `site/media/`，符合 GitHub 单文件限制与 Pages 站点 1 GB 上限。
+`https://gitsynonyms.github.io/gitsynonyms/latest.html` 展示最近一次刻录的成片，每部成片另有一个独立播放页（本次为 `https://gitsynonyms.github.io/gitsynonyms/videos/roundtable-2026-10-21.html`），只挂载播放器和下载入口。540p 预览直接在页面播放；1080p 硬字幕 MP4 作为 GitHub Release 资源（标签 `roundtable-2026-10-21`）提供下载，双语 ASS/SRT/VTT 跟随站点发布。Release 资源不适合作为页面内嵌播放源（GitHub 以附件形式返回），因此预览文件保持在 100 MB 以内并提交到 `site/media/`，符合 GitHub 单文件限制与 Pages 站点 1 GB 上限。
 
 ### What can SRT format
 
