@@ -11,6 +11,7 @@ import re
 import shutil
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 from difflib import SequenceMatcher
 from datetime import date, datetime
 from pathlib import Path
@@ -236,6 +237,338 @@ def parse_vtt(content: str) -> list[dict]:
     if not result:
         raise ValueError("Subtitle file has no valid WebVTT cues.")
     return result
+
+
+def _word_timings_from_segments(
+    text: str, segments: Sequence[tuple[float, float, str]]
+) -> list[dict]:
+    """Map caption segments onto the words of a cue.
+
+    ``segments`` holds (start, end, text) fragments in caption order. Every word
+    of the cue text is placed inside the segment that produced it, and words
+    sharing one segment are spread evenly inside that segment, which keeps the
+    karaoke highlight aligned with the spoken word.
+    """
+    words = list(_rolling_word_spans(text))
+    if not words or not segments:
+        return []
+    segment_spans: list[tuple[float, float, int, int]] = []
+    offset = 0
+    for segment_start, segment_end, segment_text in segments:
+        length = len(segment_text)
+        segment_spans.append((segment_start, segment_end, offset, offset + length))
+        offset += length
+    grouped: dict[int, list[int]] = {}
+    for word_index, word in enumerate(words):
+        for segment_index, (_, _, begin, finish) in enumerate(segment_spans):
+            if word.start() >= begin and word.start() < finish:
+                grouped.setdefault(segment_index, []).append(word_index)
+                break
+        else:
+            grouped.setdefault(len(segment_spans) - 1, []).append(word_index)
+    timings: list[dict] = [None] * len(words)  # type: ignore[list-item]
+    for segment_index, word_indexes in grouped.items():
+        segment_start, segment_end, begin, finish = segment_spans[segment_index]
+        span = max(finish - begin, 1)
+        total = max(segment_end - segment_start, 0.0)
+        if len(word_indexes) == 1:
+            timings[word_indexes[0]] = {
+                "start": segment_start,
+                "end": segment_end,
+                "text": words[word_indexes[0]].group(),
+            }
+            continue
+        for word_index in word_indexes:
+            word = words[word_index]
+            timings[word_index] = {
+                "start": segment_start + total * (word.start() - begin) / span,
+                "end": segment_start + total * (word.end() - begin) / span,
+                "text": word.group(),
+            }
+    return [timing for timing in timings if timing is not None]
+
+
+def parse_json3(content: str) -> list[dict]:
+    """Parse YouTube's JSON3 caption format, which carries per-word offsets."""
+    try:
+        payload = json.loads(content)
+    except json.JSONDecodeError as error:
+        raise ValueError(f"Invalid JSON3 caption file: {error}") from error
+    events = payload.get("events") if isinstance(payload, dict) else None
+    if not isinstance(events, list):
+        raise ValueError("JSON3 caption file has no events.")
+    result = []
+    for event in events:
+        if not isinstance(event, dict):
+            continue
+        segments = event.get("segs")
+        if not isinstance(segments, list) or not segments:
+            continue
+        try:
+            start = float(event.get("tStartMs", 0)) / 1000
+            end = start + float(event.get("dDurationMs", 0)) / 1000
+        except (TypeError, ValueError):
+            continue
+        if end <= start:
+            continue
+        starts: list[float] = []
+        parts: list[str] = []
+        for segment in segments:
+            if not isinstance(segment, dict):
+                continue
+            text = str(segment.get("utf8", ""))
+            if not text:
+                continue
+            try:
+                offset = float(segment.get("tOffsetMs", 0)) / 1000
+            except (TypeError, ValueError):
+                offset = 0.0
+            starts.append(start + offset)
+            parts.append(text)
+        if not parts:
+            continue
+        text = "".join(parts)
+        if not text.strip():
+            continue
+        timed_segments = [
+            (
+                starts[index],
+                starts[index + 1] if index + 1 < len(starts) else end,
+                parts[index],
+            )
+            for index in range(len(parts))
+        ]
+        cue = {
+            "start": start,
+            "end": end,
+            "text": text,
+            "start_timestamp": format_timestamp(start),
+            "end_timestamp": format_timestamp(end),
+        }
+        words = _word_timings_from_segments(text, timed_segments)
+        if words:
+            cue["word_timings"] = words
+        result.append(cue)
+    if not result:
+        raise ValueError("JSON3 caption file has no valid cues.")
+    return result
+
+
+def parse_srv3(content: str) -> list[dict]:
+    """Parse YouTube's srv3 caption format, which carries per-word starts."""
+    try:
+        root = ET.fromstring(content)
+    except ET.ParseError as error:
+        raise ValueError(f"Invalid srv3 caption file: {error}") from error
+    result = []
+    for paragraph in root.iter():
+        if paragraph.tag.split("}")[-1] != "p":
+            continue
+        try:
+            start = float(paragraph.get("t", 0)) / 1000
+            end = start + float(paragraph.get("d", 0)) / 1000
+        except (TypeError, ValueError):
+            continue
+        if end <= start:
+            continue
+        starts: list[float] = []
+        parts: list[str] = []
+        for child in paragraph:
+            if child.tag.split("}")[-1] != "s":
+                continue
+            text = "".join(child.itertext())
+            if not text:
+                continue
+            try:
+                child_start = float(child.get("t", 0)) / 1000
+            except (TypeError, ValueError):
+                child_start = start
+            starts.append(child_start)
+            parts.append(text)
+        if not parts:
+            continue
+        text = "".join(parts)
+        if not text.strip():
+            continue
+        timed_segments = [
+            (
+                starts[index],
+                starts[index + 1] if index + 1 < len(starts) else end,
+                parts[index],
+            )
+            for index in range(len(parts))
+        ]
+        cue = {
+            "start": start,
+            "end": end,
+            "text": text,
+            "start_timestamp": format_timestamp(start),
+            "end_timestamp": format_timestamp(end),
+        }
+        words = _word_timings_from_segments(text, timed_segments)
+        if words:
+            cue["word_timings"] = words
+        result.append(cue)
+    if not result:
+        raise ValueError("srv3 caption file has no valid cues.")
+    return result
+
+
+def parse_srv1(content: str) -> list[dict]:
+    """Parse YouTube's srv1 caption format."""
+    try:
+        root = ET.fromstring(content)
+    except ET.ParseError as error:
+        raise ValueError(f"Invalid srv1 caption file: {error}") from error
+    result = []
+    for node in root.iter():
+        if node.tag.split("}")[-1] != "text":
+            continue
+        try:
+            start = float(node.get("start", 0))
+            end = start + float(node.get("dur", 0))
+        except (TypeError, ValueError):
+            continue
+        if end <= start:
+            continue
+        starts: list[float] = []
+        parts: list[str] = []
+        for child in node:
+            if child.tag.split("}")[-1] != "p":
+                continue
+            text = "".join(child.itertext())
+            if not text:
+                continue
+            try:
+                child_start = float(child.get("t", 0)) / 1000
+            except (TypeError, ValueError):
+                child_start = start
+            starts.append(child_start)
+            parts.append(text)
+        text = "".join(parts) if parts else "".join(node.itertext())
+        if not text.strip():
+            continue
+        timed_segments = [
+            (
+                starts[index],
+                starts[index + 1] if index + 1 < len(starts) else end,
+                parts[index],
+            )
+            for index in range(len(parts))
+        ]
+        cue = {
+            "start": start,
+            "end": end,
+            "text": text,
+            "start_timestamp": format_timestamp(start),
+            "end_timestamp": format_timestamp(end),
+        }
+        words = _word_timings_from_segments(text, timed_segments)
+        if words:
+            cue["word_timings"] = words
+        result.append(cue)
+    if not result:
+        raise ValueError("srv1 caption file has no valid cues.")
+    return result
+
+
+def ttml_timestamp_to_seconds(value: str) -> float:
+    """Convert a TTML offset such as ``00:00:01.250`` or ``1.25s`` to seconds."""
+    cleaned = value.strip()
+    if cleaned.endswith("s"):
+        cleaned = cleaned[:-1]
+    parts = cleaned.split(":")
+    try:
+        numbers = [float(part) for part in parts]
+    except ValueError as error:
+        raise ValueError(f"Invalid TTML timestamp: {value!r}") from error
+    seconds = 0.0
+    for number in numbers:
+        seconds = seconds * 60 + number
+    if not math.isfinite(seconds) or seconds < 0:
+        raise ValueError(f"Invalid TTML timestamp: {value!r}")
+    return seconds
+
+
+def parse_ttml(content: str) -> list[dict]:
+    """Parse a TTML caption file; its timing is cue level only."""
+    try:
+        root = ET.fromstring(content)
+    except ET.ParseError as error:
+        raise ValueError(f"Invalid TTML caption file: {error}") from error
+    result = []
+    for node in root.iter():
+        if node.tag.split("}")[-1] != "p":
+            continue
+        begin = node.get("begin")
+        end = node.get("end")
+        if not begin or not end:
+            continue
+        try:
+            start = ttml_timestamp_to_seconds(begin)
+            end_value = ttml_timestamp_to_seconds(end)
+        except ValueError:
+            continue
+        if end_value <= start:
+            continue
+        text = "".join(node.itertext())
+        if not text.strip():
+            continue
+        result.append(
+            {
+                "start": start,
+                "end": end_value,
+                "text": text,
+                "start_timestamp": format_timestamp(start),
+                "end_timestamp": format_timestamp(end_value),
+            }
+        )
+    if not result:
+        raise ValueError("TTML caption file has no valid cues.")
+    return result
+
+
+CAPTION_FORMATS = ("vtt", "srt", "ttml", "srv3", "srv2", "srv1", "json3")
+CAPTION_PARSERS = {
+    "json3": parse_json3,
+    "srv3": parse_srv3,
+    "srv1": parse_srv1,
+    "vtt": parse_vtt,
+    "ttml": parse_ttml,
+    "srt": parse_srt,
+}
+# Formats ordered from the most precise timing data to the least precise.
+CAPTION_PRECISION_ORDER = ("json3", "srv3", "srv1", "vtt", "ttml", "srt")
+
+
+def parse_caption_file(path: Path) -> list[dict]:
+    """Parse a downloaded caption file with the parser for its format."""
+    extension = path.suffix.lower().lstrip(".")
+    parser = CAPTION_PARSERS.get(extension)
+    if parser is None:
+        raise ValueError(f"Unsupported caption format: {path.name}")
+    content = path.read_text(encoding="utf-8-sig", errors="replace")
+    return parser(content)
+
+
+def select_most_precise_cues(files: Sequence[Path]) -> tuple[list[dict], Path]:
+    """Pick the downloaded caption file that carries the most precise timing."""
+    by_extension: dict[str, Path] = {}
+    for path in files:
+        extension = path.suffix.lower().lstrip(".")
+        if extension in CAPTION_PARSERS and extension not in by_extension:
+            by_extension[extension] = path
+    for extension in CAPTION_PRECISION_ORDER:
+        path = by_extension.get(extension)
+        if path is None:
+            continue
+        try:
+            cues = parse_caption_file(path)
+        except ValueError:
+            continue
+        if cues:
+            return cues, path
+    raise RuntimeError("No downloaded caption file could be parsed.")
 
 
 def _without_rolling_cues(cues: Sequence[dict]) -> list[dict]:
@@ -1341,6 +1674,16 @@ def pick_language(tracks: dict, preferences: Sequence[str]) -> str | None:
     return next((lowered[code.lower()] for code in preferences if code.lower() in lowered), None)
 
 
+def track_formats(tracks: dict, language: str) -> list[str]:
+    """List the caption formats YouTube publishes for one language."""
+    entries = tracks.get(language) or []
+    formats = []
+    for entry in entries:
+        if isinstance(entry, dict) and entry.get("ext"):
+            formats.append(str(entry["ext"]))
+    return formats
+
+
 def classify_track(language: str, metadata: dict) -> str:
     if pick_language(metadata.get("subtitles", {}), (language,)):
         return "manual"
@@ -1378,43 +1721,79 @@ def run_ytdlp(
 
 
 def download_track(
-    url: str, video_id: str, language: str, track_kind: str, directory: Path, wait: int
-) -> tuple[Path, list[dict]]:
+    url: str,
+    video_id: str,
+    language: str,
+    track_kind: str,
+    directory: Path,
+    wait: int,
+    formats: Sequence[str],
+) -> tuple[list[Path], list[dict], Path]:
+    """Download one caption track in every published format.
+
+    All seven formats are kept byte-for-byte as yt-dlp writes them. The cues
+    used for the merge and for the ASS are taken from the format that carries
+    the most precise timing data.
+    """
+    requested = [ext for ext in CAPTION_FORMATS if ext in set(formats)]
+    if not requested:
+        raise RuntimeError(f"YouTube publishes no supported caption format for {language}.")
     print(
-        f"  Requesting {language} ({track_kind}); yt-dlp will wait {wait}s before the request.",
+        f"  Requesting {language} ({track_kind}) as {', '.join(requested)}; "
+        f"yt-dlp will wait {wait}s before each request.",
         flush=True,
     )
-    args = [
-        "--no-warnings",
-        "--skip-download",
-        "--retries",
-        "5",
-        "--no-overwrites",
-    ]
-    if wait:
-        args.extend(["--sleep-subtitles", str(wait)])
-    args.extend([
-        "--write-subs" if track_kind == "manual" else "--write-auto-subs",
-        "--sub-langs",
-        language,
-        "--sub-format",
-        "vtt/best",
-        "--convert-subs",
-        "vtt",
-        "-o",
-        str(directory / "%(id)s.%(language)s.%(ext)s"),
-        url,
-    ])
-    run_ytdlp(args, show_progress=True)
-    matches = [
+    for extension in requested:
+        args = [
+            "--no-warnings",
+            "--skip-download",
+            "--retries",
+            "5",
+            "--no-overwrites",
+        ]
+        if wait:
+            args.extend(["--sleep-subtitles", str(wait)])
+        args.extend([
+            "--write-subs" if track_kind == "manual" else "--write-auto-subs",
+            "--sub-langs",
+            language,
+            "--sub-format",
+            extension,
+            "-o",
+            str(directory / "%(id)s.%(language)s.%(ext)s"),
+            url,
+        ])
+        run_ytdlp(args, show_progress=True)
+    matches = sorted(
         path
         for path in directory.glob(f"{video_id}.*")
-        if path.is_file() and path.name.lower().endswith(f".{language.lower()}.vtt")
-    ]
+        if path.is_file()
+        and path.name.lower().endswith(tuple(f".{language.lower()}.{ext}" for ext in CAPTION_FORMATS))
+    )
     if not matches:
-        raise RuntimeError(f"yt-dlp did not produce the requested {language} WebVTT file.")
-    source_path = matches[0]
-    return source_path, parse_vtt(source_path.read_text(encoding="utf-8-sig"))
+        raise RuntimeError(f"yt-dlp did not produce the requested {language} caption files.")
+    cues, source_path = select_most_precise_cues(matches)
+    return matches, cues, source_path
+
+
+def load_track(
+    url: str,
+    video_id: str,
+    language: str,
+    track_kind: str,
+    directory: Path,
+    wait: int,
+    formats: Sequence[str],
+    local_file: Path | None = None,
+) -> tuple[list[Path], list[dict], Path]:
+    """Use a local caption file when given, otherwise download every format."""
+    if local_file is not None:
+        if not local_file.is_file():
+            raise ValueError(f"Local caption file not found: {local_file}")
+        print(f"  Using the local caption file {local_file} for {language}.", flush=True)
+        cues = parse_caption_file(local_file)
+        return [local_file], cues, local_file
+    return download_track(url, video_id, language, track_kind, directory, wait, formats)
 
 
 def download_video(url: str, video_id: str, directory: Path) -> Path:
@@ -1584,6 +1963,17 @@ def main(argv: list[str] | None = None) -> int:
         help="Download and keep the source video, then create an MP4 with the ASS subtitles burned in.",
     )
     parser.add_argument(
+        "--source-video",
+        help="Existing video file to burn the subtitles into instead of downloading it again.",
+    )
+    parser.add_argument(
+        "--local-file",
+        action="append",
+        default=[],
+        metavar="LANGUAGE=PATH",
+        help="Use a local caption file for a language instead of downloading it, e.g. zh-Hans=translation.srt.",
+    )
+    parser.add_argument(
         "--video-encoder",
         choices=("h264_qsv", "libx264"),
         default="libx264",
@@ -1653,22 +2043,44 @@ def main(argv: list[str] | None = None) -> int:
         folder.mkdir(parents=True, exist_ok=True)
 
         print("Step 2/5: Downloading bottom track ({}) first...".format(second_code), flush=True)
-        second_path, second = download_track(
+        local_tracks = {}
+        for entry in args.local_file:
+            language, separator, path = entry.partition("=")
+            if not separator or not language.strip() or not path.strip():
+                raise ValueError("--local-file expects LANGUAGE=PATH")
+            local_tracks[language.strip().lower()] = Path(path.strip())
+        second_files, second, second_source = load_track(
             args.url,
             video_id,
             second_code,
             second_kind,
             folder,
             subtitle_wait(second_code, args.sleep_subtitles),
+            track_formats(tracks, second_code),
+            local_tracks.get(second_code.lower()),
         )
         print(f"Step 3/5: Downloading top track ({first_code})...", flush=True)
-        first_path, first = download_track(
+        first_files, first, first_source = load_track(
             args.url,
             video_id,
             first_code,
             first_kind,
             folder,
             subtitle_wait(first_code, args.sleep_subtitles),
+            track_formats(tracks, first_code),
+            local_tracks.get(first_code.lower()),
+        )
+        print(
+            f"  Formats kept for {first_code}: {', '.join(sorted(path.suffix.lstrip('.') for path in first_files))}",
+            flush=True,
+        )
+        print(
+            f"  Formats kept for {second_code}: {', '.join(sorted(path.suffix.lstrip('.') for path in second_files))}",
+            flush=True,
+        )
+        print(
+            f"  Most precise sources: {first_source.name} + {second_source.name}",
+            flush=True,
         )
 
         print("Step 4/5: Merging the unchanged downloaded tracks...", flush=True)
@@ -1709,8 +2121,14 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  OK: {vtt_output.name} (WebVTT)", flush=True)
         print(f"  OK: {ass_output.name} (ASS styles: Chinese above English)", flush=True)
         if args.burn_in:
-            print("Step 6/6: Downloading the video and burning in the ASS subtitles...", flush=True)
-            source_video = download_video(args.url, video_id, folder)
+            if args.source_video:
+                source_video = Path(args.source_video)
+                if not source_video.is_file():
+                    raise ValueError(f"--source-video file not found: {source_video}")
+                print(f"Step 6/6: Burning in the ASS subtitles into {source_video.name}...", flush=True)
+            else:
+                print("Step 6/6: Downloading the video and burning in the ASS subtitles...", flush=True)
+                source_video = download_video(args.url, video_id, folder)
             burned_output = folder / f"Burned_Bilingual_{video_id}.mp4"
             burn_ass_into_video(
                 source_video,
@@ -1723,8 +2141,8 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print("Step 6/6: Video burn-in skipped; pass --burn-in to render a subtitled MP4.", flush=True)
         print("Original downloaded subtitles were left untouched:", flush=True)
-        print(first_path.resolve())
-        print(second_path.resolve())
+        for path in [*first_files, *second_files]:
+            print(path.resolve())
         print("Done. Subtitle files:", flush=True)
         print(output.resolve())
         print(vtt_output.resolve())
