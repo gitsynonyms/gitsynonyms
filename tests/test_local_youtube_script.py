@@ -556,6 +556,53 @@ def test_merge_pairs_cues_whose_end_times_drift_by_a_few_milliseconds():
     )
 
 
+def test_merge_keeps_repeated_phrasing_for_plain_srt_tracks():
+    chinese = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:02,000\n谢谢\n\n"
+        "2\n00:00:02,000 --> 00:00:03,000\n谢谢大家\n\n"
+    )
+    english = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:02,000\nThank you\n\n"
+        "2\n00:00:02,000 --> 00:00:03,000\nThank you all\n\n"
+    )
+
+    merged = youtube_srt.align_and_merge(chinese, english)
+
+    assert "Thank you all" in merged
+    assert "谢谢大家" in merged
+
+
+def test_merge_strips_rolling_repeats_from_word_timed_vtt():
+    english = youtube_srt.parse_vtt(
+        "WEBVTT\n\n"
+        "00:00:01.000 --> 00:00:02.000\n"
+        "the president spoke<00:00:01.500><c> today</c>\n\n"
+        "00:00:02.000 --> 00:00:03.000\n"
+        "the president spoke today<00:00:02.500><c> about</c><00:00:02.800><c> jobs</c>\n"
+    )
+
+    merged = youtube_srt.align_and_merge(english, english)
+
+    assert "about jobs" in merged
+    assert "the president spoke today about jobs" not in merged
+
+
+def test_merge_drops_single_frame_stub_cues():
+    chinese = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:02,000\n你好\n\n"
+        "2\n00:00:02,000 --> 00:00:02,010\n你好\n\n"
+    )
+    english = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:02,000\nHello\n\n"
+        "2\n00:00:02,000 --> 00:00:02,010\nHello\n\n"
+    )
+
+    merged = youtube_srt.align_and_merge(chinese, english)
+
+    assert merged.count("Hello") == 1
+    assert youtube_srt.validate_srt(merged) == 1
+
+
 def test_language_preference_is_case_insensitive():
     assert youtube_srt.pick_language({"en": [], "en-orig": []}, ["en-orig", "en"]) == "en-orig"
     assert youtube_srt.pick_language({"zh-Hans": []}, ["zh-hans"]) == "zh-Hans"

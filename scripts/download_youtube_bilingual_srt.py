@@ -361,6 +361,9 @@ def align_and_merge(
         raise ValueError("Both subtitle tracks must contain cues.")
     first = _without_rolling_cues(first)
     second = _without_rolling_cues(second)
+    rolling_source = any(
+        cue.get("word_timings") for cue in (*first, *second)
+    )
     pairs, unmatched_first, unmatched_second = _pair_same_end_cues(first, second)
     cues = [*first, *second]
     if any(cue["end"] <= cue["start"] or not cue["text"].strip() for cue in cues):
@@ -409,7 +412,8 @@ def align_and_merge(
 
     segments.extend(timeline_segments)
     segments.sort(key=lambda segment: (segment["start"], segment["end"]))
-    _trim_rolling_repeats(segments)
+    if rolling_source:
+        _trim_rolling_repeats(segments)
     blocks = []
     for index, segment in enumerate(segments, 1):
         start = format_timestamp(segment["start"])

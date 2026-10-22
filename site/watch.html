@@ -53,7 +53,7 @@
 
       <section class="panel" aria-labelledby="burn-title">
         <h2 id="burn-title">刻录成硬字幕视频</h2>
-        <p class="hint">下载原片后，用一条 FFmpeg 命令即可把 ASS 烧进画面；字号与背景框会随分辨率等比缩放。</p>
+        <p class="hint">本页目前只托管字幕文件，没有托管刻录版 MP4：原片媒体流在当前构建环境中被 YouTube 拒绝下载（HTTP 403），所以成片需要用下面的命令在能下载原片的机器上生成。</p>
         <pre class="command">ffmpeg -i source.mp4 -vf "subtitles='IQKChHxD9e8.zh-en.ass'" -c:v libx264 -crf 20 -c:a copy burned.mp4</pre>
         <p class="hint">也可以用仓库脚本一步完成下载、对齐与刻录（先安装 <code>yt-dlp</code> 与 FFmpeg）；<code>--burn-max-height 480</code> 会把成片压到适合网页分发的体积：</p>
         <pre class="command">python scripts/download_youtube_bilingual_srt.py "https://www.youtube.com/watch?v=IQKChHxD9e8" --burn-in --burn-max-height 480 --global-quality 30 --burn-preset veryfast</pre>
