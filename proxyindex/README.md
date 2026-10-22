@@ -5,6 +5,21 @@ repository with a few files, this aggregates thousands of repositories and the
 proxy files inside them, deduplicates the entries, and records which proxies
 actually answer at collection time.
 
+## Optional stage 0: recursive seed crawl
+
+`scripts/crawl_seed_graph.py` walks seed URLs level by level, records every
+page link, link edge, and proxy endpoint in SQLite, and stops once a whole level
+discovers no URL that is not already stored. Level 1 is the seed set; a URL
+first found on a level-n page is stored at level n+1, so level 2 is the first
+generation of discovered links and so on. See
+`.github/skills/seed-link-crawler/SKILL.md` for the full command reference.
+
+```bash
+python scripts/crawl_seed_graph.py --seed-file proxyindex/sources.txt \
+  --db proxyindex/seed-graph.sqlite3 --max-depth 3 \
+  --export-proxies proxyindex/seed-proxies.txt
+```
+
 ## Pipeline
 
 | Stage | Script | Output |
