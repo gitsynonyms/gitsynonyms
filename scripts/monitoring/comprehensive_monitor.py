@@ -211,6 +211,33 @@ def looks_like_event(title: str) -> bool:
     return bool(re.search(r"[A-Z][a-z]{2,8}\.?\s+\d{1,2},\s+\d{4}", title))
 
 
+def best_resolution(video_url: str) -> int:
+    """Read the highest resolution YouTube offers, so the ranking can prefer it.
+
+    The burn always uses the best available video format, so a candidate that
+    also exists in a higher quality is the more authoritative record.
+    """
+    import yt_dlp
+
+    options = {
+        "quiet": True,
+        "no_warnings": True,
+        "skip_download": True,
+        "ignoreerrors": True,
+    }
+    try:
+        with yt_dlp.YoutubeDL(options) as ydl:
+            info = ydl.extract_info(video_url, download=False)
+    except Exception:  # noqa: BLE001
+        return 0
+    heights = [
+        int(f.get("height") or 0)
+        for f in (info or {}).get("formats") or []
+        if f.get("height")
+    ]
+    return max(heights) if heights else 0
+
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -229,6 +256,17 @@ def main() -> int:
     candidates, corroboration = gather_candidates()
     print(f"official candidates: {len(candidates)}", flush=True)
     print(f"cross-source candidates: {len(corroboration)}", flush=True)
+
+    # Prefer the most authoritative record: the official channel, the longest
+    # runtime and the highest available resolution for the same event.
+    for candidate in candidates[:8]:
+        if not candidate.video_id:
+            continue
+        resolution = best_resolution(candidate.url)
+        if resolution:
+            candidate.details["max_resolution"] = resolution
+            candidate.confidence += min(resolution / 1080, 1) * 0.05
+    candidates = ms.rank_candidates(candidates)
 
     new_video = ""
     title = ""
