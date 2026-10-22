@@ -94,3 +94,26 @@ The settings page also provides instant cross-page synchronization, a subtitle p
 ### What can SRT format
 
 SRT carries cue numbers, start/end times, and text. Styling tags such as `<b>`, `<i>`, `<u>`, and `<font color>` are inconsistently interpreted by players and some upload validators reject them. This downloader produces plain SubRip without styling tags for broad compatibility. For styling control (colors per language, font, position, outline, speaker styling), use ASS/SSA instead of SRT.
+
+## Backlink graph (N levels)
+
+`scripts/find_backlinks.py` discovers pages that link to or mention a seed URL,
+uses each discovered page as the next seed, and stops when one whole level adds
+no new URL. Level 1 is the seed set (一级种子); pages found on level 1 are the
+一级反向链接 and become the 二级种子, and so on. Results live in SQLite
+(`nodes`, `edges`, `queries`, `meta`); `--export-nodes` adds `role`, `hop`,
+`label` and `seed_label` to every JSONL record.
+
+Providers: Bing, Hacker News, Reddit (Pullpush), Lemmy, Stack Exchange, GitHub,
+Wikipedia and GDELT, plus an optional SearXNG instance and a local JSONL/CSV
+index for Ahrefs/Moz/Common Crawl exports. Candidates are verified by fetching
+the page and checking for a real hyperlink first, then for the URL in text.
+
+```bash
+python scripts/find_backlinks.py --seed "<URL>" --db backlink-graph.sqlite3 \
+  --max-depth 2 --max-queries 20 --export-nodes nodes.jsonl
+```
+
+See `.github/skills/backlink-graph/SKILL.md` for level semantics, provider
+limits, verification, and the database schema.
+

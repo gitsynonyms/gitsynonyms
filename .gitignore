@@ -25,6 +25,11 @@ proxyindex/proxies.txt
 proxyindex/alive_tcp.txt
 proxyindex/alive_http.txt
 proxyindex/*.log
+
 # Seed crawler database and its WAL sidecars.
 proxyindex/*.sqlite3
 proxyindex/*.sqlite3-*
+
+# Backlink graph default database and WAL sidecars.
+backlink-graph.sqlite3
+backlink-graph.sqlite3-*
