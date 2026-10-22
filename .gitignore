@@ -6,6 +6,9 @@ venv/
 dist/
 build/
 *.egg-info/
+# Local toolchain, downloads and render intermediates (not deliverables).
+tools/
+work/
 
 # Large media artifacts from the YouTube downloader stay on disk; only the
 # subtitle files and the folder metadata are tracked in the repository.

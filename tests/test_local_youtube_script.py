@@ -621,6 +621,37 @@ def test_parse_vtt_clamps_inline_timestamp_past_the_cue_end():
     assert cues[0]["word_timings"][-1] == {"start": 57.19, "end": 57.19, "text": "know"}
 
 
+def test_vtt_parser_snaps_boundary_word_timestamp_rounded_past_cue_end():
+    parsed = youtube_srt.parse_vtt(
+        "WEBVTT\n\n"
+        "00:10:15.760 --> 00:10:17.829 align:start position:0%\n"
+        "Dubai<00:10:16.240> police<00:10:17.839> at\n\n"
+        "00:10:17.829 --> 00:10:17.839 align:start position:0%\n"
+        "Dubai police at\n"
+    )
+
+    assert parsed[0]["text"] == "Dubai police at"
+    assert [word["start"] for word in parsed[0]["word_timings"]] == [
+        615.76,
+        616.24,
+        617.829,
+    ]
+    assert parsed[0]["word_timings"][-1]["end"] == 617.829
+
+
+def test_vtt_parser_rejects_inline_timestamp_far_outside_its_cue():
+    try:
+        youtube_srt.parse_vtt(
+            "WEBVTT\n\n"
+            "00:00:01.000 --> 00:00:02.000\n"
+            "Hello <00:00:09.000>world\n"
+        )
+    except ValueError as error:
+        assert "outside its cue" in str(error)
+    else:
+        raise AssertionError("A far out-of-range inline timestamp must be rejected")
+
+
 def test_ass_uses_vtt_word_timestamps_instead_of_uniform_estimate():
     cues = youtube_srt.parse_vtt(
         "WEBVTT\n\n"

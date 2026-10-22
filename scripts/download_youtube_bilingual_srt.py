@@ -50,6 +50,9 @@ BOX_STYLES = {
     "solid-color": {"color": "#708496", "opacity": 1, "edge": "#D9E7F5"},
 }
 ENGLISH_HIGHLIGHT_COLOR = "#00D7FF"
+# YouTube rounds rolling-caption boundary timestamps to the millisecond, so an
+# inline word timestamp can land a few milliseconds outside its own cue.
+INLINE_TIMESTAMP_TOLERANCE = 0.5
 
 
 def video_id_from_url(value: str) -> str:
@@ -176,13 +179,23 @@ def parse_vtt(content: str) -> list[dict]:
             position = 0
             for stamp in inline_timestamp.finditer(line):
                 chunks.append((current_start, line[position:stamp.start()]))
-                stamp_start = vtt_timestamp_to_seconds(stamp.group(1))
-                if not start <= stamp_start < end:
-                    # Rolling YouTube captions can carry a word timestamp a few
-                    # milliseconds past the cue end. Keep the caption text and
-                    # clamp the highlight instead of rejecting the whole track.
-                    stamp_start = min(max(stamp_start, start), end)
-                current_start = stamp_start
+                stamp_seconds = vtt_timestamp_to_seconds(stamp.group(1))
+                if not start <= stamp_seconds < end:
+                    # YouTube's rolling captions can round a boundary timestamp a
+                    # few milliseconds past the cue end (or before its start).
+                    # Snap that stamp to the cue boundary instead of rejecting the
+                    # whole track; keep failing on timestamps further outside.
+                    if (
+                        start - INLINE_TIMESTAMP_TOLERANCE
+                        <= stamp_seconds
+                        <= end + INLINE_TIMESTAMP_TOLERANCE
+                    ):
+                        stamp_seconds = min(max(stamp_seconds, start), end)
+                    else:
+                        raise ValueError(
+                            f"Inline WebVTT timestamp is outside its cue: {stamp.group(0)!r}"
+                        )
+                current_start = stamp_seconds
                 has_inline_timing = True
                 position = stamp.end()
             chunks.append((current_start, line[position:]))
