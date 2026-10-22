@@ -91,7 +91,72 @@ The settings page also provides instant cross-page synchronization, a subtitle p
 
 `https://gitsynonyms.github.io/gitsynonyms/latest.html` 展示最近一次刻录的成片：540p 预览直接在页面播放，1080p 硬字幕 MP4 作为 GitHub Release 资源（标签 `roundtable-2026-10-21`）提供下载，双语 ASS/SRT/VTT 跟随站点发布。Release 资源不适合作为页面内嵌播放源（GitHub 以附件形式返回），因此预览文件保持在 100 MB 以内并提交到 `site/media/`，符合 GitHub 单文件限制与 Pages 站点 1 GB 上限。
 
-### What can SRT format
+### Module 2: processing an already-selected video
+
+`scripts/video_processing.py` is the video-processing department. It starts
+after the video and its subtitles have been selected, never downloads anything,
+and turns exactly those files into a publishable burn-in. It accepts a selection
+manifest or explicit paths:
+
+```bash
+python3 scripts/video_processing.py --selection selection.json
+python3 scripts/video_processing.py \
+  --video work/TLH3gXrPCTU.source.mp4 \
+  --subtitle output/2026-10-21_.../bilingual_Chinese-English.ass \
+  --video-id TLH3gXrPCTU --event-date 2026-10-21 \
+  --output-dir output/2026-10-21_... --preview --poster
+```
+
+A manifest names the chosen files; relative paths resolve against the manifest
+directory first and the current directory second:
+
+```json
+{
+  "video_id": "TLH3gXrPCTU",
+  "title": "President Trump Participates in a Roundtable, Oct. 21, 2026",
+  "event_date": "2026-10-21",
+  "video": "../work/TLH3gXrPCTU.source.mp4",
+  "subtitles": {
+    "ass": "output/2026-10-21_.../bilingual_Chinese-English.ass",
+    "srt": "output/2026-10-21_.../bilingual_Chinese-English.srt"
+  },
+  "output_dir": "output/2026-10-21_...",
+  "preview": true,
+  "poster": true
+}
+```
+
+The module prefers the styled ASS because it carries the layout, colors, and
+per-word timing, and falls back to SRT/VTT (rendered with libass defaults). It
+then:
+
+1. probes the video with `ffprobe` and rejects files with no video stream or no
+   duration;
+2. parses the subtitle with the repository's caption parsers, counts cues,
+   reports first/last cue and coverage, and warns when the captions run past the
+   end of the video (`--strict` makes that an error);
+3. reports the ASS font families and what fontconfig (`fc-match`) substitutes,
+   and condenses libass's per-glyph warnings into one missing-glyph warning
+   (`--strict-fonts` makes missing glyphs fatal);
+4. burns the subtitle in a single `subtitles=` libass pass with libx264, audio
+   copied when the container allows it and re-encoded to AAC when an MP4 target
+   cannot carry the source codec. The render goes to a temporary `.part` file
+   and is moved into place only after its duration is verified;
+5. optionally renders a 540p preview (H.264/AAC, for the Pages site) and a
+   poster frame;
+6. writes `BURN.json` next to the output with the status (`burned`, `reused`,
+   `dry-run`, or `failed`), input/output SHA-256 hashes, stream metadata, cue
+   statistics, font substitutions, and the exact FFmpeg command. The publishing
+   module consumes this report instead of re-probing the files.
+
+Existing fresh outputs are reused unless `--force` is passed, so a retry does
+not re-encode a long video. `--dry-run` performs every validation and records
+the planned commands without running FFmpeg. The command exits `0` for
+`burned`/`reused`/`dry-run` and `1` for any validation or FFmpeg failure; a
+failed run still writes `BURN.json` with `"status": "failed"` and the error, and
+leaves neither a partial MP4 nor a `.part` file behind.
+
+
 
 SRT carries cue numbers, start/end times, and text. Styling tags such as `<b>`, `<i>`, `<u>`, and `<font color>` are inconsistently interpreted by players and some upload validators reject them. This downloader produces plain SubRip without styling tags for broad compatibility. For styling control (colors per language, font, position, outline, speaker styling), use ASS/SSA instead of SRT.
 
@@ -127,6 +192,10 @@ uploads (longest and most event-like first), and for every new video:
 4. burns the subtitles into the video and writes `VERIFICATION.json` next to
    the output;
 5. regenerates the site pages and deploys them to GitHub Pages.
+
+Step 4 is also available as a standalone module: `scripts/video_processing.py`
+takes the video and subtitle files that were already selected and produces the
+burn-in plus `BURN.json` without downloading anything (see *Module 2* above).
 
 Every source is optional: a missing API key disables only that source, and a
 blocked host never fails the run. The monitor keeps `output/.monitor-state.json`
