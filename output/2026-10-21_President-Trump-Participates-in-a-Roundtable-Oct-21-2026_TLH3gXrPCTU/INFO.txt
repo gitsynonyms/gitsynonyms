@@ -1,0 +1,32 @@
+Video: President Trump Participates in a Roundtable, Oct. 21, 2026
+Video ID: TLH3gXrPCTU
+Event date: 2026-10-21
+Duration: 30:06 (1806 s)
+Source: https://www.youtube.com/watch?v=TLH3gXrPCTU
+Source video file: filebin.net/f8l40pcd28jo8bl0 (YouTube download returned HTTP 403)
+
+auto-generated_English.srt: YouTube en-orig automatic caption track, parsed from
+TLH3gXrPCTU.en.en-orig.vtt and serialized into complete caption lines.
+The transcript is not independently proofread.
+
+Chinese track: YouTube lists an automatic Simplified Chinese (zh-Hans) translated
+caption, but every timedtext request (vtt, json3, srv1, ttml; with and without the
+56 s delay) returned HTTP 429 Too Many Requests. The Chinese text therefore comes
+from machine translation of the English track through Google's public
+translate.googleapis.com endpoint. It is labelled auto-translated; it is not a
+YouTube translation and has not been reviewed by a person.
+
+bilingual_Chinese-English.ass: classic preset (gold Chinese above white English,
+cyan word highlights, Chinese 1.2x size), glass-diamond background box kept
+visible from 0 s to the full video duration, caption area (66,883)-(1852,1022) on
+the 1920x1080 canvas. Fonts follow the preset (Microsoft YaHei / Arial). The
+render used fontconfig aliases mapping those families to Noto Sans CJK SC and
+Noto Sans, because this machine has no Microsoft fonts.
+
+Parser note: two inline word timestamps in the source WebVTT are rounded 10 ms
+past their cue end; the parser snaps such boundary timestamps to the cue edge and
+still rejects timestamps further outside their cue.
+
+Burned MP4: single FFmpeg 7.0.2 libass filter pass, libx264 CRF 20 (preset
+veryfast), audio stream copied unchanged. The 1080p render is published as a
+GitHub Release asset; a 540p preview is committed to the Pages site.

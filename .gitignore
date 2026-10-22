@@ -6,3 +6,6 @@ venv/
 dist/
 build/
 *.egg-info/
+# Local toolchain, downloads and render intermediates (not deliverables).
+tools/
+work/
