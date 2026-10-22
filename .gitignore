@@ -18,3 +18,10 @@ output/**/*.m4a
 
 # Local scratch directory for download tooling and logs.
 .work/
+
+# Proxy index: keep the tooling and the source list, not the multi-million-line pools.
+proxyindex/raw.txt
+proxyindex/proxies.txt
+proxyindex/alive_tcp.txt
+proxyindex/alive_http.txt
+proxyindex/*.log
