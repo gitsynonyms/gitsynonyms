@@ -9,6 +9,12 @@ Caption formats (kept byte-for-byte as yt-dlp wrote them):
 5YerQHGsX04.en.en-orig.<ext>   English, YouTube auto-generated captions (en-orig)
 5YerQHGsX04.en.zh-Hans.<ext>    Chinese, YouTube auto-translation (zh-Hans)
 <ext> is one of vtt, srt, ttml, srv3, srv2, srv1, json3.
+Present for English: vtt, srt, ttml, srv3, srv2, srv1, json3.
+Present for Chinese: vtt, json3. The remaining Chinese formats (srt, ttml, srv3, srv2, srv1)
+were still queued for download when this archive was written, because YouTube answered most
+requests for the translated track with HTTP 429 (Too Many Requests). The Chinese track that
+produced the ASS and the bilingual files is the json3 one, which was fetched during a retry
+window; no caption text was substituted or invented for the formats that are still missing.
 
 Merged subtitles and ASS:
 auto-translated+auto-generated_Bilingual_zh-Hans-en-orig.srt   time-aligned bilingual SRT
