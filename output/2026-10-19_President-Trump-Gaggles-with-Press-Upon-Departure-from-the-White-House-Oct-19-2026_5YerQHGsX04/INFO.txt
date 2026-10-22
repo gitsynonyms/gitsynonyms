@@ -5,25 +5,31 @@ Source: https://www.youtube.com/watch?v=5YerQHGsX04
 Uploader: The White House
 Duration: 00:19:47 (1187 s)
 
-Files:
+Caption formats (kept byte-for-byte as yt-dlp wrote them):
+5YerQHGsX04.en.en-orig.<ext>   English, YouTube auto-generated captions (en-orig)
+5YerQHGsX04.en.zh-Hans.<ext>    Chinese, YouTube auto-translation (zh-Hans)
+<ext> is one of vtt, srt, ttml, srv3, srv2, srv1, json3.
+
+Merged subtitles and ASS:
+auto-translated+auto-generated_Bilingual_zh-Hans-en-orig.srt   time-aligned bilingual SRT
+auto-translated+auto-generated_Bilingual_zh-Hans-en-orig.vtt   bilingual WebVTT
+auto-translated+auto-generated_Bilingual_zh-Hans-en-orig.ass   styled ASS used for the burn-in
+The ASS is built from the json3 track of each language, the most precise timing YouTube
+publishes. Its per-word offsets drive the English karaoke highlight, and its cue boundaries
+pair the Chinese and English lines one to one, so "大家好。" sits above "Hello everybody."
+instead of above a different rolling window.
+
+Video:
 5YerQHGsX04.source.mp4              1080p H.264 (yt-dlp format 137) + AAC (140) source video.
-5YerQHGsX04.en.en-orig.vtt          English captions exactly as downloaded from YouTube.
-auto-generated_English.srt          English captions converted to SubRip (969 cues, text unchanged).
-machine-translated_Chinese.srt       Chinese line produced by machine-translating the English track.
-machine-translated_Bilingual.srt     Time-aligned bilingual SRT, Chinese above English (969 cues).
-machine-translated_Bilingual.ass     Styled ASS (classic preset, glass-diamond box) used for burn-in.
 Burned_Bilingual_5YerQHGsX04.mp4     Source video with the bilingual ASS burned in (libx264, CRF 18).
 
 Caption provenance:
 English track: YouTube auto-generated captions (en-orig). The transcript is not independently
 proofread.
-Chinese track: YouTube's own zh-Hans auto-translation is listed for this video, but every
-request for it was answered with HTTP 429 (Too Many Requests), both directly and through
-alternative egress routes, so no YouTube translation track is represented here. The Chinese
-line is instead a machine translation of the English track produced with the Google Translate
-endpoint (translate.googleapis.com/translate_a/single). It is therefore labelled
-"machine-translated" rather than "auto-translated", it is not a YouTube-authored translation,
-and it has not been proofread by a human.
+Chinese track: YouTube's own zh-Hans auto-translation of the English track. YouTube answered
+most requests for this translated track with HTTP 429 (Too Many Requests) during the session,
+so the track was fetched by a retry loop; the formats that could not be retrieved are noted
+below and no caption text was substituted or invented.
 
 Parser note:
 One inline word timestamp in the English WebVTT track (00:18:57.200) falls 10 ms past the end
