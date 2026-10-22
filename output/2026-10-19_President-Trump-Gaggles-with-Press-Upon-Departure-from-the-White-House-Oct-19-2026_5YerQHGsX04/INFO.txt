@@ -1,0 +1,44 @@
+Video: President Trump Gaggles with Press Upon Departure from the White House, Oct. 19, 2026
+Video ID: 5YerQHGsX04
+Event date: 2026-10-19
+Source: https://www.youtube.com/watch?v=5YerQHGsX04
+Uploader: The White House
+Duration: 00:19:47 (1187 s)
+
+Caption formats (kept byte-for-byte as yt-dlp wrote them):
+5YerQHGsX04.en.en-orig.<ext>   English, YouTube auto-generated captions (en-orig)
+5YerQHGsX04.en.zh-Hans.<ext>    Chinese, YouTube auto-translation (zh-Hans)
+<ext> is one of vtt, srt, ttml, srv3, srv2, srv1, json3.
+Present for English: vtt, srt, ttml, srv3, srv2, srv1, json3.
+Present for Chinese: vtt, json3. The remaining Chinese formats (srt, ttml, srv3, srv2, srv1)
+were still queued for download when this archive was written, because YouTube answered most
+requests for the translated track with HTTP 429 (Too Many Requests). The Chinese track that
+produced the ASS and the bilingual files is the json3 one, which was fetched during a retry
+window; no caption text was substituted or invented for the formats that are still missing.
+
+Merged subtitles and ASS:
+auto-translated+auto-generated_Bilingual_zh-Hans-en-orig.srt   time-aligned bilingual SRT
+auto-translated+auto-generated_Bilingual_zh-Hans-en-orig.vtt   bilingual WebVTT
+auto-translated+auto-generated_Bilingual_zh-Hans-en-orig.ass   styled ASS used for the burn-in
+The ASS is built from the json3 track of each language, the most precise timing YouTube
+publishes. Its per-word offsets drive the English karaoke highlight, and its cue boundaries
+pair the Chinese and English lines one to one, so "大家好。" sits above "Hello everybody."
+instead of above a different rolling window.
+
+Video:
+5YerQHGsX04.source.mp4              1080p H.264 (yt-dlp format 137) + AAC (140) source video.
+Burned_Bilingual_5YerQHGsX04.mp4     Source video with the bilingual ASS burned in (libx264, CRF 18).
+
+Caption provenance:
+English track: YouTube auto-generated captions (en-orig). The transcript is not independently
+proofread.
+Chinese track: YouTube's own zh-Hans auto-translation of the English track. YouTube answered
+most requests for this translated track with HTTP 429 (Too Many Requests) during the session,
+so the track was fetched by a retry loop; the formats that could not be retrieved are noted
+below and no caption text was substituted or invented.
+
+Parser note:
+One inline word timestamp in the English WebVTT track (00:18:57.200) falls 10 ms past the end
+of its cue. scripts/download_youtube_bilingual_srt.py now clamps such timestamps to the cue
+boundary instead of rejecting the whole track, and tests/test_local_youtube_script.py covers
+that behaviour.
