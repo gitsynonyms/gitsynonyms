@@ -94,3 +94,58 @@ The settings page also provides instant cross-page synchronization, a subtitle p
 ### What can SRT format
 
 SRT carries cue numbers, start/end times, and text. Styling tags such as `<b>`, `<i>`, `<u>`, and `<font color>` are inconsistently interpreted by players and some upload validators reject them. This downloader produces plain SubRip without styling tags for broad compatibility. For styling control (colors per language, font, position, outline, speaker styling), use ASS/SSA instead of SRT.
+
+## Video archive and scheduled monitoring
+
+`site/videos.html` lists every archived bilingual burn-in, newest first by event
+date, and each entry links to its own detail page under `site/videos/<id>.html`.
+The detail page carries the full download list: the 1080p MP4 from the GitHub
+Release, the bilingual ASS/SRT/VTT, and the source caption files in all seven
+published formats (`vtt`, `srt`, `ttml`, `srv3`, `srv2`, `srv1`, `json3`) for
+both languages. Pages for older videos are regenerated from the archive, so
+publishing a new video never disturbs the existing ones.
+
+`scripts/generate_video_pages.py` builds those pages from the `output/` folders;
+`scripts/monitoring/` holds the scheduled monitor:
+
+| Script | Role |
+|---|---|
+| `multi_source.py` | discovery and verification across every source |
+| `comprehensive_monitor.py` | poll, verify, download, burn, record |
+| `install_workflow.py` | copy the workflow into `.github/workflows/` |
+
+The monitor polls `@WhiteHouse/videos` and `@WhiteHouse/streams`, ranks the
+uploads (longest and most event-like first), and for every new video:
+
+1. confirms the event with the other sources — the RollCall Factbase calendar
+   for the day's schedule, GDELT for mainstream coverage, congressional
+   records, YouTube comments and forum threads, plus reverse links and a
+   Google/C-SPAN search;
+2. downloads all seven caption formats for both languages, treating `json3` as
+   the primary timing source;
+3. builds the bilingual ASS from the most precise format available;
+4. burns the subtitles into the video and writes `VERIFICATION.json` next to
+   the output;
+5. regenerates the site pages and deploys them to GitHub Pages.
+
+Every source is optional: a missing API key disables only that source, and a
+blocked host never fails the run. The monitor keeps `output/.monitor-state.json`
+so a run only acts on videos it has not archived yet, and it rotates through the
+validated proxy pool so the YouTube rate limiter sees a different egress each
+time. The same egress must carry both the API request and the media request,
+because YouTube signs media URLs against the IP it observed on the API call.
+
+The scheduled workflow lives in `scripts/monitoring/monitor-whitehouse.yml`.
+Creating a file under `.github/workflows/` needs a token with the `workflows`
+permission, so install it with:
+
+```bash
+python3 scripts/monitoring/install_workflow.py
+git add .github/workflows/monitor-whitehouse.yml
+git commit -m "Add the White House video monitor workflow"
+git push
+```
+
+Optional secrets: `YOUTUBE_API_KEY`, `GOOGLE_CSE_ID`, `GOOGLE_CSE_API_KEY`,
+`GDELT_API_KEY`, `NEWSBANK_API_KEY`. Without them the monitor still polls the
+two official channels and the Factbase calendar.
