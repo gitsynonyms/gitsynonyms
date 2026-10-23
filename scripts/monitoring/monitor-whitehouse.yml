@@ -69,7 +69,7 @@ jobs:
         env:
           YTDLP_PROXY: ${{ secrets.YTDLP_PROXY }}
           PROBE_VIDEO_URL: ${{ inputs.video_url }}
-          PROXY_SCAN_MODE: auto
+          PROXY_SCAN_MODE: ${{ github.event_name == 'workflow_dispatch' && 'off' || 'auto' }}
           PROXY_SCAN_BUDGET: "600"
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python scripts/select_public_ytdlp_proxies.py

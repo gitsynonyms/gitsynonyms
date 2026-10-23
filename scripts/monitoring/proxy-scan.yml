@@ -151,10 +151,15 @@ jobs:
         run: |
           python -m pip install -q --trusted-host pypi.org --trusted-host files.pythonhosted.org \
             'yt-dlp>=2025.1' 'deep-translator>=1.11.4,<2.0' 'youtube-transcript-api>=0.6.2'
-          which deno || curl -fsSL https://deno.land/install.sh | sh -s -- -y
-          export PATH="$HOME/.deno/bin:$PATH"
-          echo "$HOME/.deno/bin" >> $GITHUB_PATH
-          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
 
       - name: Download and mirror videos
         id: mirror
