@@ -318,19 +318,19 @@ def main() -> int:
             mode="auto" if scan_mode in {"auto", "cached"} else scan_mode,
             budget_seconds=scan_budget,
         )
-        candidates = load_index_candidates(index_dir)
-        if not candidates and scan_mode != "bounded":
+        indexed_candidates = load_index_candidates(index_dir)
+        if indexed_candidates:
+            candidates_by_source = {"published full scan": indexed_candidates}
+        else:
             print(
                 "::warning::the full scan published no verified proxy; "
                 "falling back to the bounded public lists",
                 file=sys.stderr,
             )
-            candidates = fetch_candidates()
-        if not candidates:
-            candidates = fetch_candidates()
+            candidates_by_source = fetch_candidates()
         probe_url = os.environ.get("PROBE_VIDEO_URL", "").strip()
         video_id = youtube_video_id(probe_url) if probe_url else None
-        selected, source_counts = select_proxies(candidates, video_id=video_id)
+        selected, source_counts = select_proxies(candidates_by_source, video_id=video_id)
         private_proxy = os.environ.get("YTDLP_PROXY", "").strip()
         ordered = ([private_proxy] if private_proxy else []) + selected
         if not ordered:
@@ -346,7 +346,8 @@ def main() -> int:
     print(
         f"Proxy scan: {scan['status']}"
         f"{' (ran)' if scan.get('ran') else ''}; candidates checked: "
-        f"{len(candidates)}; selected public proxies: {len(selected)}; probe target: "
+        f"{sum(len(candidates) for candidates in candidates_by_source.values())}; "
+        f"selected public proxies: {len(selected)}; probe target: "
         f"{video_id or 'generic YouTube connectivity'}; "
         f"top-proxy source counts: {source_summary}."
     )

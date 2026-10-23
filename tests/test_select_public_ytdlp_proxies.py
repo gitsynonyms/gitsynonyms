@@ -242,3 +242,37 @@ def test_ensure_full_scan_reuses_a_fresh_result_and_runs_a_stale_one(tmp_path):
     off = proxy_selector.ensure_full_scan(index_dir=index, mode="off", runner=never)
     assert off["status"] == "off"
 
+
+def test_main_wraps_published_candidate_list_before_selecting(tmp_path, monkeypatch):
+    env_file = tmp_path / "github_env"
+    monkeypatch.setenv("GITHUB_ENV", str(env_file))
+    monkeypatch.setenv("PROXY_SCAN_MODE", "off")
+    monkeypatch.setenv("PROBE_VIDEO_URL", "https://youtu.be/5E09UkJq4Jo")
+    monkeypatch.setenv("YTDLP_PROXY", "")
+    monkeypatch.setenv("YTDLP_PROXY_POOL_JSON", "")
+    monkeypatch.setenv("PROXY_INDEX_DIR", str(tmp_path))
+    monkeypatch.setattr(
+        proxy_selector,
+        "ensure_full_scan",
+        lambda **_kwargs: {"status": "off", "ran": False},
+    )
+    monkeypatch.setattr(
+        proxy_selector,
+        "load_index_candidates",
+        lambda _index_dir: ["http://192.0.2.1:8080"],
+    )
+    observed = {}
+
+    def select(candidates_by_source, *, video_id):
+        observed["candidates"] = candidates_by_source
+        observed["video_id"] = video_id
+        return ["http://192.0.2.1:8080"], {"published full scan": 1}
+
+    monkeypatch.setattr(proxy_selector, "select_proxies", select)
+
+    assert proxy_selector.main() == 0
+    assert observed == {
+        "candidates": {"published full scan": ["http://192.0.2.1:8080"]},
+        "video_id": "5E09UkJq4Jo",
+    }
+    assert env_file.read_text(encoding="utf-8").count("http://192.0.2.1:8080") == 1

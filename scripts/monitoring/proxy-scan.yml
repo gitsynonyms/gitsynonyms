@@ -165,6 +165,7 @@ jobs:
         id: mirror
         env:
           YTDLP_PROXY_POOL_JSON: ${{ needs.scan.outputs.top10_json }}
+          YTDLP_PROXY: ${{ secrets.YTDLP_PROXY }}
           MANUAL_URLS: ${{ inputs.video_url }}
           AUTO_URL: ${{ needs.scan.outputs.video_url }}
           UPLOAD_MIN_OK: ${{ inputs.upload_min_ok || '2' }}
