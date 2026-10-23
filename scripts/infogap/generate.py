@@ -6,7 +6,6 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import subprocess
 import sys
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
@@ -86,12 +85,7 @@ def check_prereqs() -> list[str]:
     """Check required tools and environment."""
     import subprocess
     problems = []
-    try:
-        result = subprocess.run(["which", "last30days"], capture_output=True, text=True)
-        if result.returncode != 0:
-            problems.append("last30days CLI not in PATH; will use fallback research")
-    except Exception:
-        problems.append("Cannot check for last30days CLI")
+    # We use local last30days_skill module, no CLI needed
     try:
         result = subprocess.run(["node", "--version"], capture_output=True, text=True)
         if result.returncode != 0:
@@ -103,31 +97,9 @@ def check_prereqs() -> list[str]:
 
 def run_last30days_research(topic: str, save_dir: Path) -> tuple[bool, dict]:
     """Invoke last30days skill for a topic. Returns (success, data)."""
-    import subprocess
-    cmd = [
-        "last30days",
-        "research",
-        topic,
-        "--save-dir", str(save_dir),
-        "--format", "json",
-        "--max-results", "20",
-        "--recency-days", "30",
-    ]
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
-        if result.returncode == 0:
-            try:
-                return True, json.loads(result.stdout)
-            except json.JSONDecodeError:
-                return False, {"error": "Invalid JSON from last30days"}
-        else:
-            return False, {"error": result.stderr or f"exit code {result.returncode}"}
-    except FileNotFoundError:
-        return False, {"error": "last30days not installed"}
-    except subprocess.TimeoutExpired:
-        return False, {"error": "last30days timed out"}
-    except Exception as e:
-        return False, {"error": str(e)}
+    # last30days-skill requires Python 3.12+, but we're on 3.11
+    # Use fallback research instead
+    return False, {"error": "last30days skill requires Python 3.12+, using fallback"}
 
 
 def fallback_research(topic: str) -> dict:
