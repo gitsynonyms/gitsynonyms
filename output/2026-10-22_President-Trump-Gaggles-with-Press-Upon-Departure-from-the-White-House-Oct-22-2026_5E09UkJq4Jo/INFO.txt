@@ -1,0 +1,34 @@
+Video: President Trump Gaggles with Press Upon Departure from the White House, Oct. 22, 2026
+Video ID: 5E09UkJq4Jo
+Event date: 2026-10-22
+Source: https://www.youtube.com/watch?v=5E09UkJq4Jo
+Uploader: The White House (verified channel)
+Duration: 00:12:33 (753 s)
+
+Caption formats (kept byte-for-byte as yt-dlp wrote them):
+5E09UkJq4Jo.en.en-orig.<ext>   English, YouTube auto-generated captions (en-orig)
+5E09UkJq4Jo.en.zh-Hans.<ext>    Chinese, YouTube auto-translation (zh-Hans)
+<ext> is one of vtt, srt, ttml, srv3, srv2, srv1, json3.
+Present for English: vtt, srt, ttml, srv3, srv2, srv1, json3.
+Present for Chinese: pending. YouTube answered every request for the translated
+track (zh-Hans, zh-Hant, zh-Hans-en-US) with HTTP 429 Too Many Requests, both
+directly and through rotating proxies, while the video was processed. No YouTube
+translation is therefore claimed here; the Chinese line in the ASS and the
+bilingual files comes from machine translation of the English track through the
+Google translate endpoint and is labelled machine-translated.
+
+Merged subtitles and ASS:
+auto-translated+auto-generated_Bilingual_zh-Hans-en-orig.srt   time-aligned bilingual SRT
+auto-translated+auto-generated_Bilingual_zh-Hans-en-orig.vtt   bilingual WebVTT
+auto-translated+auto-generated_Bilingual_zh-Hans-en-orig.ass   styled ASS used for the burn-in
+machine-translated_Chinese.srt                                  the Chinese line on its own
+
+Video:
+5E09UkJq4Jo.source.mp4              1080p H.264 (yt-dlp format 137) + AAC (140) source video.
+Burned_Bilingual_5E09UkJq4Jo.mp4     Source video with the bilingual ASS burned in (libx264, CRF 18).
+
+Caption provenance:
+English track: YouTube auto-generated captions (en-orig), not independently proofread.
+Chinese track: machine translation of the English track, not a YouTube translation and not
+proofread. The archive is marked so the YouTube zh-Hans track can replace it once the rate
+limit clears; nothing is presented as a verified human translation.

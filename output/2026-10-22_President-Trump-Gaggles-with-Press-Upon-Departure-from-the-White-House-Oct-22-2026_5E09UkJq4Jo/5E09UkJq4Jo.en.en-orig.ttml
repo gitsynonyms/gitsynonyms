@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<tt xml:lang="en" xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:tts="http://www.w3.org/ns/ttml#styling" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" ttp:profile="http://www.w3.org/TR/profile/sdp-us" >
+<head>
+<styling>
+<style xml:id="s1" tts:textAlign="center" tts:extent="90% 90%" tts:origin="5% 5%" tts:displayAlign="after"/>
+<style xml:id="s2" tts:fontSize=".72c" tts:backgroundColor="black" tts:color="white"/>
+</styling>
+<layout>
+<region xml:id="r1" style="s1"/>
+</layout>
+</head>
+<body region="r1">
+<div>
+<p begin="00:00:03.760" end="00:00:08.880" style="s2">Mr. President, Amy Atkins mother has not</p>
+<p begin="00:00:06.560" end="00:00:11.840" style="s2">cared for her in about 50 years after</p>
+<p begin="00:00:08.880" end="00:00:13.599" style="s2">her stepdad was indicted for raping her.</p>
+<p begin="00:00:11.840" end="00:00:14.880" style="s2">Why should anyone listen to what the</p>
+<p begin="00:00:13.599" end="00:00:16.640" style="s2">mother has to say?</p>
+<p begin="00:00:14.880" end="00:00:18.560" style="s2">&gt;&gt; Well, I know nothing about it. All I</p>
+<p begin="00:00:16.640" end="00:00:21.119" style="s2">know is the mother said very bad things</p>
+<p begin="00:00:18.560" end="00:00:24.560" style="s2">about Actton, who I guess is running for</p>
+<p begin="00:00:21.119" end="00:00:27.680" style="s2">governor against Vake. And all I can say</p>
+<p begin="00:00:24.560" end="00:00:29.599" style="s2">is Vake is great. And I know one thing,</p>
+<p begin="00:00:27.680" end="00:00:32.160" style="s2">if my mother said bad about me, it would</p>
+<p begin="00:00:29.599" end="00:00:34.719" style="s2">be a major news story. That&#39;s for sure.</p>
+<p begin="00:00:32.160" end="00:00:36.800" style="s2">So, I don&#39;t know what it is, but I guess</p>
+<p begin="00:00:34.719" end="00:00:39.280" style="s2">the mother said very bad things about</p>
+<p begin="00:00:36.800" end="00:00:41.520" style="s2">the one who&#39;s running for governor. And</p>
+<p begin="00:00:39.280" end="00:00:43.520" style="s2">I think you have to take that seriously.</p>
+<p begin="00:00:41.520" end="00:00:45.280" style="s2">&gt;&gt; Is there anything in a campaign ad that</p>
+<p begin="00:00:43.520" end="00:00:47.120" style="s2">should be off limits?</p>
+<p begin="00:00:45.280" end="00:00:49.760" style="s2">&gt;&gt; I know one thing, if my mother said that</p>
+<p begin="00:00:47.120" end="00:00:52.000" style="s2">about me, it would be uh you would have</p>
+<p begin="00:00:49.760" end="00:00:54.239" style="s2">hit gold. You would have been very happy</p>
+<p begin="00:00:52.000" end="00:00:55.920" style="s2">about it. So, I know nothing about it</p>
+<p begin="00:00:54.239" end="00:00:58.640" style="s2">other than the mother said horrible</p>
+<p begin="00:00:55.920" end="00:01:01.520" style="s2">things about a person that&#39;s running for</p>
+<p begin="00:00:58.640" end="00:01:04.080" style="s2">governor of a great state, right? A</p>
+<p begin="00:01:01.520" end="00:01:05.360" style="s2">great state. And if it&#39;s even a little</p>
+<p begin="00:01:04.080" end="00:01:06.880" style="s2">bit true, you don&#39;t want her as</p>
+<p begin="00:01:05.360" end="00:01:08.880" style="s2">governor. So, I ask you about your</p>
+<p begin="00:01:06.880" end="00:01:11.360" style="s2">&gt;&gt; campaigning for Ashley Henson tonight in</p>
+<p begin="00:01:08.880" end="00:01:13.119" style="s2">Iowa. She said that the Rama Swami ad is</p>
+<p begin="00:01:11.360" end="00:01:15.520" style="s2">absolutely terrible and it should be</p>
+<p begin="00:01:13.119" end="00:01:18.080" style="s2">taken down. Why are you saying that&#39;s</p>
+<p begin="00:01:15.520" end="00:01:20.960" style="s2">her opinion? I&#39;m defending it because I</p>
+<p begin="00:01:18.080" end="00:01:22.799" style="s2">know that if that ad were about my</p>
+<p begin="00:01:20.960" end="00:01:24.960" style="s2">mother, you would love it. You would</p>
+<p begin="00:01:22.799" end="00:01:27.280" style="s2">love every inch of it. And what&#39;s</p>
+<p begin="00:01:24.960" end="00:01:29.360" style="s2">happened is the press has teamed up</p>
+<p begin="00:01:27.280" end="00:01:31.280" style="s2">because he&#39;s a Republican and they&#39;ve</p>
+<p begin="00:01:29.360" end="00:01:34.479" style="s2">tried to make it like it&#39;s a horrible</p>
+<p begin="00:01:31.280" end="00:01:36.880" style="s2">thing. This is a mother saying very bad</p>
+<p begin="00:01:34.479" end="00:01:38.880" style="s2">things about her daughter. And I don&#39;t</p>
+<p begin="00:01:36.880" end="00:01:41.840" style="s2">know why that should be shielded. The</p>
+<p begin="00:01:38.880" end="00:01:44.479" style="s2">only problem is the press has decided to</p>
+<p begin="00:01:41.840" end="00:01:47.280" style="s2">unify and act like it&#39;s a horrible</p>
+<p begin="00:01:44.479" end="00:01:49.840" style="s2">thing. It&#39;s horrible for her. And I told</p>
+<p begin="00:01:47.280" end="00:01:52.799" style="s2">Vake, I said, &quot;Well, if it were about</p>
+<p begin="00:01:49.840" end="00:01:56.320" style="s2">you or about especially about me, if</p>
+<p begin="00:01:52.799" end="00:01:58.000" style="s2">Mary Mloud, my mother, Mary Mloud, Trump</p>
+<p begin="00:01:56.320" end="00:01:59.119" style="s2">said that about me, you&#39;d have it as</p>
+<p begin="00:01:58.000" end="00:02:01.119" style="s2">your number one story.&quot;</p>
+<p begin="00:01:59.119" end="00:02:03.040" style="s2">&gt;&gt; On Ukraine, Mr. President, President</p>
+<p begin="00:02:01.119" end="00:02:04.960" style="s2">Zalinski said these new Russian strikes</p>
+<p begin="00:02:03.040" end="00:02:06.560" style="s2">overnight are proof that nothing&#39;s</p>
+<p begin="00:02:04.960" end="00:02:07.840" style="s2">changed with Putin, that he doesn&#39;t want</p>
+<p begin="00:02:06.560" end="00:02:09.360" style="s2">peace. How do you see it?</p>
+<p begin="00:02:07.840" end="00:02:11.280" style="s2">&gt;&gt; Well, we&#39;ll see how it works out. That&#39;s</p>
+<p begin="00:02:09.360" end="00:02:13.680" style="s2">been happening a lot. Mr. President,</p>
+<p begin="00:02:11.280" end="00:02:15.680" style="s2">what a mistake Barack Obama is coming to</p>
+<p begin="00:02:13.680" end="00:02:17.520" style="s2">Michigan right before you go through</p>
+<p begin="00:02:15.680" end="00:02:18.640" style="s2">Michigan. Any thoughts on how that&#39;s</p>
+<p begin="00:02:17.520" end="00:02:20.879" style="s2">going to work out for Democrats?</p>
+<p begin="00:02:18.640" end="00:02:22.800" style="s2">&gt;&gt; Well, I won Michigan by a lot. It was a</p>
+<p begin="00:02:20.879" end="00:02:24.480" style="s2">It&#39;s a great state. I&#39;ve done a lot for</p>
+<p begin="00:02:22.800" end="00:02:26.560" style="s2">them, the Air Force base and everything</p>
+<p begin="00:02:24.480" end="00:02:28.080" style="s2">else. And I think we&#39;re going to do very</p>
+<p begin="00:02:26.560" end="00:02:30.000" style="s2">well in Michigan. I really do.</p>
+<p begin="00:02:28.080" end="00:02:32.319" style="s2">&gt;&gt; And then you saw what Elon Omar said</p>
+<p begin="00:02:30.000" end="00:02:34.640" style="s2">about her brother. She was asked if</p>
+<p begin="00:02:32.319" end="00:02:36.720" style="s2">she&#39;d married her brother and she said,</p>
+<p begin="00:02:34.640" end="00:02:38.480" style="s2">&quot;Not to my knowledge.&quot; Why do you think</p>
+<p begin="00:02:36.720" end="00:02:40.160" style="s2">that she didn&#39;t just say no? Well, if</p>
+<p begin="00:02:38.480" end="00:02:43.120" style="s2">you asked me that same question about,</p>
+<p begin="00:02:40.160" end="00:02:45.760" style="s2">let&#39;s say, my sister, I would say no.</p>
+<p begin="00:02:43.120" end="00:02:48.560" style="s2">She said not to my knowledge. Uh, that</p>
+<p begin="00:02:45.760" end="00:02:50.480" style="s2">tells you a lot right there. No, she&#39;s</p>
+<p begin="00:02:48.560" end="00:02:51.920" style="s2">I&#39;ve never been a big fan of hers. I</p>
+<p begin="00:02:50.480" end="00:02:54.800" style="s2">I&#39;ll be honest. Let&#39;s see how it all</p>
+<p begin="00:02:51.920" end="00:02:56.080" style="s2">works out. But that statement tells you</p>
+<p begin="00:02:54.800" end="00:02:58.560" style="s2">a lot.</p>
+<p begin="00:02:56.080" end="00:03:00.400" style="s2">&gt;&gt; Could you call Elon Musk to bring back</p>
+<p begin="00:02:58.560" end="00:03:05.120" style="s2">Stling for Ukraine? Well, I don&#39;t want</p>
+<p begin="00:03:00.400" end="00:03:07.200" style="s2">to say, but uh I know it was a very</p>
+<p begin="00:03:05.120" end="00:03:09.840" style="s2">interesting situation, so I don&#39;t want</p>
+<p begin="00:03:07.200" end="00:03:12.239" style="s2">to comment one way or the other, but uh</p>
+<p begin="00:03:09.840" end="00:03:14.239" style="s2">&gt;&gt; the Wall Street my relationship with</p>
+<p begin="00:03:12.239" end="00:03:15.680" style="s2">Elon is a very good one. Go ahead.</p>
+<p begin="00:03:14.239" end="00:03:17.519" style="s2">&gt;&gt; The Wall Street Journal is reporting</p>
+<p begin="00:03:15.680" end="00:03:18.879" style="s2">that you called him and asked him to</p>
+<p begin="00:03:17.519" end="00:03:21.040" style="s2">&gt;&gt; I don&#39;t want to comment on it. You know,</p>
+<p begin="00:03:18.879" end="00:03:22.800" style="s2">whether I called or whether somebody</p>
+<p begin="00:03:21.040" end="00:03:25.200" style="s2">else called doesn&#39;t make any difference.</p>
+<p begin="00:03:22.800" end="00:03:27.360" style="s2">I guess the bottom line, he put it back.</p>
+<p begin="00:03:25.200" end="00:03:30.560" style="s2">&gt;&gt; Was it a mistake for Stormfield to be</p>
+<p begin="00:03:27.360" end="00:03:32.000" style="s2">slow down? Any</p>
+<p begin="00:03:30.560" end="00:03:32.720" style="s2">other question? Go ahead.</p>
+<p begin="00:03:32.000" end="00:03:33.440" style="s2">&gt;&gt; Thank you.</p>
+<p begin="00:03:32.720" end="00:03:35.360" style="s2">&gt;&gt; Say hello.</p>
+<p begin="00:03:33.440" end="00:03:37.040" style="s2">&gt;&gt; Thank you.</p>
+<p begin="00:03:35.360" end="00:03:39.280" style="s2">&gt;&gt; North Carolina question. Hi.</p>
+<p begin="00:03:37.040" end="00:03:42.239" style="s2">&gt;&gt; On June, you said at the recent rally</p>
+<p begin="00:03:39.280" end="00:03:44.640" style="s2">that you would order the DOJ to settle</p>
+<p begin="00:03:42.239" end="00:03:46.480" style="s2">those lawsuits if they&#39;re legitimate.</p>
+<p begin="00:03:44.640" end="00:03:48.480" style="s2">Yeah. Why not do so now, sir?</p>
+<p begin="00:03:46.480" end="00:03:49.920" style="s2">&gt;&gt; Uh I think if they can do it reasonably,</p>
+<p begin="00:03:48.480" end="00:03:52.640" style="s2">they should settle. If they can&#39;t, they</p>
+<p begin="00:03:49.920" end="00:03:54.319" style="s2">have to just go. But uh we want to take</p>
+<p begin="00:03:52.640" end="00:03:56.799" style="s2">care of a lot of soldiers. If the</p>
+<p begin="00:03:54.319" end="00:03:59.200" style="s2">soldiers were affected and it was it was</p>
+<p begin="00:03:56.799" end="00:04:00.879" style="s2">a proper situation, we want to take care</p>
+<p begin="00:03:59.200" end="00:04:01.680" style="s2">of it. We want to take care of our</p>
+<p begin="00:04:00.879" end="00:04:03.439" style="s2">soldiers.</p>
+<p begin="00:04:01.680" end="00:04:05.439" style="s2">&gt;&gt; You said it&#39;s dependent on the midterms</p>
+<p begin="00:04:03.439" end="00:04:07.040" style="s2">results though. Uh why?</p>
+<p begin="00:04:05.439" end="00:04:08.400" style="s2">&gt;&gt; Well, because if we&#39;re not there, then</p>
+<p begin="00:04:07.040" end="00:04:10.400" style="s2">somebody else is going to have to settle</p>
+<p begin="00:04:08.400" end="00:04:13.280" style="s2">it. So, I can&#39;t speak for another</p>
+<p begin="00:04:10.400" end="00:04:14.799" style="s2">administration. So, uh, if we do badly</p>
+<p begin="00:04:13.280" end="00:04:17.120" style="s2">or if the people that we need</p>
+<p begin="00:04:14.799" end="00:04:18.720" style="s2">surrounding us can&#39;t get it done because</p>
+<p begin="00:04:17.120" end="00:04:20.799" style="s2">you have a lot of congressmen up, you</p>
+<p begin="00:04:18.720" end="00:04:22.639" style="s2">have a lot of senators up, you have a</p>
+<p begin="00:04:20.799" end="00:04:25.840" style="s2">lot of people involved in that whole</p>
+<p begin="00:04:22.639" end="00:04:28.320" style="s2">situation. Uh, so if the Republicans</p>
+<p begin="00:04:25.840" end="00:04:30.960" style="s2">don&#39;t do well, I I would say that maybe</p>
+<p begin="00:04:28.320" end="00:04:32.960" style="s2">they won&#39;t get their money.</p>
+<p begin="00:04:30.960" end="00:04:35.280" style="s2">&gt;&gt; Why did you make no mention of the</p>
+<p begin="00:04:32.960" end="00:04:37.199" style="s2">sexual abuse allegations that Amy Actton</p>
+<p begin="00:04:35.280" end="00:04:38.639" style="s2">made against her stepfather who stayed</p>
+<p begin="00:04:37.199" end="00:04:40.560" style="s2">married to her mother?</p>
+<p begin="00:04:38.639" end="00:04:42.479" style="s2">&gt;&gt; Well, I have no idea. I don&#39;t know the</p>
+<p begin="00:04:40.560" end="00:04:44.960" style="s2">mother. I don&#39;t know her. I never heard</p>
+<p begin="00:04:42.479" end="00:04:47.120" style="s2">of her until just recently as somebody</p>
+<p begin="00:04:44.960" end="00:04:50.000" style="s2">running for governor of Ohio. I can tell</p>
+<p begin="00:04:47.120" end="00:04:51.680" style="s2">you this. If my mother ever made those</p>
+<p begin="00:04:50.000" end="00:04:53.360" style="s2">statements, I have a mother I had a</p>
+<p begin="00:04:51.680" end="00:04:56.400" style="s2">mother who&#39;s up there right now looking</p>
+<p begin="00:04:53.360" end="00:04:58.479" style="s2">down. Mary Mloud Trump. If she ever made</p>
+<p begin="00:04:56.400" end="00:05:01.120" style="s2">statements like that about me, you and</p>
+<p begin="00:04:58.479" end="00:05:02.880" style="s2">your fake station would have it front</p>
+<p begin="00:05:01.120" end="00:05:06.400" style="s2">row center. You&#39;d love it. What&#39;s</p>
+<p begin="00:05:02.880" end="00:05:08.639" style="s2">happened is the the press has ganged up</p>
+<p begin="00:05:06.400" end="00:05:10.800" style="s2">on a woman making a horrible statement</p>
+<p begin="00:05:08.639" end="00:05:12.560" style="s2">about her daughter. And I don&#39;t know why</p>
+<p begin="00:05:10.800" end="00:05:14.320" style="s2">she should be shielded or the daughter</p>
+<p begin="00:05:12.560" end="00:05:15.039" style="s2">should be sher stepmother a child</p>
+<p begin="00:05:14.320" end="00:05:17.199" style="s2">rapist.</p>
+<p begin="00:05:15.039" end="00:05:20.160" style="s2">&gt;&gt; Mother made a horrible statement about</p>
+<p begin="00:05:17.199" end="00:05:21.840" style="s2">the daughter said she was a dirty liar.</p>
+<p begin="00:05:20.160" end="00:05:23.840" style="s2">She said she was a lot of different</p>
+<p begin="00:05:21.840" end="00:05:26.479" style="s2">things and I don&#39;t know why you&#39;re not</p>
+<p begin="00:05:23.840" end="00:05:29.280" style="s2">allowed to say that she I know one</p>
+<p begin="00:05:26.479" end="00:05:31.600" style="s2">thing. If my mother who loved me made</p>
+<p begin="00:05:29.280" end="00:05:33.520" style="s2">those different you&#39;d be the first one</p>
+<p begin="00:05:31.600" end="00:05:35.759" style="s2">to be broadcasting and you would have</p>
+<p begin="00:05:33.520" end="00:05:38.000" style="s2">found nothing wrong with him. Amy</p>
+<p begin="00:05:35.759" end="00:05:40.560" style="s2">Actton&#39;s mother said horrible things</p>
+<p begin="00:05:38.000" end="00:05:42.160" style="s2">about Amy Actton. And I don&#39;t know why</p>
+<p begin="00:05:40.560" end="00:05:44.000" style="s2">you&#39;re not allowed to do that. You&#39;re</p>
+<p begin="00:05:42.160" end="00:05:47.199" style="s2">not allowed to broadcast it. Now, I&#39;ll</p>
+<p begin="00:05:44.000" end="00:05:49.840" style="s2">say this. The press has ganged up</p>
+<p begin="00:05:47.199" end="00:05:53.039" style="s2">because you hate it. Because that one ad</p>
+<p begin="00:05:49.840" end="00:05:55.120" style="s2">should really win. Look, if what the</p>
+<p begin="00:05:53.039" end="00:05:57.520" style="s2">mother said about the daughter is half</p>
+<p begin="00:05:55.120" end="00:05:58.880" style="s2">right, she has no right even running for</p>
+<p begin="00:05:57.520" end="00:06:00.720" style="s2">the governor of Ohio.</p>
+<p begin="00:05:58.880" end="00:06:01.520" style="s2">&gt;&gt; What about the daughter said about her</p>
+<p begin="00:06:00.720" end="00:06:02.800" style="s2">mother?</p>
+<p begin="00:06:01.520" end="00:06:03.440" style="s2">&gt;&gt; I don&#39;t know what the daughter said. I</p>
+<p begin="00:06:02.800" end="00:06:05.120" style="s2">don&#39;t know.</p>
+<p begin="00:06:03.440" end="00:06:06.639" style="s2">&gt;&gt; Her stepmother. Her mother remained</p>
+<p begin="00:06:05.120" end="00:06:08.319" style="s2">married to her stepfather who sexually</p>
+<p begin="00:06:06.639" end="00:06:09.840" style="s2">abused her when she was 12 years old.</p>
+<p begin="00:06:08.319" end="00:06:10.160" style="s2">&gt;&gt; When did she make that statement? Was it</p>
+<p begin="00:06:09.840" end="00:06:12.000" style="s2">just</p>
+<p begin="00:06:10.160" end="00:06:13.520" style="s2">&gt;&gt; in the 1970s?</p>
+<p begin="00:06:12.000" end="00:06:15.919" style="s2">They he was charged. Mr.</p>
+<p begin="00:06:13.520" end="00:06:18.319" style="s2">&gt;&gt; You know, I have no idea. All I know is</p>
+<p begin="00:06:15.919" end="00:06:20.639" style="s2">Amy Actton&#39;s mother said horrible things</p>
+<p begin="00:06:18.319" end="00:06:23.520" style="s2">about Amy Actton, calling her a liar and</p>
+<p begin="00:06:20.639" end="00:06:26.880" style="s2">other things and unreliable, a lot of</p>
+<p begin="00:06:23.520" end="00:06:29.199" style="s2">very bad things. And I say that she&#39;s</p>
+<p begin="00:06:26.880" end="00:06:31.280" style="s2">fair game. And I know one thing, if it</p>
+<p begin="00:06:29.199" end="00:06:33.280" style="s2">were my mother, I&#39;d be fair game. And</p>
+<p begin="00:06:31.280" end="00:06:36.240" style="s2">you know that and you know that well.</p>
+<p begin="00:06:33.280" end="00:06:38.560" style="s2">You&#39;re trying to help Amy Actton get</p>
+<p begin="00:06:36.240" end="00:06:40.880" style="s2">elected. The press has teamed up to help</p>
+<p begin="00:06:38.560" end="00:06:43.120" style="s2">Amy Actton get elected and that&#39;s all it</p>
+<p begin="00:06:40.880" end="00:06:45.280" style="s2">is. What the mother said is terrible</p>
+<p begin="00:06:43.120" end="00:06:46.960" style="s2">from the standpoint that I wouldn&#39;t want</p>
+<p begin="00:06:45.280" end="00:06:49.039" style="s2">somebody like that to be the governor of</p>
+<p begin="00:06:46.960" end="00:06:51.520" style="s2">a great state.</p>
+<p begin="00:06:49.039" end="00:06:53.520" style="s2">&gt;&gt; There are a lot of races in red states,</p>
+<p begin="00:06:51.520" end="00:06:56.720" style="s2">Mr. President. There are a lot of close</p>
+<p begin="00:06:53.520" end="00:06:57.280" style="s2">races in red states. Why are Democrats</p>
+<p begin="00:06:56.720" end="00:06:58.800" style="s2">doing so well?</p>
+<p begin="00:06:57.280" end="00:07:01.840" style="s2">&gt;&gt; I don&#39;t know if they&#39;re close. I mean, I</p>
+<p begin="00:06:58.800" end="00:07:06.400" style="s2">just saw that the New York Times</p>
+<p begin="00:07:01.840" end="00:07:07.919" style="s2">used the poll numbers of a totally fake,</p>
+<p begin="00:07:06.400" end="00:07:11.520" style="s2">you know, a group that said they were</p>
+<p begin="00:07:07.919" end="00:07:15.680" style="s2">fake numbers against me. So, I don&#39;t</p>
+<p begin="00:07:11.520" end="00:07:18.800" style="s2">know if you saw that the New York Times,</p>
+<p begin="00:07:15.680" end="00:07:20.479" style="s2">the New York Times used fake poll</p>
+<p begin="00:07:18.800" end="00:07:23.520" style="s2">numbers against me and it was just</p>
+<p begin="00:07:20.479" end="00:07:26.240" style="s2">revealed. The polling company just said</p>
+<p begin="00:07:23.520" end="00:07:28.080" style="s2">that the numbers were fake. And I</p>
+<p begin="00:07:26.240" end="00:07:30.400" style="s2">haven&#39;t had an apology from the New York</p>
+<p begin="00:07:28.080" end="00:07:34.080" style="s2">Times, but if you saw that polling</p>
+<p begin="00:07:30.400" end="00:07:36.560" style="s2">company, it was a fake poll. And the New</p>
+<p begin="00:07:34.080" end="00:07:38.720" style="s2">York Times uses that polling company.</p>
+<p begin="00:07:36.560" end="00:07:41.520" style="s2">So, to the best of my knowledge, they</p>
+<p begin="00:07:38.720" end="00:07:42.800" style="s2">have not apologized to me.</p>
+<p begin="00:07:41.520" end="00:07:44.160" style="s2">&gt;&gt; Are you going to be able to keep the</p>
+<p begin="00:07:42.800" end="00:07:46.240" style="s2">House and the Senate?</p>
+<p begin="00:07:44.160" end="00:07:48.319" style="s2">&gt;&gt; I hope so. I mean, we&#39;ll see.</p>
+<p begin="00:07:46.240" end="00:07:51.440" style="s2">&gt;&gt; Look, we&#39;ll see. When I run, we get</p>
+<p begin="00:07:48.319" end="00:07:53.759" style="s2">almost 50% more voters. So, if I can get</p>
+<p begin="00:07:51.440" end="00:07:56.160" style="s2">my voters out, we&#39;re going to win. If we</p>
+<p begin="00:07:53.759" end="00:08:00.000" style="s2">can&#39;t get the voters out, I guess not.</p>
+<p begin="00:07:56.160" end="00:08:02.080" style="s2">Uh, typically the the president of, you</p>
+<p begin="00:08:00.000" end="00:08:05.039" style="s2">know, Republican, Democrat, whatever,</p>
+<p begin="00:08:02.080" end="00:08:07.120" style="s2">doesn&#39;t do well at midterms. I say this,</p>
+<p begin="00:08:05.039" end="00:08:09.680" style="s2">if my poll, if my people come out, even</p>
+<p begin="00:08:07.120" end="00:08:13.680" style="s2">a little bit will do great. But I think</p>
+<p begin="00:08:09.680" end="00:08:15.840" style="s2">the number is 49 or 50 50%. So, when I</p>
+<p begin="00:08:13.680" end="00:08:18.160" style="s2">run, 50% more people come out. I guess</p>
+<p begin="00:08:15.840" end="00:08:20.879" style="s2">that&#39;s a compliment. I&#39;d like to see if</p>
+<p begin="00:08:18.160" end="00:08:22.720" style="s2">I could get a lot of them out. Now, if</p>
+<p begin="00:08:20.879" end="00:08:23.599" style="s2">we do that, we&#39;ll win easily in a</p>
+<p begin="00:08:22.720" end="00:08:25.199" style="s2">landslide.</p>
+<p begin="00:08:23.599" end="00:08:26.479" style="s2">&gt;&gt; Mr. President, question on Maine.</p>
+<p begin="00:08:25.199" end="00:08:28.160" style="s2">Question on Maine. You&#39;re you&#39;re going</p>
+<p begin="00:08:26.479" end="00:08:29.840" style="s2">all over the country. Do you have plans</p>
+<p begin="00:08:28.160" end="00:08:31.599" style="s2">to go to Maine? Would that help?</p>
+<p begin="00:08:29.840" end="00:08:33.039" style="s2">&gt;&gt; We&#39;re going to go for a number. We&#39;re</p>
+<p begin="00:08:31.599" end="00:08:34.640" style="s2">probably going to add a couple. It&#39;s a</p>
+<p begin="00:08:33.039" end="00:08:37.279" style="s2">lot of work. I will tell you this is a</p>
+<p begin="00:08:34.640" end="00:08:38.800" style="s2">lot of this is a lot of travel, but I</p>
+<p begin="00:08:37.279" end="00:08:41.440" style="s2">love the people. We&#39;re getting great</p>
+<p begin="00:08:38.800" end="00:08:43.519" style="s2">crowds. They have a line in Iowa that&#39;s</p>
+<p begin="00:08:41.440" end="00:08:46.160" style="s2">miles long right now trying to get into</p>
+<p begin="00:08:43.519" end="00:08:48.240" style="s2">the arena.</p>
+<p begin="00:08:46.160" end="00:08:50.160" style="s2">time of Texas. You&#39;re spending a lot of</p>
+<p begin="00:08:48.240" end="00:08:51.120" style="s2">money in time in Texas. I think the most</p>
+<p begin="00:08:50.160" end="00:08:53.440" style="s2">amount of money you&#39;re spending</p>
+<p begin="00:08:51.120" end="00:08:55.519" style="s2">&gt;&gt; Well, I think this I think that uh we</p>
+<p begin="00:08:53.440" end="00:08:58.560" style="s2">have the greatest attorney general</p>
+<p begin="00:08:55.519" end="00:09:00.240" style="s2">running in the history of Texas and he&#39;s</p>
+<p begin="00:08:58.560" end="00:09:02.000" style="s2">running against a guy they call him a</p>
+<p begin="00:09:00.240" end="00:09:04.640" style="s2">freak. I mean, that&#39;s his nickname. He</p>
+<p begin="00:09:02.000" end="00:09:06.160" style="s2">is a freak. And Texas cannot have</p>
+<p begin="00:09:04.640" end="00:09:08.320" style="s2">Telefo.</p>
+<p begin="00:09:06.160" end="00:09:10.399" style="s2">So, what Texas has is the greatest</p>
+<p begin="00:09:08.320" end="00:09:12.399" style="s2">attorney general in their history and</p>
+<p begin="00:09:10.399" end="00:09:14.320" style="s2">one of the greatest attorney generals in</p>
+<p begin="00:09:12.399" end="00:09:16.480" style="s2">the country. And that&#39;s what you want</p>
+<p begin="00:09:14.320" end="00:09:17.760" style="s2">for your senator.</p>
+<p begin="00:09:16.480" end="00:09:20.640" style="s2">&gt;&gt; Do you have any re do you have any</p>
+<p begin="00:09:17.760" end="00:09:22.720" style="s2">reaction to the reports that the the DOJ</p>
+<p begin="00:09:20.640" end="00:09:24.080" style="s2">is looking at Cory Luwendowski now?</p>
+<p begin="00:09:22.720" end="00:09:25.680" style="s2">&gt;&gt; I don&#39;t know about it. I mean, I heard</p>
+<p begin="00:09:24.080" end="00:09:28.399" style="s2">something about it, but I don&#39;t know</p>
+<p begin="00:09:25.680" end="00:09:30.320" style="s2">exactly what it is. All I know is I want</p>
+<p begin="00:09:28.399" end="00:09:32.000" style="s2">my people to be honest and if they&#39;re</p>
+<p begin="00:09:30.320" end="00:09:33.839" style="s2">not going to be honest, they have to be</p>
+<p begin="00:09:32.000" end="00:09:36.160" style="s2">prosecuted. I don&#39;t know about</p>
+<p begin="00:09:33.839" end="00:09:37.680" style="s2">specifically, but because I view if</p>
+<p begin="00:09:36.160" end="00:09:40.160" style="s2">people are not honest, they&#39;re stealing</p>
+<p begin="00:09:37.680" end="00:09:42.320" style="s2">from me as president. They&#39;re stealing</p>
+<p begin="00:09:40.160" end="00:09:44.320" style="s2">from me. So, I want my people to be</p>
+<p begin="00:09:42.320" end="00:09:46.640" style="s2">honest, and if they&#39;re not honest, I&#39;ll</p>
+<p begin="00:09:44.320" end="00:09:47.120" style="s2">have my DOJ go and do whatever they have</p>
+<p begin="00:09:46.640" end="00:09:48.080" style="s2">to do.</p>
+<p begin="00:09:47.120" end="00:09:49.120" style="s2">&gt;&gt; Don&#39;t think you&#39;re okay with that</p>
+<p begin="00:09:48.080" end="00:09:51.519" style="s2">investigation, Andrew?</p>
+<p begin="00:09:49.120" end="00:09:53.120" style="s2">&gt;&gt; I Well, I I could I guess I can stop</p>
+<p begin="00:09:51.519" end="00:09:55.360" style="s2">anything. Look,</p>
+<p begin="00:09:53.120" end="00:09:57.040" style="s2">&gt;&gt; if my people are not I have no idea what</p>
+<p begin="00:09:55.360" end="00:09:58.959" style="s2">he did. I have just heard about it a</p>
+<p begin="00:09:57.040" end="00:10:01.200" style="s2">little while. I want the people that</p>
+<p begin="00:09:58.959" end="00:10:02.399" style="s2">work for this administration to be 100%</p>
+<p begin="00:10:01.200" end="00:10:04.160" style="s2">honest.</p>
+<p begin="00:10:02.399" end="00:10:07.440" style="s2">&gt;&gt; How mean, Mr. President,</p>
+<p begin="00:10:04.160" end="00:10:10.880" style="s2">&gt;&gt; how Means resigned today from HHS is</p>
+<p begin="00:10:07.440" end="00:10:13.839" style="s2">Baja dead, sir.</p>
+<p begin="00:10:10.880" end="00:10:16.880" style="s2">Uh, don&#39;t know her very well at all. I</p>
+<p begin="00:10:13.839" end="00:10:17.360" style="s2">guess you&#39;re talking about it&#39;s a Bobby</p>
+<p begin="00:10:16.880" end="00:10:18.800" style="s2">Kennedy.</p>
+<p begin="00:10:17.360" end="00:10:21.600" style="s2">&gt;&gt; Well, you&#39;ll have to don&#39;t know. It&#39;s</p>
+<p begin="00:10:18.800" end="00:10:23.279" style="s2">doing great. Baja is doing great.</p>
+<p begin="00:10:21.600" end="00:10:24.720" style="s2">&gt;&gt; It sounds like you&#39;re talking about him</p>
+<p begin="00:10:23.279" end="00:10:26.320" style="s2">specifically when you&#39;re talking about</p>
+<p begin="00:10:24.720" end="00:10:29.040" style="s2">people stealing.</p>
+<p begin="00:10:26.320" end="00:10:31.440" style="s2">&gt;&gt; Uh, I would say this. If somebody is</p>
+<p begin="00:10:29.040" end="00:10:33.600" style="s2">dishonest, I consider them not only</p>
+<p begin="00:10:31.440" end="00:10:36.560" style="s2">against the country, I consider that</p>
+<p begin="00:10:33.600" end="00:10:39.040" style="s2">dishonest against me. So, I will never I</p>
+<p begin="00:10:36.560" end="00:10:41.120" style="s2">will never do anything to stop a</p>
+<p begin="00:10:39.040" end="00:10:42.000" style="s2">prosecution if somebody is dishonest.</p>
+<p begin="00:10:41.120" end="00:10:43.279" style="s2">Yep.</p>
+<p begin="00:10:42.000" end="00:10:44.800" style="s2">&gt;&gt; How worried are you about the</p>
+<p begin="00:10:43.279" end="00:10:45.360" style="s2">Mississippi Senate race? Why are you</p>
+<p begin="00:10:44.800" end="00:10:47.040" style="s2">going to Mississippi?</p>
+<p begin="00:10:45.360" end="00:10:48.800" style="s2">&gt;&gt; I&#39;m just hearing about it now from you.</p>
+<p begin="00:10:47.040" end="00:10:50.320" style="s2">What What&#39;s wrong with Mississippi?</p>
+<p begin="00:10:48.800" end="00:10:51.600" style="s2">&gt;&gt; Are you worried about losing the seat</p>
+<p begin="00:10:50.320" end="00:10:53.519" style="s2">there?</p>
+<p begin="00:10:51.600" end="00:10:56.079" style="s2">&gt;&gt; What are the poll numbers?</p>
+<p begin="00:10:53.519" end="00:10:57.279" style="s2">&gt;&gt; What are the pollith</p>
+<p begin="00:10:56.079" end="00:10:58.000" style="s2">&gt;&gt; and what is it? What are the poll</p>
+<p begin="00:10:57.279" end="00:10:59.200" style="s2">numbers?</p>
+<p begin="00:10:58.000" end="00:11:01.360" style="s2">&gt;&gt; It&#39;s tough to say, but they&#39;re</p>
+<p begin="00:10:59.200" end="00:11:02.720" style="s2">&gt;&gt; I mean, Cindy Hyde&#39;s been very popular.</p>
+<p begin="00:11:01.360" end="00:11:04.640" style="s2">If I need to, you know, I went</p>
+<p begin="00:11:02.720" end="00:11:07.760" style="s2">Mississippi as like I did just about</p>
+<p begin="00:11:04.640" end="00:11:09.680" style="s2">everything else in a landslide. So, if I</p>
+<p begin="00:11:07.760" end="00:11:12.000" style="s2">need to get her over the top, I would go</p>
+<p begin="00:11:09.680" end="00:11:14.640" style="s2">there. She&#39;s great. Cindy Hyde Smith is</p>
+<p begin="00:11:12.000" end="00:11:16.959" style="s2">great. So, if I need to go, I mean, I&#39;m</p>
+<p begin="00:11:14.640" end="00:11:18.399" style="s2">pretty well booked up as you see, but if</p>
+<p begin="00:11:16.959" end="00:11:20.320" style="s2">I need to go, I&#39;d go.</p>
+<p begin="00:11:18.399" end="00:11:22.560" style="s2">&gt;&gt; Sir, will you only endorse Vice</p>
+<p begin="00:11:20.320" end="00:11:24.640" style="s2">President Vance if Republicans hold the</p>
+<p begin="00:11:22.560" end="00:11:25.440" style="s2">majorities?</p>
+<p begin="00:11:24.640" end="00:11:27.200" style="s2">Vice President,</p>
+<p begin="00:11:25.440" end="00:11:29.839" style="s2">&gt;&gt; if Republicans don&#39;t hold the</p>
+<p begin="00:11:27.200" end="00:11:31.600" style="s2">majorities, are you not going to endorse</p>
+<p begin="00:11:29.839" end="00:11:32.800" style="s2">Vice President Vance for 2028?</p>
+<p begin="00:11:31.600" end="00:11:35.600" style="s2">&gt;&gt; Where do you get that idea?</p>
+<p begin="00:11:32.800" end="00:11:36.160" style="s2">&gt;&gt; Well, you&#39;ve just said it&#39;s never</p>
+<p begin="00:11:35.600" end="00:11:37.920" style="s2">happens.</p>
+<p begin="00:11:36.160" end="00:11:40.079" style="s2">&gt;&gt; I never even thought of it. No, because</p>
+<p begin="00:11:37.920" end="00:11:41.920" style="s2">we&#39;re just too we have too much time to</p>
+<p begin="00:11:40.079" end="00:11:42.560" style="s2">be thinking about that. It&#39;s a long way</p>
+<p begin="00:11:41.920" end="00:11:45.120" style="s2">off.</p>
+<p begin="00:11:42.560" end="00:11:47.120" style="s2">&gt;&gt; Where will you Todd Has Todd Blanch</p>
+<p begin="00:11:45.120" end="00:11:47.600" style="s2">briefed you about the Corin Luendowski</p>
+<p begin="00:11:47.120" end="00:11:49.200" style="s2">situation?</p>
+<p begin="00:11:47.600" end="00:11:51.360" style="s2">&gt;&gt; No, he hasn&#39;t. I just heard about it a</p>
+<p begin="00:11:49.200" end="00:11:53.040" style="s2">little while ago. But I want my people</p>
+<p begin="00:11:51.360" end="00:11:54.560" style="s2">to be honest. If he&#39;s honest, that&#39;s</p>
+<p begin="00:11:53.040" end="00:11:55.519" style="s2">good. If he&#39;s not honest, you have to</p>
+<p begin="00:11:54.560" end="00:11:57.279" style="s2">pay a price.</p>
+<p begin="00:11:55.519" end="00:11:59.600" style="s2">&gt;&gt; And in all these tight races, Mr.</p>
+<p begin="00:11:57.279" end="00:12:01.279" style="s2">President, how do you think the Iran war</p>
+<p begin="00:11:59.600" end="00:12:03.040" style="s2">has impacted the races?</p>
+<p begin="00:12:01.279" end="00:12:04.480" style="s2">&gt;&gt; Well, in one way, they love it because</p>
+<p begin="00:12:03.040" end="00:12:06.320" style="s2">I&#39;m doing what should have been done by</p>
+<p begin="00:12:04.480" end="00:12:09.040" style="s2">other presidents. In another way, maybe</p>
+<p begin="00:12:06.320" end="00:12:11.600" style="s2">they don&#39;t. It&#39;s there&#39;s a price to pay,</p>
+<p begin="00:12:09.040" end="00:12:13.360" style="s2">which I knew immediately when I did it.</p>
+<p begin="00:12:11.600" end="00:12:15.279" style="s2">But we can&#39;t let Iran have a nuclear</p>
+<p begin="00:12:13.360" end="00:12:18.079" style="s2">weapon. I mean, in one way, people</p>
+<p begin="00:12:15.279" end="00:12:20.639" style="s2">probably don&#39;t love it, but many people,</p>
+<p begin="00:12:18.079" end="00:12:22.320" style="s2">many great patriots really love it. This</p>
+<p begin="00:12:20.639" end="00:12:24.639" style="s2">should have been done a long time ago by</p>
+<p begin="00:12:22.320" end="00:12:26.800" style="s2">other presidents, the Iran war, and</p>
+<p begin="00:12:24.639" end="00:12:28.399" style="s2">we&#39;ve knocked the hell out of them. And</p>
+<p begin="00:12:26.800" end="00:12:30.160" style="s2">we may do it a little bit further. Thank</p>
+<p begin="00:12:28.399" end="00:12:34.240" style="s2">you, Mr. President. Was it a mistake to</p>
+<p begin="00:12:30.160" end="00:12:34.240" style="s2">slow down the battlefield over Ukraine?</p>
+</div>
+</body>
+</tt>
