@@ -1,0 +1,93 @@
+{
+  "module": "module2b-third-party-captions",
+  "language": "en",
+  "duration_seconds": 0.0,
+  "reference": {},
+  "providers": {
+    "assemblyai": {
+      "name": "AssemblyAI",
+      "status": "skipped",
+      "reason": "ASSEMBLYAI_API_KEY is not set.",
+      "source": "https://www.assemblyai.com/pricing"
+    },
+    "deepgram": {
+      "name": "Deepgram",
+      "status": "skipped",
+      "reason": "DEEPGRAM_API_KEY is not set.",
+      "source": "https://deepgram.com/pricing"
+    },
+    "gladia": {
+      "name": "Gladia",
+      "status": "skipped",
+      "reason": "GLADIA_API_KEY is not set.",
+      "source": "https://www.gladia.io/pricing"
+    },
+    "revai": {
+      "name": "Rev AI",
+      "status": "skipped",
+      "reason": "REVAI_API_KEY is not set.",
+      "source": "https://www.rev.ai/pricing"
+    },
+    "elevenlabs": {
+      "name": "ElevenLabs Scribe v2",
+      "status": "skipped",
+      "reason": "ELEVENLABS_API_KEY is not set.",
+      "source": "https://elevenlabs.io/speech-to-text"
+    },
+    "openai": {
+      "name": "OpenAI Whisper API",
+      "status": "skipped",
+      "reason": "OPENAI_API_KEY is not set.",
+      "source": "https://platform.openai.com/docs/guides/speech-to-text"
+    },
+    "speechmatics": {
+      "name": "Speechmatics",
+      "status": "unsupported",
+      "reason": "Adapter pending; batch jobs API documents word-level timings.",
+      "source": "https://www.speechmatics.com/pricing"
+    },
+    "sonix": {
+      "name": "Sonix",
+      "status": "unsupported",
+      "reason": "REST API exists; adapter pending.",
+      "source": "https://sonix.ai/pricing"
+    },
+    "trint": {
+      "name": "Trint",
+      "status": "unsupported",
+      "reason": "API exists; pricing depends on plan; adapter pending.",
+      "source": "https://developer.trint.com/docs/pricing/"
+    },
+    "happyscribe": {
+      "name": "Happy Scribe",
+      "status": "unsupported",
+      "reason": "Orders API implemented by vendor; adapter pending.",
+      "source": "https://dev.happyscribe.com/"
+    },
+    "otter": {
+      "name": "Otter.ai",
+      "status": "unsupported",
+      "reason": "No official public API; browser automation is not a reliable API substitute.",
+      "source": "https://otter.ai/"
+    },
+    "descript": {
+      "name": "Descript",
+      "status": "unsupported",
+      "reason": "Workflow/Underlord API, not a raw word-timestamp STT endpoint.",
+      "source": "https://www.descript.com/api"
+    },
+    "openrouter": {
+      "name": "OpenRouter (audio chat)",
+      "status": "unsupported",
+      "reason": "Audio input is supported via chat completions, but it is not a WER-comparable STT service and returns no word timestamps.",
+      "source": "https://openrouter.ai/docs/features/multimodal/audio"
+    },
+    "zoom": {
+      "name": "Zoom Scribe",
+      "status": "unsupported",
+      "reason": "No public raw STT API advertised; leaderboard result only.",
+      "source": "https://huggingface.co/spaces/hf-audio/open_asr_leaderboard"
+    }
+  },
+  "ranking": []
+}

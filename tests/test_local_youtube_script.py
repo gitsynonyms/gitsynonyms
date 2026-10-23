@@ -96,6 +96,63 @@ def test_ass_uses_chinese_above_english_with_chinese_1_2x_size():
     assert "Style: English,Arial,48,&H00FFD700,&H00FFFFFF," in result
 
 
+def test_ass_does_not_accumulate_stale_overlapping_cues():
+    chinese = [
+        {
+            "start": 8.88,
+            "end": 13.599,
+            "text": "。",
+            "word_timings": [{"start": 8.88, "end": 13.599, "text": "。"}],
+        },
+        {"start": 11.84, "end": 14.88, "text": "为什么有人要听"},
+        {"start": 13.599, "end": 16.64, "text": "母亲的话？"},
+    ]
+    english = [
+        {
+            "start": 8.88,
+            "end": 13.599,
+            "text": "her stepdad was indicted for raping her.",
+            "word_timings": [
+                {"start": 8.88, "end": 9.2, "text": "her"},
+                {"start": 9.2, "end": 9.76, "text": "stepdad"},
+                {"start": 9.76, "end": 9.92, "text": "was"},
+                {"start": 9.92, "end": 10.4, "text": "indicted"},
+                {"start": 10.4, "end": 10.72, "text": "for"},
+                {"start": 10.72, "end": 11.2, "text": "raping"},
+                {"start": 11.2, "end": 13.599, "text": "her."},
+            ],
+        },
+        {
+            "start": 11.84,
+            "end": 14.88,
+            "text": "Why should anyone listen to what the mother has to say?",
+        },
+    ]
+
+    result = youtube_srt.build_ass(chinese, english, box_style="none")
+    dialogues = [
+        line for line in result.splitlines() if line.startswith("Dialogue: 1,")
+    ]
+    overlapping_event = next(
+        line for line in dialogues if line.startswith("Dialogue: 1,0:00:11.84,")
+    )
+    plain_event = without_karaoke_tags(overlapping_event)
+
+    assert "stepdad" not in plain_event
+    assert "her." not in plain_event
+    assert "为什么有人要听" in plain_event
+    assert "Why should anyone listen" in plain_event
+    assert any(
+        line.startswith("Dialogue: 1,0:00:08.88,0:00:11.84,")
+        and "her stepdad" in without_karaoke_tags(line)
+        for line in dialogues
+    )
+    assert all(
+        line.split(",", 3)[2] != line.split(",", 3)[1]
+        for line in dialogues
+    )
+
+
 def test_ass_highlights_english_words_in_sequence():
     chinese = youtube_srt.parse_srt("1\n00:00:01,000 --> 00:00:03,000\n你好\n\n")
     english = youtube_srt.parse_srt(
@@ -310,6 +367,25 @@ def test_ass_serializes_rolling_cues_with_different_end_times_without_repeats():
     )
 
 
+def test_ass_recognizes_cumulative_cues_after_a_short_gap():
+    cues = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:02,000\n"
+        "总统先生，艾米·阿特金斯的母亲\n\n"
+        "2\n00:00:02,600 --> 00:00:04,000\n"
+        "总统先生，艾米·阿特金斯的母亲后来受到威胁\n"
+    )
+
+    serialized = youtube_srt._serialize_same_end_cues(cues)
+
+    assert [(cue["start"], cue["end"]) for cue in serialized] == [
+        (1.0, 2.6),
+        (2.6, 4.0),
+    ]
+    assert "".join(cue["text"] for cue in serialized) == (
+        "总统先生，艾米·阿特金斯的母亲后来受到威胁"
+    )
+
+
 def test_ass_rolls_overlapping_youtube_caption_window_into_one_line():
     chinese = youtube_srt.parse_srt(
         "1\n00:00:04,160 --> 00:00:08,720\n女士们先生们，美国总统\n\n"
@@ -489,6 +565,17 @@ def test_qsv_burn_in_uses_requested_one_line_ffmpeg_quality_options(monkeypatch,
     assert len(calls) == 2
 
 
+def test_caption_box_can_be_disabled_for_a_clean_source():
+    cues = youtube_srt.parse_srt("1\n00:00:01,000 --> 00:00:02,000\ncaption\n\n")
+
+    result = youtube_srt.build_ass(cues, cues, box_style="none")
+
+    assert "CaptionBox" not in result
+    assert "CaptionFacet" not in result
+    assert result.count("Dialogue: ") == 1
+    assert "Dialogue: 1,0:00:01.00,0:00:02.00," in result
+
+
 def test_ass_caption_box_is_embedded_and_opacity_is_validated():
     cues = youtube_srt.parse_srt("1\n00:00:01,000 --> 00:00:02,000\ncaption\n\n")
     result = youtube_srt.build_ass(cues, cues)
@@ -508,6 +595,16 @@ def test_ytdlp_uses_deno_runtime_when_available(monkeypatch):
     def fake_which(name):
         return f"{name}.exe"
 
+    for name in (
+        "YTDLP_PROXY",
+        "HTTPS_PROXY",
+        "https_proxy",
+        "HTTP_PROXY",
+        "http_proxy",
+        "ALL_PROXY",
+        "all_proxy",
+    ):
+        monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(youtube_srt.shutil, "which", fake_which)
     monkeypatch.setattr(
         youtube_srt.subprocess,
@@ -521,32 +618,149 @@ def test_ytdlp_uses_deno_runtime_when_available(monkeypatch):
     assert captured[0][0][:3] == ["yt-dlp.exe", "--js-runtimes", "deno"]
 
 
-def test_ytdlp_uses_configured_proxy_without_exposing_it_on_errors(monkeypatch):
-    proxy = "http://proxy-user:proxy-password@proxy.example:8080"
+def test_ytdlp_uses_configured_proxy_and_redacts_it_from_errors(monkeypatch):
+    proxy = "http://user:secret@proxy.example:8080"
     captured = []
 
     monkeypatch.setattr(youtube_srt.shutil, "which", lambda name: f"{name}.exe")
     monkeypatch.setenv("YTDLP_PROXY", proxy)
 
+    def run(command, **kwargs):
+        captured.append((command, kwargs))
+        if len(captured) == 1:
+            raise subprocess.CalledProcessError(1, command, stderr="Direct connection failed")
+        return subprocess.CompletedProcess(command, 0, "{}", "")
+
+    monkeypatch.setattr(youtube_srt.subprocess, "run", run)
+
+    result = youtube_srt.run_ytdlp(["--dump-single-json", "https://youtu.be/IySF_8OArvw"])
+
+    assert result.returncode == 0
+    assert "--proxy" not in captured[0][0]
+    assert captured[1][0][captured[1][0].index("--proxy") + 1] == proxy
+    assert "HTTP_PROXY" not in captured[0][1]["env"]
+
+
+def test_ytdlp_succeeds_directly_without_using_configured_proxy(monkeypatch):
+    captured = []
+
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda name: f"{name}.exe")
+    monkeypatch.setenv("YTDLP_PROXY", "http://proxy.example:8080")
+    monkeypatch.setenv("HTTPS_PROXY", "http://proxy.example:8080")
+    monkeypatch.setattr(
+        youtube_srt.subprocess,
+        "run",
+        lambda command, **kwargs: captured.append((command, kwargs))
+        or subprocess.CompletedProcess(command, 0, "{}", ""),
+    )
+
+    youtube_srt.run_ytdlp(["--dump-single-json", "https://youtu.be/IySF_8OArvw"])
+
+    assert "--proxy" not in captured[0][0]
+    assert "HTTPS_PROXY" not in captured[0][1]["env"]
+
+
+def test_ytdlp_reports_both_direct_and_proxy_failures(monkeypatch):
+    proxy = "http://proxy.example:8080"
+    calls = []
+
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda name: f"{name}.exe")
+    monkeypatch.setenv("YTDLP_PROXY", proxy)
+
     def fail(command, **kwargs):
-        captured.append(command)
-        raise subprocess.CalledProcessError(
-            1,
-            command,
-            stderr=f"Could not connect to {proxy}",
-        )
+        calls.append(command)
+        if "--proxy" not in command:
+            raise subprocess.CalledProcessError(1, command, stderr="Direct failure")
+        raise subprocess.CalledProcessError(1, command, stderr=f"Cannot connect to {proxy}")
 
     monkeypatch.setattr(youtube_srt.subprocess, "run", fail)
 
     try:
         youtube_srt.run_ytdlp(["--dump-single-json", "https://youtu.be/IySF_8OArvw"])
     except RuntimeError as error:
-        assert proxy not in str(error)
+        assert "Direct failure" in str(error)
         assert "[configured proxy]" in str(error)
+        assert proxy not in str(error)
     else:
-        raise AssertionError("Expected the yt-dlp failure to be reported")
+        raise AssertionError("Expected both direct and proxy attempts to fail")
 
-    assert captured[0][captured[0].index("--proxy") + 1] == proxy
+    assert len(calls) == 2
+    assert "--proxy" not in calls[0]
+    assert calls[1][calls[1].index("--proxy") + 1] == proxy
+
+
+def test_ytdlp_tries_public_proxy_pool_in_order_after_direct_failure(monkeypatch):
+    proxies = [
+        "http://192.0.2.1:8080",
+        "http://192.0.2.2:8080",
+        "http://192.0.2.3:8080",
+        "http://192.0.2.4:8080",
+        "http://192.0.2.5:8080",
+    ]
+    calls = []
+
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda name: f"{name}.exe")
+    monkeypatch.delenv("YTDLP_PROXY", raising=False)
+    monkeypatch.setenv("YTDLP_PROXY_POOL_JSON", json.dumps(proxies))
+
+    def run(command, **kwargs):
+        calls.append(command)
+        if len(calls) <= 3:
+            raise subprocess.CalledProcessError(1, command, stderr="Proxy unavailable")
+        return subprocess.CompletedProcess(command, 0, "{}", "")
+
+    monkeypatch.setattr(youtube_srt.subprocess, "run", run)
+
+    result = youtube_srt.run_ytdlp(["--dump-single-json", "https://youtu.be/IySF_8OArvw"])
+
+    assert result.returncode == 0
+    assert len(calls) == 4
+    assert "--proxy" not in calls[0]
+    assert [calls[index][calls[index].index("--proxy") + 1] for index in range(1, 4)] == proxies[:3]
+
+
+def test_ytdlp_rejects_invalid_proxy_pool_json(monkeypatch):
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda name: f"{name}.exe")
+    monkeypatch.setenv("YTDLP_PROXY_POOL_JSON", "not-json")
+
+    try:
+        youtube_srt.run_ytdlp(["--dump-single-json", "https://youtu.be/IySF_8OArvw"])
+    except RuntimeError as error:
+        assert "not valid JSON" in str(error)
+    else:
+        raise AssertionError("Expected invalid proxy-pool JSON to fail")
+
+
+def test_ytdlp_uses_configured_cookies_file(monkeypatch, tmp_path):
+    captured = []
+    cookies = tmp_path / "youtube-cookies.txt"
+    cookies.write_text("# Netscape HTTP Cookie File\n", encoding="utf-8")
+
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda name: f"{name}.exe")
+    monkeypatch.setattr(
+        youtube_srt.subprocess,
+        "run",
+        lambda command, **kwargs: captured.append((command, kwargs))
+        or subprocess.CompletedProcess(command, 0, "{}", ""),
+    )
+    monkeypatch.setenv("YTDLP_COOKIES_FILE", str(cookies))
+
+    youtube_srt.run_ytdlp(["--dump-single-json", "https://youtu.be/IySF_8OArvw"])
+
+    command = captured[0][0]
+    assert command[command.index("--cookies") + 1] == str(cookies)
+
+
+def test_ytdlp_rejects_missing_configured_cookies_file(monkeypatch, tmp_path):
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda name: f"{name}.exe")
+    monkeypatch.setenv("YTDLP_COOKIES_FILE", str(tmp_path / "missing-cookies.txt"))
+
+    try:
+        youtube_srt.run_ytdlp(["--dump-single-json", "https://youtu.be/IySF_8OArvw"])
+    except RuntimeError as error:
+        assert "cookies file does not exist" in str(error)
+    else:
+        raise AssertionError("Expected missing configured cookies file to fail")
 
 
 def test_merge_preserves_source_caption_text_verbatim():
@@ -694,6 +908,52 @@ def test_vtt_parser_skips_blank_line_after_timing_header():
         (6.03, 6.04),
     ]
     assert parsed[0]["text"] == "Ladies and gentlemen,"
+
+
+def test_parse_vtt_clamps_inline_timestamp_past_the_cue_end():
+    cues = youtube_srt.parse_vtt(
+        "WEBVTT\n\n"
+        "00:00:55.760 --> 00:00:57.190\n"
+        "a Democrat and that is what they do.\n"
+        "That's<00:00:56.000><c> all</c><00:00:57.200><c> know</c>\n"
+    )
+
+    assert len(cues) == 1
+    assert cues[0]["start"] == 55.76
+    assert cues[0]["end"] == 57.19
+    assert cues[0]["text"] == "a Democrat and that is what they do.\nThat's all know"
+    assert cues[0]["word_timings"][-1] == {"start": 57.19, "end": 57.19, "text": "know"}
+
+
+def test_vtt_parser_snaps_boundary_word_timestamp_rounded_past_cue_end():
+    parsed = youtube_srt.parse_vtt(
+        "WEBVTT\n\n"
+        "00:10:15.760 --> 00:10:17.829 align:start position:0%\n"
+        "Dubai<00:10:16.240> police<00:10:17.839> at\n\n"
+        "00:10:17.829 --> 00:10:17.839 align:start position:0%\n"
+        "Dubai police at\n"
+    )
+
+    assert parsed[0]["text"] == "Dubai police at"
+    assert [word["start"] for word in parsed[0]["word_timings"]] == [
+        615.76,
+        616.24,
+        617.829,
+    ]
+    assert parsed[0]["word_timings"][-1]["end"] == 617.829
+
+
+def test_vtt_parser_rejects_inline_timestamp_far_outside_its_cue():
+    try:
+        youtube_srt.parse_vtt(
+            "WEBVTT\n\n"
+            "00:00:01.000 --> 00:00:02.000\n"
+            "Hello <00:00:09.000>world\n"
+        )
+    except ValueError as error:
+        assert "outside its cue" in str(error)
+    else:
+        raise AssertionError("A far out-of-range inline timestamp must be rejected")
 
 
 def test_ass_uses_vtt_word_timestamps_instead_of_uniform_estimate():
@@ -962,35 +1222,445 @@ def test_write_vtt_converts_bilingual_srt_and_validates_output(tmp_path):
     ]
 
 
-def test_download_track_matches_yt_dlp_extended_language_filename(monkeypatch, tmp_path):
+def test_download_track_requests_every_caption_format_and_uses_the_most_precise(
+    monkeypatch, tmp_path
+):
     monkeypatch.setattr(youtube_srt.shutil, "which", lambda _: "yt-dlp.exe")
+    requested = []
+    contents = {
+        "vtt": "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHello\n",
+        "srt": "1\n00:00:01,000 --> 00:00:02,000\nHello\n\n",
+        "ttml": (
+            '<tt xmlns="http://www.w3.org/ns/ttml"><body><div>'
+            '<p begin="00:00:01.000" end="00:00:02.000">Hello</p>'
+            "</div></body></tt>"
+        ),
+        "srv3": (
+            '<timedtext format="3"><body>'
+            '<p t="1000" d="1000"><s t="1000">Hello</s></p>'
+            "</body></timedtext>"
+        ),
+        "srv2": (
+            '<timedtext format="2"><body>'
+            '<p t="1000" d="1000"><s t="1000">Hello</s></p>'
+            "</body></timedtext>"
+        ),
+        "srv1": (
+            '<transcript><text start="1" dur="1">Hello</text></transcript>'
+        ),
+        "json3": json.dumps(
+            {
+                "events": [
+                    {
+                        "tStartMs": "1000",
+                        "dDurationMs": "1000",
+                        "segs": [{"utf8": "Hello", "tOffsetMs": "0"}],
+                    }
+                ]
+            }
+        ),
+    }
 
     def fake_run(_args, **_kwargs):
         assert _kwargs["capture_output"] is False
-        assert "--sleep-subtitles" not in _args
-        assert _args[_args.index("--sub-format") + 1] == "vtt/best"
-        assert _args[_args.index("--convert-subs") + 1] == "vtt"
-        subtitle = tmp_path / "IySF_8OArvw.en.en-orig.vtt"
-        subtitle.write_text(
-            "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHello\n",
+        requested.append(_args[_args.index("--sub-format") + 1])
+        assert "--convert-subs" not in _args
+        extension = _args[_args.index("--sub-format") + 1]
+        (tmp_path / f"IySF_8OArvw.en.en-orig.{extension}").write_text(
+            contents[extension],
             encoding="utf-8",
         )
         return subprocess.CompletedProcess([], 0, "", "")
 
     monkeypatch.setattr(youtube_srt.subprocess, "run", fake_run)
-    entries = youtube_srt.download_track(
+    files, cues, source = youtube_srt.download_track(
         "https://youtu.be/IySF_8OArvw",
         "IySF_8OArvw",
         "en-orig",
         "auto-generated",
         tmp_path,
         0,
+        ["vtt", "srt", "ttml", "srv3", "srv2", "srv1", "json3"],
     )
-    source_path, entries = entries
-    assert source_path.read_text(encoding="utf-8") == (
-        "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHello\n"
+
+    assert requested == ["vtt", "srt", "ttml", "srv3", "srv2", "srv1", "json3"]
+    assert [path.suffix for path in files] == [
+        ".json3",
+        ".srt",
+        ".srv1",
+        ".srv2",
+        ".srv3",
+        ".ttml",
+        ".vtt",
+    ]
+    assert source.name == "IySF_8OArvw.en.en-orig.json3"
+    assert cues[0]["text"] == "Hello"
+
+
+def test_download_track_only_requests_the_published_formats(monkeypatch, tmp_path):
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda _: "yt-dlp.exe")
+    requested = []
+
+    def fake_run(_args, **_kwargs):
+        extension = _args[_args.index("--sub-format") + 1]
+        requested.append(extension)
+        (tmp_path / f"IySF_8OArvw.en.en-orig.{extension}").write_text(
+            "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHello\n",
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess([], 0, "", "")
+
+    monkeypatch.setattr(youtube_srt.subprocess, "run", fake_run)
+    files, cues, source = youtube_srt.download_track(
+        "https://youtu.be/IySF_8OArvw",
+        "IySF_8OArvw",
+        "en-orig",
+        "auto-generated",
+        tmp_path,
+        0,
+        ["vtt", "json3"],
     )
-    assert entries[0]["text"] == "Hello"
+
+    assert requested == ["vtt", "json3"]
+    assert [path.suffix for path in files] == [".json3", ".vtt"]
+
+
+def test_download_track_waits_before_every_request_of_a_delayed_track(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda _: "yt-dlp.exe")
+    waits = []
+
+    def fake_run(_args, **_kwargs):
+        extension = _args[_args.index("--sub-format") + 1]
+        if "--sleep-subtitles" in _args:
+            waits.append(_args[_args.index("--sleep-subtitles") + 1])
+        (tmp_path / f"IySF_8OArvw.en.zh-Hans.{extension}").write_text(
+            "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\n你好\n",
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess([], 0, "", "")
+
+    monkeypatch.setattr(youtube_srt.subprocess, "run", fake_run)
+    youtube_srt.download_track(
+        "https://youtu.be/IySF_8OArvw",
+        "IySF_8OArvw",
+        "zh-Hans",
+        "auto-translated",
+        tmp_path,
+        56,
+        ["vtt", "json3"],
+    )
+
+    assert waits == ["56", "56"]
+
+
+def test_parse_json3_reads_word_offsets():
+    cues = youtube_srt.parse_json3(
+        json.dumps(
+            {
+                "events": [
+                    {
+                        "tStartMs": "1000",
+                        "dDurationMs": "2000",
+                        "segs": [
+                            {"utf8": "Hello", "tOffsetMs": "0"},
+                            {"utf8": " everybody.", "tOffsetMs": "400"},
+                        ],
+                    },
+                    {
+                        "tStartMs": "3000",
+                        "dDurationMs": "900",
+                        "segs": [{"utf8": "你", "tOffsetMs": "0"}, {"utf8": "好", "tOffsetMs": "300"}],
+                    },
+                ]
+            }
+        )
+    )
+
+    assert [(cue["start"], cue["end"], cue["text"]) for cue in cues] == [
+        (1.0, 3.0, "Hello everybody."),
+        (3.0, 3.9, "你好"),
+    ]
+    assert cues[0]["word_timings"] == [
+        {"start": 1.0, "end": 1.4, "text": "Hello"},
+        {"start": 1.4, "end": 3.0, "text": "everybody"},
+    ]
+    assert cues[1]["word_timings"] == [
+        {"start": 3.0, "end": 3.3, "text": "你"},
+        {"start": 3.3, "end": 3.9, "text": "好"},
+    ]
+
+
+def test_parse_srv3_reads_word_starts():
+    cues = youtube_srt.parse_srv3(
+        '<?xml version="1.0" encoding="utf-8"?>'
+        '<timedtext format="3"><body>'
+        '<p t="719" d="5120"><s t="0">Hello</s><s t="321"> everybody.</s></p>'
+        "</body></timedtext>"
+    )
+
+    assert [(cue["start"], cue["end"], cue["text"]) for cue in cues] == [
+        (0.719, 5.839, "Hello everybody.")
+    ]
+    assert cues[0]["word_timings"] == [
+        {"start": 0.719, "end": 1.04, "text": "Hello"},
+        {"start": 1.04, "end": 5.839, "text": "everybody"},
+    ]
+
+
+def test_parse_srv2_reads_word_runs():
+    cues = youtube_srt.parse_srv2(
+        '<?xml version="1.0" encoding="utf-8" ?><timedtext>'
+        '<text t="719" d="5120" w="1">Hello</text>'
+        '<text t="1040" d="4799" w="1" append="1"> everybody.</text>'
+        '<text t="2639" d="4881" w="1">I&#39;m</text>'
+        '<text t="2879" d="4641" w="1" append="1"> going</text>'
+        "</timedtext>"
+    )
+
+    assert [(cue["start"], cue["end"], cue["text"]) for cue in cues] == [
+        (0.719, 5.839, "Hello everybody."),
+        (2.639, 7.52, "I'm going"),
+    ]
+    assert cues[0]["word_timings"] == [
+        {"start": 0.719, "end": 1.04, "text": "Hello"},
+        {"start": 1.04, "end": 5.839, "text": "everybody"},
+    ]
+
+
+def test_parse_ttml_reads_cue_level_timing():
+    cues = youtube_srt.parse_ttml(
+        '<tt xmlns="http://www.w3.org/ns/ttml"><body><div>'
+        '<p begin="00:00:01.000" end="00:00:02.500">你好</p>'
+        "</div></body></tt>"
+    )
+
+    assert [(cue["start"], cue["end"], cue["text"]) for cue in cues] == [
+        (1.0, 2.5, "你好")
+    ]
+    assert "word_timings" not in cues[0]
+
+
+def test_select_most_precise_cues_prefers_json3_over_the_other_formats(tmp_path):
+    json3 = tmp_path / "track.json3"
+    json3.write_text(
+        json.dumps(
+            {
+                "events": [
+                    {
+                        "tStartMs": "1000",
+                        "dDurationMs": "1000",
+                        "segs": [{"utf8": "Hello", "tOffsetMs": "0"}],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    vtt = tmp_path / "track.vtt"
+    vtt.write_text("WEBVTT\n\n00:00:05.000 --> 00:00:06.000\nLater\n", encoding="utf-8")
+
+    cues, source = youtube_srt.select_most_precise_cues([vtt, json3])
+
+    assert source == json3
+    assert cues[0]["text"] == "Hello"
+
+
+def test_select_most_precise_cues_falls_back_to_the_next_precise_format(tmp_path):
+    ttml = tmp_path / "track.ttml"
+    ttml.write_text(
+        '<tt xmlns="http://www.w3.org/ns/ttml"><body><div>'
+        '<p begin="00:00:02.000" end="00:00:03.000">Hello</p>'
+        "</div></body></tt>",
+        encoding="utf-8",
+    )
+
+    cues, source = youtube_srt.select_most_precise_cues([ttml])
+
+    assert source == ttml
+    assert cues[0]["text"] == "Hello"
+
+
+def test_local_file_replaces_the_download_for_that_language(monkeypatch, tmp_path, capsys):
+    downloaded_languages = []
+
+    def fake_run_yt_dlp(arguments, **_kwargs):
+        if "--dump-single-json" in arguments:
+            metadata = {
+                "id": "IySF_8OArvw",
+                "title": "Example event",
+                "upload_date": "20261018",
+                "duration": 2,
+                "language": "en",
+                "subtitles": {},
+                "automatic_captions": {
+                    "en-orig": [{"ext": "vtt"}],
+                    "zh-Hans": [{"ext": "vtt"}],
+                },
+            }
+            return subprocess.CompletedProcess([], 0, json.dumps(metadata), "")
+
+        language = arguments[arguments.index("--sub-langs") + 1]
+        downloaded_languages.append(language)
+        template = Path(arguments[arguments.index("-o") + 1])
+        path = Path(
+            str(template)
+            .replace("%(id)s", "IySF_8OArvw")
+            .replace("%(language)s", language)
+            .replace("%(ext)s", "vtt")
+        )
+        path.write_text(
+            "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHello\n",
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess([], 0, "", "")
+
+    monkeypatch.setattr(youtube_srt, "run_ytdlp", fake_run_yt_dlp)
+    local = tmp_path / "translation.srt"
+    local.write_text(
+        "1\n00:00:01,000 --> 00:00:02,000\n本地字幕\n\n",
+        encoding="utf-8",
+    )
+    archive = tmp_path / "archive"
+    assert youtube_srt.main(
+        [
+            "https://www.youtube.com/watch?v=IySF_8OArvw",
+            "--output-dir",
+            str(archive),
+            "--local-file",
+            f"zh-Hans={local}",
+        ]
+    ) == 0
+
+    assert downloaded_languages == ["en-orig"]
+    bilingual = next(
+        path
+        for path in archive.rglob("*_Bilingual_*.srt")
+    )
+    content = bilingual.read_text(encoding="utf-8-sig")
+    assert "本地字幕" in content
+    assert "Hello" in content
+
+
+def test_burn_in_reuses_the_given_source_video(monkeypatch, tmp_path):
+    captured = {}
+
+    def fake_run_yt_dlp(arguments, **_kwargs):
+        if "--dump-single-json" in arguments:
+            metadata = {
+                "id": "IySF_8OArvw",
+                "title": "Example event",
+                "upload_date": "20261018",
+                "duration": 2,
+                "language": "en",
+                "subtitles": {},
+                "automatic_captions": {
+                    "en-orig": [{"ext": "vtt"}, {"ext": "json3"}],
+                    "zh-Hans": [{"ext": "vtt"}, {"ext": "json3"}],
+                },
+            }
+            return subprocess.CompletedProcess([], 0, json.dumps(metadata), "")
+        template = Path(arguments[arguments.index("-o") + 1])
+        language = arguments[arguments.index("--sub-langs") + 1]
+        path = Path(
+            str(template)
+            .replace("%(id)s", "IySF_8OArvw")
+            .replace("%(language)s", language)
+            .replace("%(ext)s", "vtt")
+        )
+        text = "Hello" if language == "en-orig" else "你好"
+        path.write_text(
+            f"WEBVTT\n\n00:00:01.000 --> 00:00:02.000\n{text}\n",
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess([], 0, "", "")
+
+    def fake_download_video(*_args, **_kwargs):
+        raise AssertionError("the source video must not be downloaded again")
+
+    def fake_burn(video, ass, output, **_kwargs):
+        captured["video"] = video
+        captured["ass"] = ass
+        captured["output"] = output
+
+    monkeypatch.setattr(youtube_srt, "run_ytdlp", fake_run_yt_dlp)
+    monkeypatch.setattr(youtube_srt, "download_video", fake_download_video)
+    monkeypatch.setattr(youtube_srt, "burn_ass_into_video", fake_burn)
+
+    source = tmp_path / "existing.mp4"
+    source.write_bytes(b"video")
+    archive = tmp_path / "archive"
+    assert youtube_srt.main(
+        [
+            "https://www.youtube.com/watch?v=IySF_8OArvw",
+            "--output-dir",
+            str(archive),
+            "--burn-in",
+            "--source-video",
+            str(source),
+        ]
+    ) == 0
+
+    assert captured["video"] == source
+    assert captured["ass"].suffix == ".ass"
+    assert captured["output"].name == "Burned_Bilingual_IySF_8OArvw.mp4"
+
+
+def test_download_source_video_without_legacy_burn_in(monkeypatch, tmp_path):
+    metadata = {
+        "id": "IySF_8OArvw",
+        "title": "Example event",
+        "upload_date": "20261018",
+        "duration": 2,
+        "language": "en",
+        "subtitles": {
+            "en-orig": [{"ext": "vtt"}],
+            "zh-Hans": [{"ext": "vtt"}],
+        },
+        "automatic_captions": {},
+    }
+    video_downloads = []
+
+    def fake_run_yt_dlp(arguments, **_kwargs):
+        assert "--dump-single-json" in arguments
+        return subprocess.CompletedProcess([], 0, json.dumps(metadata), "")
+
+    def fake_download_video(url, video_id, directory):
+        video_downloads.append((url, video_id))
+        source = directory / f"{video_id}.source.mp4"
+        source.write_bytes(b"video")
+        return source
+
+    monkeypatch.setattr(youtube_srt, "run_ytdlp", fake_run_yt_dlp)
+    monkeypatch.setattr(youtube_srt, "download_video", fake_download_video)
+
+    chinese = tmp_path / "chinese.srt"
+    english = tmp_path / "english.srt"
+    chinese.write_text("1\n00:00:01,000 --> 00:00:02,000\n你好\n", encoding="utf-8")
+    english.write_text("1\n00:00:01,000 --> 00:00:02,000\nHello\n", encoding="utf-8")
+    archive = tmp_path / "archive"
+    url = "https://www.youtube.com/watch?v=IySF_8OArvw"
+
+    assert youtube_srt.main(
+        [
+            url,
+            "--output-dir",
+            str(archive),
+            "--sleep-subtitles",
+            "0",
+            "--local-file",
+            f"zh-Hans={chinese}",
+            "--local-file",
+            f"en-orig={english}",
+            "--download-source-video",
+        ]
+    ) == 0
+
+    assert video_downloads == [(url, "IySF_8OArvw")]
+    source = next(archive.rglob("IySF_8OArvw.source.mp4"))
+    assert source.read_bytes() == b"video"
+    assert not list(archive.rglob("Burned_Bilingual_IySF_8OArvw.mp4"))
 
 
 def test_main_preserves_raw_tracks_and_merges_original_caption_content(monkeypatch, tmp_path, capsys):
@@ -1006,7 +1676,10 @@ def test_main_preserves_raw_tracks_and_merges_original_caption_content(monkeypat
                 "duration": 2,
                 "language": "en",
                 "subtitles": {},
-                "automatic_captions": {"en-orig": [], "zh-Hans": []},
+                "automatic_captions": {
+                    "en-orig": [{"ext": "vtt"}, {"ext": "json3"}],
+                    "zh-Hans": [{"ext": "vtt"}, {"ext": "json3"}],
+                },
             }
             return subprocess.CompletedProcess([], 0, json.dumps(metadata), "")
 
@@ -1077,7 +1750,12 @@ def test_main_preserves_raw_tracks_and_merges_original_caption_content(monkeypat
     bilingual_vtt = bilingual_vtt_paths[0].read_text(encoding="utf-8")
     assert bilingual_vtt.startswith("WEBVTT\n\n1\n00:00:01.000 --> 00:00:02.000")
     assert "<b>你好</b>\n<i>Hello & welcome</i>" in bilingual_vtt
-    assert downloaded_languages == [("en-orig", "0"), ("zh-Hans", "56")]
+    assert downloaded_languages == [
+        ("en-orig", "0"),
+        ("en-orig", "0"),
+        ("zh-Hans", "56"),
+        ("zh-Hans", "56"),
+    ]
     assert "Style: Chinese,Microsoft YaHei,57.6," in ass_paths[0].read_text(encoding="utf-8-sig")
     manifest = json.loads(json_paths[0].read_text(encoding="utf-8"))
     assert manifest["video"]["id"] == "IySF_8OArvw"

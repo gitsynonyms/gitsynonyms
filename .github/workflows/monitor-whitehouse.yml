@@ -1,0 +1,352 @@
+name: Monitor White House Videos
+run-name: ${{ github.event_name == 'schedule' && 'White House channel scan' || format('White House video {0}', github.run_id) }}
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+    inputs:
+      video_url:
+        description: Optional YouTube video URL to process as a new upload
+        required: false
+        type: string
+      force_check:
+        description: Reprocess the latest upload even if it was already recorded
+        required: false
+        type: boolean
+        default: false
+      compare_captions:
+        description: Opt in to a 3-minute third-party ASR comparison (uses configured provider API keys)
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: whitehouse-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    outputs:
+      video_id: ${{ steps.ready.outputs.video_id }}
+      source_platform: ${{ steps.ready.outputs.source_platform }}
+      source_channel: ${{ steps.ready.outputs.source_channel }}
+      source_channel_id: ${{ steps.ready.outputs.source_channel_id }}
+      source_title: ${{ steps.ready.outputs.source_title }}
+      source_url: ${{ steps.ready.outputs.source_url }}
+      published_at_ns: ${{ steps.ready.outputs.published_at_ns }}
+      published_epoch_ns: ${{ steps.ready.outputs.published_epoch_ns }}
+      published_date: ${{ steps.ready.outputs.published_date }}
+      published_time_source: ${{ steps.ready.outputs.published_time_source }}
+      published_time_precision: ${{ steps.ready.outputs.published_time_precision }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Install YouTube and video tools
+        shell: pwsh
+        run: |
+          python -m pip install "yt-dlp[default]"
+          yt-dlp --js-runtimes deno --version
+
+      - name: Fetch and probe a bounded public proxy set
+        env:
+          YTDLP_PROXY: ${{ secrets.YTDLP_PROXY }}
+          PROBE_VIDEO_URL: ${{ inputs.video_url }}
+        run: python scripts/select_public_ytdlp_proxies.py
+
+      - name: Resolve the latest unprocessed channel upload
+        id: resolve
+        env:
+          FORCE_CHECK: ${{ inputs.force_check }}
+          VIDEO_URL: ${{ inputs.video_url }}
+        shell: pwsh
+        run: ./scripts/monitoring/resolve_channel_feed.ps1
+
+      - name: Prepare the discovered video
+        id: ready
+        env:
+          VIDEO_ID: ${{ steps.resolve.outputs.video_id }}
+          SOURCE_PLATFORM: ${{ steps.resolve.outputs.source_platform }}
+          SOURCE_CHANNEL: ${{ steps.resolve.outputs.source_channel }}
+          SOURCE_CHANNEL_ID: ${{ steps.resolve.outputs.source_channel_id }}
+          SOURCE_TITLE: ${{ steps.resolve.outputs.source_title }}
+          SOURCE_URL: ${{ steps.resolve.outputs.source_url }}
+          PUBLISHED_AT_NS: ${{ steps.resolve.outputs.published_at_ns }}
+          PUBLISHED_EPOCH_NS: ${{ steps.resolve.outputs.published_epoch_ns }}
+          PUBLISHED_DATE: ${{ steps.resolve.outputs.published_date }}
+          PUBLISHED_TIME_SOURCE: ${{ steps.resolve.outputs.published_time_source }}
+          PUBLISHED_TIME_PRECISION: ${{ steps.resolve.outputs.published_time_precision }}
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:VIDEO_ID)) {
+            @(
+              "video_id=",
+              "source_platform=",
+              "source_channel=",
+              "source_channel_id=",
+              "source_title=",
+              "source_url=",
+              "published_at_ns=",
+              "published_epoch_ns=",
+              "published_date=",
+              "published_time_source=",
+              "published_time_precision="
+            ) | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
+            exit 0
+          }
+          foreach ($name in @(
+            "VIDEO_ID",
+            "SOURCE_PLATFORM",
+            "SOURCE_CHANNEL",
+            "SOURCE_CHANNEL_ID",
+            "SOURCE_TITLE",
+            "SOURCE_URL",
+            "PUBLISHED_AT_NS",
+            "PUBLISHED_EPOCH_NS",
+            "PUBLISHED_DATE",
+            "PUBLISHED_TIME_SOURCE",
+            "PUBLISHED_TIME_PRECISION"
+          )) {
+            $key = $name.ToLowerInvariant()
+            $value = [Environment]::GetEnvironmentVariable($name)
+            $delimiter = [Guid]::NewGuid().ToString()
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "$key<<$delimiter" -Encoding utf8
+            Add-Content -Path $env:GITHUB_OUTPUT -Value $value -Encoding utf8
+            Add-Content -Path $env:GITHUB_OUTPUT -Value $delimiter -Encoding utf8
+          }
+
+      - name: Install FFmpeg for video burn-in
+        if: steps.ready.outputs.video_id != ''
+        shell: pwsh
+        run: |
+          choco install ffmpeg --yes --no-progress
+          choco install tesseract --yes --no-progress
+          ffmpeg -version
+          tesseract --version
+          $tessdata = Join-Path (Split-Path (Get-Command tesseract).Source) "tessdata"
+          $model = Join-Path $tessdata "chi_sim.traineddata"
+          Invoke-WebRequest `
+            -Uri "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/87416418657359cb625c412a48b6e1d6d41c29bd/chi_sim.traineddata" `
+            -OutFile $model
+          $modelHash = (Get-FileHash $model -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($modelHash -ne "a5fcb6f0db1e1d6d8522f39db4e848f05984669172e584e8d76b6b3141e1f730") {
+            throw "The pinned Simplified Chinese Tesseract model failed its SHA-256 check."
+          }
+          tesseract --list-langs
+
+      - name: Download captions and burn them into the video
+        if: steps.ready.outputs.video_id != ''
+        env:
+          VIDEO_ID: ${{ steps.ready.outputs.video_id }}
+          YTDLP_COOKIES_FILE: ""
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/download_youtube_bilingual_srt.py \
+            "https://www.youtube.com/watch?v=$VIDEO_ID" \
+            --output-dir output \
+            --languages zh-Hans,en-orig \
+            --download-source-video
+          folder="$(find output -mindepth 1 -maxdepth 1 -type d -name "*_${VIDEO_ID}" -print -quit)"
+          if [[ -z "$folder" || ! -d "$folder" ]]; then
+            echo "::error::The downloader did not create the caption archive for $VIDEO_ID."
+            exit 1
+          fi
+          source="$(find "$folder" -maxdepth 1 -type f -name "${VIDEO_ID}.source.*" -print -quit)"
+          if [[ -z "$source" || ! -f "$source" ]]; then
+            echo "::error::The downloader did not preserve the source video for $VIDEO_ID."
+            exit 1
+          fi
+          python scripts/video_processing.py \
+            --video "$source" \
+            --caption-dir "$folder" \
+            --video-id "$VIDEO_ID" \
+            --languages zh-Hans,en-orig \
+            --caption-box auto \
+            --box-opacity 0.85 \
+            --output-dir "$folder" \
+            --output "$folder/Burned_Bilingual_${VIDEO_ID}.mp4" \
+            --ass-output "$folder/bilingual_precise_zh-Hans-en-orig.ass" \
+            --timing-report "$folder/TIMING.json" \
+            --ergonomics warn \
+            --no-font-check
+          mp4="$(find output -type f -name "Burned_Bilingual_${VIDEO_ID}.mp4" -print -quit)"
+          if [[ -z "$mp4" || ! -f "$mp4" ]]; then
+            echo "::error::The downloader did not produce a burned MP4 for $VIDEO_ID."
+            exit 1
+          fi
+          ass="$(find output -type f -name "bilingual_precise_zh-Hans-en-orig.ass" -print -quit)"
+          if [[ -z "$ass" || ! -f "$ass" ]]; then
+            echo "::error::The downloader did not produce the ASS subtitles for $VIDEO_ID."
+            exit 1
+          fi
+          for report in "$folder/TIMING.json" "$folder/BURN.json"; do
+            if [[ ! -f "$report" ]]; then
+              echo "::error::The precise caption pipeline did not produce $report."
+              exit 1
+            fi
+          done
+          precision_vtt="$(find "$folder" -maxdepth 1 -type f -name "bilingual_precise_zh-Hans-en-orig.*.precision.vtt" -print -quit)"
+          if [[ -z "$precision_vtt" || ! -f "$precision_vtt" ]]; then
+            echo "::error::The precise caption pipeline did not produce a millisecond VTT."
+            exit 1
+          fi
+          python scripts/subtitle_frame_qa.py \
+            --video "$mp4" \
+            --ass "$ass" \
+            --language eng+chi_sim \
+            --report output/FRAME_QA.json
+      - name: Compare a bounded excerpt with configured caption providers
+        if: steps.ready.outputs.video_id != '' && inputs.compare_captions
+        continue-on-error: true
+        env:
+          VIDEO_ID: ${{ steps.ready.outputs.video_id }}
+          ASSEMBLYAI_API_KEY: ${{ secrets.ASSEMBLYAI_API_KEY }}
+          DEEPGRAM_API_KEY: ${{ secrets.DEEPGRAM_API_KEY }}
+          GLADIA_API_KEY: ${{ secrets.GLADIA_API_KEY }}
+          REVAI_API_KEY: ${{ secrets.REVAI_API_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          folder="$(find output -mindepth 1 -maxdepth 1 -type d -name "*_${VIDEO_ID}" -print -quit)"
+          source="$(find "$folder" -maxdepth 1 -type f -name "${VIDEO_ID}.source.*" -print -quit)"
+          python scripts/third_party_captions.py \
+            --audio "$source" \
+            --reference "$folder" \
+            --reference-language en-orig \
+            --video-id "$VIDEO_ID" \
+            --language en \
+            --limit-seconds 180 \
+            --work-dir "$folder/thirdparty" \
+            --json
+      - name: Publish MP4 to the video release
+        if: steps.ready.outputs.video_id != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VIDEO_ID: ${{ steps.ready.outputs.video_id }}
+          VIDEO_TITLE: ${{ steps.resolve.outputs.video_title }}
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          mp4="$(find output -type f -name "Burned_Bilingual_${VIDEO_ID}.mp4" -print -quit)"
+          if [[ -z "$mp4" || ! -f "$mp4" ]]; then
+            echo "::error::The burned MP4 for $VIDEO_ID disappeared before release upload."
+            exit 1
+          fi
+          if gh release view "$VIDEO_ID" >/dev/null 2>&1; then
+            gh release upload "$VIDEO_ID" "$mp4" --clobber
+          else
+            gh release create "$VIDEO_ID" "$mp4" \
+              --title "$VIDEO_TITLE" \
+              --notes "Automatically archived from the White House YouTube channel with Chinese and English subtitles burned in."
+          fi
+
+      - name: Generate video pages and publish archive files
+        if: steps.ready.outputs.video_id != ''
+        env:
+          VIDEO_ID: ${{ steps.ready.outputs.video_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/generate_video_pages.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add output/ site/
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish White House bilingual video $VIDEO_ID"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+
+      - name: Upload the Pages artifact
+        if: steps.ready.outputs.video_id != ''
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: monitor
+    if: needs.monitor.outputs.video_id != ''
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy the updated video archive
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  mark-processed:
+    needs: [monitor, deploy]
+    if: needs.monitor.outputs.video_id != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Record the successfully deployed video
+        env:
+          VIDEO_ID: ${{ needs.monitor.outputs.video_id }}
+          SOURCE_PLATFORM: ${{ needs.monitor.outputs.source_platform }}
+          SOURCE_CHANNEL: ${{ needs.monitor.outputs.source_channel }}
+          SOURCE_CHANNEL_ID: ${{ needs.monitor.outputs.source_channel_id }}
+          SOURCE_TITLE: ${{ needs.monitor.outputs.source_title }}
+          SOURCE_URL: ${{ needs.monitor.outputs.source_url }}
+          PUBLISHED_AT_NS: ${{ needs.monitor.outputs.published_at_ns }}
+          PUBLISHED_EPOCH_NS: ${{ needs.monitor.outputs.published_epoch_ns }}
+          PUBLISHED_DATE: ${{ needs.monitor.outputs.published_date }}
+          PUBLISHED_TIME_SOURCE: ${{ needs.monitor.outputs.published_time_source }}
+          PUBLISHED_TIME_PRECISION: ${{ needs.monitor.outputs.published_time_precision }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          state_file=".github/state/whitehouse-processed-videos.txt"
+          source_url="${SOURCE_URL:-https://www.youtube.com/watch?v=$VIDEO_ID}"
+          artifacts_json="$(python -c 'import json,os; print(json.dumps([{"type":"captioned_video_release","url":"https://github.com/gitsynonyms/gitsynonyms/releases/tag/"+os.environ["VIDEO_ID"]}]))')"
+          args=(
+            scripts/monitoring/record_processed_source.py
+            --state-file "$state_file"
+            --source-platform "${SOURCE_PLATFORM:-youtube}"
+            --source-id "$VIDEO_ID"
+            --source-channel "${SOURCE_CHANNEL:-}"
+            --source-channel-id "${SOURCE_CHANNEL_ID:-}"
+            --title "${SOURCE_TITLE:-}"
+            --source-url "$source_url"
+            --published-at "${PUBLISHED_AT_NS:-}"
+            --published-date "${PUBLISHED_DATE:-}"
+            --published-time-source "${PUBLISHED_TIME_SOURCE:-}"
+            --published-time-precision "${PUBLISHED_TIME_PRECISION:-unknown}"
+            --artifacts "$artifacts_json"
+          )
+          if [[ -n "${PUBLISHED_EPOCH_NS:-}" ]]; then
+            args+=(--published-epoch-ns "$PUBLISHED_EPOCH_NS")
+          fi
+          python "${args[@]}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$state_file"
+          if ! git diff --cached --quiet; then
+            git commit -m "Record published source $VIDEO_ID"
+            git push origin main
+          fi

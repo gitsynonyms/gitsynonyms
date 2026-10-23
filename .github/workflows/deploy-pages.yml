@@ -30,7 +30,7 @@ jobs:
       - name: Run tests
         run: python -m pytest -q
       - name: Check web app JavaScript
-        run: node --check site/app.js && node --check site/settings.js
+        run: node --check site/app.js && node --check site/settings.js && node --check site/last30days/demo.js
 
   deploy:
     needs: validate

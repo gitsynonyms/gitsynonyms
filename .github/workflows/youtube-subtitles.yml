@@ -161,7 +161,14 @@ jobs:
             exit 1
           fi
           if [[ "$source" == *youtube.com/@*"/videos"* || "$source" == *youtube.com/channel/*"/videos"* ]]; then
-            video_id="$(yt-dlp --no-warnings --flat-playlist --playlist-end 1 --print '%(id)s' "$source" | head -n 1)"
+            set -o pipefail
+            if ! video_id="$(yt-dlp --no-warnings --flat-playlist --playlist-end 1 --print '%(id)s' "$source" | head -n 1)"; then
+              if [[ -z "${YTDLP_PROXY:-}" ]]; then
+                echo "Could not resolve the latest channel video directly; configure YTDLP_PROXY for an authorized fallback." >&2
+                exit 1
+              fi
+              video_id="$(yt-dlp --proxy "$YTDLP_PROXY" --no-warnings --flat-playlist --playlist-end 1 --print '%(id)s' "$source" | head -n 1)"
+            fi
             if [[ -z "$video_id" ]]; then
               echo "Could not resolve the latest channel video from: $source" >&2
               exit 1

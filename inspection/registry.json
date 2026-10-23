@@ -1,0 +1,170 @@
+{
+  "schema": "gitsynonyms.inspection.registry/1",
+  "updated_at": "2026-10-23T04:47:00Z",
+  "directive": "DIRECTIVE.md",
+  "principle": "minimum-granularity",
+  "cadence_policy": {
+    "floor": "5m",
+    "ceiling": "7d",
+    "default": "1h"
+  },
+  "supported_mechanisms": [
+    "github-workflow",
+    "cline-schedule",
+    "pc-cron",
+    "pc-systemd-timer",
+    "pc-task-scheduler",
+    "pc-launchd",
+    "pc-startup",
+    "harness"
+  ],
+  "units": [
+    {
+      "id": "gh:gitsynonyms/monitor-whitehouse",
+      "mechanism": "github-workflow",
+      "title": "Monitor White House Videos",
+      "target": {
+        "repo": "gitsynonyms/gitsynonyms",
+        "workflow": "Monitor White House Videos",
+        "workflow_id": "393550408",
+        "path": ".github/workflows/monitor-whitehouse.yml"
+      },
+      "trigger": "schedule",
+      "cadence": "5m",
+      "severity": "P1",
+      "owner": "巡检任务执行方案处",
+      "status": "active",
+      "evidence": [
+        "gh run list --workflow 393550408 --limit 20 --json conclusion,createdAt,event",
+        "gh api repos/gitsynonyms/gitsynonyms/actions/workflows/393550408"
+      ],
+      "note": "每 5 分钟调度；连续失败会阻断新视频发布，按 P1 处置。"
+    },
+    {
+      "id": "gh:gitsynonyms/deploy-subtitle-page",
+      "mechanism": "github-workflow",
+      "title": "Deploy subtitle page",
+      "target": {
+        "repo": "gitsynonyms/gitsynonyms",
+        "workflow": "Deploy subtitle page",
+        "workflow_id": "388160593",
+        "path": ".github/workflows/deploy-pages.yml"
+      },
+      "trigger": "push",
+      "cadence": "1h",
+      "severity": "P2",
+      "owner": "巡检任务执行方案处",
+      "status": "active",
+      "evidence": [
+        "gh run list --workflow 388160593 --limit 20 --json conclusion,createdAt,event",
+        "gh api repos/gitsynonyms/gitsynonyms/actions/workflows/388160593"
+      ],
+      "note": "main 分支推送触发；巡检关注失败部署与 Pages 发布结果。"
+    },
+    {
+      "id": "gh:gitsynonyms/download-youtube-subtitles",
+      "mechanism": "github-workflow",
+      "title": "Download YouTube subtitles",
+      "target": {
+        "repo": "gitsynonyms/gitsynonyms",
+        "workflow": "Download YouTube subtitles",
+        "workflow_id": "387528345",
+        "path": ".github/workflows/youtube-subtitles.yml"
+      },
+      "trigger": "workflow_dispatch",
+      "cadence": "1d",
+      "severity": "P3",
+      "owner": "巡检任务执行方案处",
+      "status": "active",
+      "evidence": [
+        "gh run list --workflow 387528345 --limit 20 --json conclusion,createdAt,event",
+        "gh api repos/gitsynonyms/gitsynonyms/actions/workflows/387528345"
+      ],
+      "note": "按需触发；巡检关注产物是否随运行上传以及最近一次结论。"
+    },
+    {
+      "id": "gh:gitsynonyms/infogap-schedule",
+      "mechanism": "github-workflow",
+      "title": "Generate Information Gap Report (schedule)",
+      "target": {
+        "repo": "gitsynonyms/gitsynonyms",
+        "workflow": "Generate Information Gap Report",
+        "path": ".github/workflows/infogap.yml"
+      },
+      "trigger": "schedule",
+      "cadence": "6h",
+      "severity": "P2",
+      "owner": "巡检任务执行方案处",
+      "status": "active",
+      "evidence": [
+        "gh run list --workflow \"Generate Information Gap Report\" --limit 20 --json conclusion,createdAt,event",
+        "gh api repos/gitsynonyms/gitsynonyms/actions/workflows/infogap.yml"
+      ],
+      "note": "每 6 小时运行；质量门禁通过后发布多源信息差报告至 GitHub Pages。"
+    },
+    {
+      "id": "gh:gitsynonyms/infogap-dispatch",
+      "mechanism": "github-workflow",
+      "title": "Generate Information Gap Report (manual)",
+      "target": {
+        "repo": "gitsynonyms/gitsynonyms",
+        "workflow": "Generate Information Gap Report",
+        "path": ".github/workflows/infogap.yml"
+      },
+      "trigger": "workflow_dispatch",
+      "cadence": "1d",
+      "severity": "P3",
+      "owner": "巡检任务执行方案处",
+      "status": "active",
+      "evidence": [
+        "gh run list --workflow \"Generate Information Gap Report\" --limit 20 --json conclusion,createdAt,event",
+        "gh api repos/gitsynonyms/gitsynonyms/actions/workflows/infogap.yml"
+      ],
+      "note": "按需手动运行；巡检关注研究结果、质量门禁及 Pages 发布结论。"
+    }
+  ],
+  "gaps": [
+    {
+      "mechanism": "cline-schedule",
+      "status": "pending-inventory",
+      "reason": "尚未登记 Cline 账号清单与各账号的计划任务。",
+      "action": "逐账号导出计划任务；每个账号的每个任务登记为独立 MIU，含启用状态、下次运行与最近结果。"
+    },
+    {
+      "mechanism": "pc-cron",
+      "status": "pending-inventory",
+      "reason": "尚未登记任何主机的 crontab。",
+      "action": "按主机采集 crontab -l；每条独立条目登记为一个 MIU。"
+    },
+    {
+      "mechanism": "pc-systemd-timer",
+      "status": "pending-inventory",
+      "reason": "尚未登记任何主机的 systemd timer。",
+      "action": "采集 systemctl list-timers --all；每个 timer unit 登记为一个 MIU，service 不合并。"
+    },
+    {
+      "mechanism": "pc-task-scheduler",
+      "status": "pending-inventory",
+      "reason": "尚未登记任何 Windows 主机的计划任务。",
+      "action": "采集 schtasks /query /fo LIST /v；每个任务路径登记为一个 MIU。"
+    },
+    {
+      "mechanism": "pc-launchd",
+      "status": "pending-inventory",
+      "reason": "尚未登记任何 macOS 主机的 launchd 任务。",
+      "action": "采集 launchctl list 与 LaunchAgents/LaunchDaemons 目录；每个 label 登记为一个 MIU。"
+    },
+    {
+      "mechanism": "pc-startup",
+      "status": "pending-inventory",
+      "reason": "尚未登记开机/登录启动项。",
+      "action": "按主机盘点启动项与登录项；每个启动项登记为一个 MIU。"
+    },
+    {
+      "mechanism": "harness",
+      "status": "pending-inventory",
+      "reason": "尚未登记各 agent harness 的实例与任务。",
+      "action": "按 harness × 实例 × 任务登记；同一任务在不同 harness 上分别登记。"
+    }
+  ]
+}
