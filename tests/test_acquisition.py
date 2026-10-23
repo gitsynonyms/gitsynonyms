@@ -560,6 +560,8 @@ def test_cli_collect_json_then_report():
                         "2026-10-20T00:00:00Z",
                         "--limit",
                         "5",
+                        "--proxy-scan",
+                        "off",
                         "--json",
                     ]
                 )
@@ -586,7 +588,16 @@ def test_cli_exit_code_marks_a_total_outage():
         try:
             with redirect_stdout(io.StringIO()):
                 code = acquisition.main(
-                    ["collect", "--out", tmp, "--quiet", "--retries", "0"]
+                    [
+                        "collect",
+                        "--out",
+                        tmp,
+                        "--quiet",
+                        "--retries",
+                        "0",
+                        "--proxy-scan",
+                        "off",
+                    ]
                 )
             assert code == 1
         finally:
@@ -606,7 +617,15 @@ def test_cli_rejects_an_unknown_source_name():
         stderr = io.StringIO()
         with redirect_stdout(io.StringIO()), redirect_stderr(stderr):
             code = acquisition.main(
-                ["collect", "--out", tmp, "--sources", "whitehouse-news,nope"]
+                [
+                        "collect",
+                        "--out",
+                        tmp,
+                        "--sources",
+                        "whitehouse-news,nope",
+                        "--proxy-scan",
+                        "off",
+                    ]
             )
         assert code == 2
         assert "unknown source(s): nope" in stderr.getvalue()
@@ -615,4 +634,130 @@ def test_cli_rejects_an_unknown_source_name():
 
 
 
+
+
+# ---------------------------------------------------------------------------
+# Full list² proxy scan hook
+# ---------------------------------------------------------------------------
+
+
+def _scan_index(tmp_path, *, state=None, proxies=("203.0.113.1:80",)):
+    index = tmp_path / "proxyindex"
+    index.mkdir()
+    (index / "full_scan.py").write_text("# stub\n", encoding="utf-8")
+    (index / "top10.json").write_text(
+        json.dumps(
+            {
+                "schema": "gitsynonyms.proxy.top10/1",
+                "list": [f"http://{proxy}" for proxy in proxies],
+                "top": [{"proxy": f"http://{proxy}", "latency_ms": 10} for proxy in proxies],
+            }
+        ),
+        encoding="utf-8",
+    )
+    if state is not None:
+        (index / "scan-state.json").write_text(json.dumps(state), encoding="utf-8")
+    return index
+
+
+def test_refresh_proxy_pool_runs_the_fixed_scan_and_loads_the_top_list(tmp_path):
+    index = _scan_index(tmp_path)
+    calls = []
+
+    class Completed:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    def runner(command, **kwargs):
+        calls.append((command, kwargs))
+        return Completed()
+
+    result = acquisition.refresh_proxy_pool(
+        mode="full", index_dir=index, budget_seconds=60, runner=runner
+    )
+
+    assert result["status"] == "scanned"
+    assert result["ran"] is True
+    assert result["proxies"] == ("http://203.0.113.1:80",)
+    command = calls[0][0]
+    assert command[0].endswith("python") or command[0].endswith("python3")
+    assert command[1].endswith("full_scan.py")
+    assert command[2] == "scan"
+    assert "--index-dir" in command and str(index) in command
+
+
+def test_refresh_proxy_pool_reuses_a_fresh_published_scan(tmp_path):
+    now = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    index = _scan_index(tmp_path, state={"finished_at": "2026-01-01T00:30:00Z"})
+
+    def runner(*_args, **_kwargs):
+        raise AssertionError("a fresh scan must not be re-run")
+
+    result = acquisition.refresh_proxy_pool(
+        mode="auto", index_dir=index, ttl_seconds=3600, runner=runner, now=now
+    )
+    assert result["status"] == "cached"
+    assert result["ran"] is False
+    assert result["proxies"] == ("http://203.0.113.1:80",)
+
+
+def test_refresh_proxy_pool_runs_when_the_published_scan_is_stale(tmp_path):
+    now = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    index = _scan_index(tmp_path, state={"finished_at": "2025-12-30T00:00:00Z"})
+
+    class Completed:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    result = acquisition.refresh_proxy_pool(
+        mode="auto",
+        index_dir=index,
+        ttl_seconds=60,
+        runner=lambda *args, **kwargs: Completed(),
+        now=now,
+    )
+    assert result["status"] == "scanned"
+
+
+def test_refresh_proxy_pool_keeps_the_previous_pool_when_the_scan_fails(tmp_path):
+    index = _scan_index(tmp_path)
+
+    class Completed:
+        returncode = 2
+        stdout = ""
+        stderr = "probe target unreachable"
+
+    result = acquisition.refresh_proxy_pool(
+        mode="full", index_dir=index, runner=lambda *args, **kwargs: Completed()
+    )
+    assert result["status"] == "error"
+    assert "unreachable" in result["detail"]
+    assert result["proxies"] == ("http://203.0.113.1:80",)
+
+
+def test_refresh_proxy_pool_off_never_runs_and_reports_no_proxies(tmp_path):
+    index = _scan_index(tmp_path)
+
+    def runner(*_args, **_kwargs):
+        raise AssertionError("mode=off must not spawn the scan")
+
+    result = acquisition.refresh_proxy_pool(mode="off", index_dir=index, runner=runner)
+    assert result["status"] == "off"
+    assert result["ran"] is False
+    assert result["proxies"] == ()
+
+
+def test_load_top_proxies_accepts_bare_hosts_and_deduplicates(tmp_path):
+    index = tmp_path / "proxyindex"
+    index.mkdir()
+    (index / "top10.json").write_text(
+        json.dumps({"list": ["203.0.113.1:80", "http://203.0.113.1:80", "203.0.113.2:80"]}),
+        encoding="utf-8",
+    )
+    assert acquisition.load_top_proxies(index) == (
+        "http://203.0.113.1:80",
+        "http://203.0.113.2:80",
+    )
 

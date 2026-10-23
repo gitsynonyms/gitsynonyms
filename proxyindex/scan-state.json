@@ -1,0 +1,202 @@
+{
+  "schema": "gitsynonyms.proxy.scan/1",
+  "run_id": "20261023T122103Z-268f05",
+  "started_at": "2026-10-23T12:21:03Z",
+  "finished_at": "2026-10-23T12:24:21Z",
+  "probe_url": "https://www.youtube.com/generate_204",
+  "partial": true,
+  "settings": {
+    "stages": [
+      "matrix",
+      "sources",
+      "collect",
+      "probe",
+      "rank",
+      "sync"
+    ],
+    "workers": 64,
+    "probe_concurrency": 128,
+    "timeout": 8.0,
+    "budget_seconds": 150.0,
+    "query_budget": 2,
+    "probe_budget": 2500,
+    "refresh_hours": 6.0,
+    "github": true
+  },
+  "stages": {
+    "matrix": {
+      "summary": {
+        "digest": "8e2ed50cfadd475a31e68b0e78d5a988abccd1bba95d91f7c935dbfa035da266",
+        "cursor": 11,
+        "cycles": 0,
+        "total": 52005,
+        "searched": 2,
+        "coverage": 0.000212,
+        "queries": 51973,
+        "topics": 32,
+        "observed_at": "2026-10-23T12:21:14Z"
+      }
+    },
+    "sources": {
+      "summary": {
+        "sources": 72813,
+        "recorded": 20607,
+        "expanded": 52206,
+        "repos": 1582,
+        "patterns": 33
+      }
+    },
+    "collect": {
+      "summary": {
+        "sources": 72813,
+        "pending": 13717,
+        "fetched": 8137,
+        "failed": 6184,
+        "empty": 1810,
+        "entries": 39938,
+        "unique_candidates": 20876,
+        "partial": true
+      }
+    },
+    "probe": {
+      "summary": {
+        "tcp": {
+          "pending": 2500,
+          "checked": 2500,
+          "open": 2500,
+          "partial": false
+        },
+        "http": {
+          "alive_tcp": 10484,
+          "pending": 2500,
+          "checked": 1469,
+          "ok": 0,
+          "errors": 0,
+          "partial": true
+        }
+      }
+    },
+    "rank": {
+      "summary": {
+        "pool": 693502,
+        "probed_ok": 119,
+        "candidates": 60,
+        "verified": 26
+      }
+    },
+    "sync": {
+      "summary": {
+        "status": "skipped",
+        "reason": "--sync not given"
+      }
+    }
+  },
+  "coverage": {
+    "matrix_queries": 51973,
+    "matrix_topics": 32,
+    "discovery_cursor": 11,
+    "discovery_total": 52005,
+    "matrix_coverage": 0.000212,
+    "discovery_cycles": 0,
+    "sources": 72813,
+    "candidates": 693502,
+    "tcp_checked": 10500,
+    "http_checked": 9453,
+    "http_alive": 119,
+    "top10": 10,
+    "candidate_coverage": 0.015141,
+    "alive_coverage": 0.011333
+  },
+  "top": [
+    {
+      "rank": 1,
+      "proxy": "http://1.20.101.35:80",
+      "host": "1.20.101.35:80",
+      "latency_ms": 1303.3,
+      "http_status": 204,
+      "verified_at": "2026-10-23T12:24:21Z",
+      "source": "https://raw.githubusercontent.com/6yyn/free-proxy-list/HEAD/http.txt"
+    },
+    {
+      "rank": 2,
+      "proxy": "http://102.244.78.61:8080",
+      "host": "102.244.78.61:8080",
+      "latency_ms": 1318.7,
+      "http_status": 204,
+      "verified_at": "2026-10-23T12:24:21Z",
+      "source": "https://raw.githubusercontent.com/398001/ProxysList/main/all_working.txt"
+    },
+    {
+      "rank": 3,
+      "proxy": "http://102.207.191.161:8081",
+      "host": "102.207.191.161:8081",
+      "latency_ms": 1379.5,
+      "http_status": 204,
+      "verified_at": "2026-10-23T12:24:21Z",
+      "source": "https://raw.githubusercontent.com/6yyn/free-proxy-list/HEAD/http.txt"
+    },
+    {
+      "rank": 4,
+      "proxy": "http://103.125.15.58:8085",
+      "host": "103.125.15.58:8085",
+      "latency_ms": 1704.8,
+      "http_status": 204,
+      "verified_at": "2026-10-23T12:24:21Z",
+      "source": "https://raw.githubusercontent.com/6yyn/free-proxy-list/HEAD/http.txt"
+    },
+    {
+      "rank": 5,
+      "proxy": "http://1.20.101.26:80",
+      "host": "1.20.101.26:80",
+      "latency_ms": 1859.6,
+      "http_status": 204,
+      "verified_at": "2026-10-23T12:24:21Z",
+      "source": "https://raw.githubusercontent.com/Ch4120N/Ch4120N-Proxy-List/master/countries/TH/proxies.txt"
+    },
+    {
+      "rank": 6,
+      "proxy": "http://102.164.252.150:8080",
+      "host": "102.164.252.150:8080",
+      "latency_ms": 1882.7,
+      "http_status": 204,
+      "verified_at": "2026-10-23T12:24:21Z",
+      "source": "https://raw.githubusercontent.com/AmmarrBN/collect-proxy/main/proxyactive.txt"
+    },
+    {
+      "rank": 7,
+      "proxy": "http://103.130.61.60:8081",
+      "host": "103.130.61.60:8081",
+      "latency_ms": 2110.4,
+      "http_status": 204,
+      "verified_at": "2026-10-23T12:24:21Z",
+      "source": "https://raw.githubusercontent.com/6yyn/free-proxy-list/HEAD/http.txt"
+    },
+    {
+      "rank": 8,
+      "proxy": "http://103.106.115.63:8080",
+      "host": "103.106.115.63:8080",
+      "latency_ms": 2208.3,
+      "http_status": 204,
+      "verified_at": "2026-10-23T12:24:21Z",
+      "source": "https://raw.githubusercontent.com/ALIILAPRO/Proxy/HEAD/http.txt"
+    },
+    {
+      "rank": 9,
+      "proxy": "http://103.120.76.45:8080",
+      "host": "103.120.76.45:8080",
+      "latency_ms": 2620.7,
+      "http_status": 204,
+      "verified_at": "2026-10-23T12:24:21Z",
+      "source": "https://raw.githubusercontent.com/ErcinDedeoglu/proxies/HEAD/proxies/http.txt"
+    },
+    {
+      "rank": 10,
+      "proxy": "http://1.20.101.20:80",
+      "host": "1.20.101.20:80",
+      "latency_ms": 2622.7,
+      "http_status": 204,
+      "verified_at": "2026-10-23T12:24:21Z",
+      "source": "https://raw.githubusercontent.com/Ch4120N/Ch4120N-Proxy-List/HEAD/proxies/all.txt"
+    }
+  ]
+}

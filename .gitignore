@@ -25,6 +25,22 @@ proxyindex/proxies.txt
 proxyindex/alive_tcp.txt
 proxyindex/alive_http.txt
 proxyindex/*.log
+# Full list² scan working state: reproducible from the committed matrix code and
+# the append-only source list. Published top10/report/state stay tracked.
+proxyindex/query-matrix.json
+proxyindex/queries.txt
+proxyindex/discovery-state.json
+proxyindex/discovered.jsonl
+proxyindex/sources.full.txt
+proxyindex/collect.jsonl
+proxyindex/pool.txt
+proxyindex/pool.parts
+proxyindex/pool.provenance.tsv
+proxyindex/provenance.parts
+proxyindex/tcp-probes.tsv
+proxyindex/http-probes.tsv
+proxyindex/*.merged
+proxyindex/*.tmp
 
 # Monitor state and verification scratch.
 output/.monitor-state.json
