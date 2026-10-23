@@ -6,6 +6,10 @@ on:
     - cron: "*/5 * * * *"
   workflow_dispatch:
     inputs:
+      video_url:
+        description: Optional YouTube video URL to process as a new upload
+        required: false
+        type: string
       force_check:
         description: Reprocess the latest upload even if it was already recorded
         required: false
@@ -55,6 +59,7 @@ jobs:
         id: resolve
         env:
           FORCE_CHECK: ${{ inputs.force_check }}
+          VIDEO_URL: ${{ inputs.video_url }}
         shell: pwsh
         run: ./scripts/monitoring/resolve_channel_feed.ps1
 
