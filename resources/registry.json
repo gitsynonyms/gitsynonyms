@@ -1,0 +1,125 @@
+{
+  "schema": "gitsynonyms.resources.registry/1",
+  "updated_at": "2026-10-23T02:30:00Z",
+  "owner": "资源获取分析司",
+  "designated_by": "总控",
+  "principle": "one-url-one-record",
+  "cadence_policy": {
+    "floor": "5m",
+    "ceiling": "7d"
+  },
+  "resources": [
+    {
+      "id": "yt:@WhiteHouse/streams",
+      "kind": "youtube-channel",
+      "url": "https://www.youtube.com/@WhiteHouse/streams",
+      "designated": true,
+      "trust": "official",
+      "cadence": "5m",
+      "analysis": [
+        "live-event-detection",
+        "caption-acquisition",
+        "timeline-verification"
+      ],
+      "collector": {
+        "script": "scripts/monitoring/acquisition.py",
+        "source": "whitehouse-streams"
+      },
+      "status": "active",
+      "note": "钦定资源：白宫官方直播与往期流，按 P1 跟踪。"
+    },
+    {
+      "id": "yt:@WhiteHouse/videos",
+      "kind": "youtube-channel",
+      "url": "https://www.youtube.com/@WhiteHouse/videos",
+      "designated": true,
+      "trust": "official",
+      "cadence": "5m",
+      "analysis": [
+        "upload-detection",
+        "caption-acquisition",
+        "bilingual-material"
+      ],
+      "collector": {
+        "script": "scripts/monitoring/acquisition.py",
+        "source": "whitehouse-youtube"
+      },
+      "status": "active",
+      "note": "钦定资源：白宫官方视频上传，与 streams 分开登记，不得合并。"
+    },
+    {
+      "id": "rss:whitehouse.gov/news",
+      "kind": "rss-feed",
+      "url": "https://www.whitehouse.gov/news/feed/",
+      "designated": false,
+      "trust": "official",
+      "cadence": "5m",
+      "analysis": [
+        "official-statements",
+        "policy-text",
+        "event-corroboration"
+      ],
+      "collector": {
+        "script": "scripts/monitoring/acquisition.py",
+        "source": "whitehouse-news"
+      },
+      "status": "active",
+      "note": "支撑来源：白宫新闻与讲话全文。"
+    },
+    {
+      "id": "rss:whitehouse.gov/presidential-actions",
+      "kind": "rss-feed",
+      "url": "https://www.whitehouse.gov/presidential-actions/feed/",
+      "designated": false,
+      "trust": "official",
+      "cadence": "5m",
+      "analysis": [
+        "proclamation-text",
+        "executive-action-index",
+        "event-corroboration"
+      ],
+      "collector": {
+        "script": "scripts/monitoring/acquisition.py",
+        "source": "whitehouse-actions"
+      },
+      "status": "active",
+      "note": "支撑来源：总统行动、公告与行政令。"
+    },
+    {
+      "id": "html:rollcall.com/factbase/trump/calendar",
+      "kind": "html-page",
+      "url": "https://rollcall.com/factbase/trump/calendar/",
+      "designated": false,
+      "trust": "wire",
+      "cadence": "1h",
+      "analysis": [
+        "schedule-confirmation",
+        "event-corroboration"
+      ],
+      "collector": {
+        "script": "scripts/monitoring/acquisition.py",
+        "source": "factbase-calendar"
+      },
+      "status": "active",
+      "note": "支撑来源：独立日程，用于确认事件是否发生。"
+    },
+    {
+      "id": "json:api.gdeltproject.org/doc",
+      "kind": "json-api",
+      "url": "https://api.gdeltproject.org/api/v2/doc/doc?query=%22white%20house%22&mode=ArtList&format=json&maxrecords=50&timespan=3d&sort=datedesc",
+      "designated": false,
+      "trust": "aggregator",
+      "cadence": "1h",
+      "analysis": [
+        "coverage-discovery",
+        "media-corroboration"
+      ],
+      "collector": {
+        "script": "scripts/monitoring/acquisition.py",
+        "source": "gdelt-whitehouse"
+      },
+      "status": "active",
+      "note": "支撑来源：主流媒体覆盖，免费接口偶发 429，按来源降级处理。"
+    }
+  ]
+}

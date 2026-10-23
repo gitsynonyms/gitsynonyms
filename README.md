@@ -3,9 +3,24 @@
 `gitsynonyms` is a tiny Git command lookup tool focused on common aliases and close synonyms.
 
 > **最高指示**：本仓库的组织与巡检制度以 [`DIRECTIVE.md`](DIRECTIVE.md) 为最高效力
-> 文件；登记表为 [`inspection/registry.json`](inspection/registry.json)，执行入口为
-> `python scripts/inspection/plan.py check --github`。任何 agent、账号、主机或
+> 文件；登记表为 [`inspection/registry.json`](inspection/registry.json) 与
+> [`resources/registry.json`](resources/registry.json)，执行入口分别为
+> `python scripts/inspection/plan.py check --github` 与
+> `python scripts/resources/check.py check`。任何 agent、账号、主机或
 > harness 在开始工作前必须先读该文件。
+
+## 组织与登记表
+
+| 司 / 处 | 登记表 | 校验入口 |
+|---|---|---|
+| 资源获取分析司 | `resources/registry.json`：钦定 White House 直播/视频频道与支撑来源，一条 URL 一条记录 | `python scripts/resources/check.py check` |
+| 定期巡检司 / 巡检任务执行方案处 | `inspection/registry.json`：每个最小可巡检单元一条记录 | `python scripts/inspection/plan.py check --github` |
+
+```bash
+python scripts/resources/check.py list        # 钦定与支撑资源
+python scripts/resources/check.py coverage    # 钦定资源覆盖率
+python scripts/inspection/plan.py plan        # 下一轮到期巡检单元
+```
 
 ## Install
 

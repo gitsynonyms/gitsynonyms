@@ -1,6 +1,6 @@
 # 巡检登记表结构
 
-`inspection/registry.json` 是最高指示第三条的唯一登记源。`scripts/inspection/plan.py`
+`inspection/registry.json` 是最高指示第四条的巡检登记源。`scripts/inspection/plan.py`
 对它的校验就是"最小粒度"的可执行定义：一条记录只能对应一个 MIU，缺口必须显式声明。
 
 ## 顶层字段
@@ -26,7 +26,7 @@
 | `target` | 是 | 定位该单元的属性集合；值只能是标量，不能是数组 |
 | `trigger` | 是 | `schedule` / `workflow_dispatch` / `push` / `pull_request` / `manual` / `timer` / `login` / `boot` / `unknown` |
 | `cadence` | 是 | 单单元频率，必须落在 `cadence_policy` 的 floor 与 ceiling 之间 |
-| `severity` | 是 | `P0`–`P3`，含义见最高指示第七条 |
+| `severity` | 是 | `P0`–`P3`，含义见最高指示第八条 |
 | `owner` | 是 | 负责该单元的执行方 |
 | `status` | 是 | `active` / `paused` / `retired` / `pending-inventory` |
 | `evidence` | 是 | 可直接复现的采集命令或链接，至少一条 |
