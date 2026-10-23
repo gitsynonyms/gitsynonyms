@@ -35,10 +35,9 @@ on:
         type: string
         default: "2400"
       video_url:
-        description: YouTube video URL to download and mirror (optional)
+        description: YouTube video URL to download and mirror (optional; example: https://www.youtube.com/watch?v=5E09UkJq4Jo)
         required: false
         type: string
-        default: "https://www.youtube.com/watch?v=5E09UkJq4Jo"
       upload_min_ok:
         description: Minimum successful mirror uploads required
         required: false
