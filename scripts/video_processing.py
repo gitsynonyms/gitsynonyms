@@ -67,6 +67,7 @@ if str(SCRIPTS_DIR) not in sys.path:
 # Reuse the repository's caption parsers so a subtitle is read exactly the same
 # way here as it was written by the downloader.
 import download_youtube_bilingual_srt as captions  # noqa: E402
+import subtitle_ergonomics  # noqa: E402
 import subtitle_timing  # noqa: E402
 
 MODULE_NAME = "module2-video-processing"
@@ -133,6 +134,10 @@ class BurnOptions:
     report: Path | None = None
     caption_box: str = "auto"
     box_opacity: float = DEFAULT_BOX_OPACITY
+    ergonomics: str = "warn"
+    children: bool = False
+    max_cps: float | None = None
+    ergonomics_report: Path | None = None
 
 
 def utc_now() -> str:
@@ -567,65 +572,11 @@ def check_fonts(fonts: Sequence[str]) -> dict:
     return {"checked": True, "fonts": matches}
 
 
-ASS_TIMESTAMP = re.compile(r"^(\d+):(\d{2}):(\d{2})[.](\d{1,2})$")
-
-
-def ass_time_to_seconds(value: str) -> float:
-    match = ASS_TIMESTAMP.fullmatch(value.strip())
-    if not match:
-        raise ValueError(f"Invalid ASS timestamp: {value!r}")
-    hours, minutes, seconds, fraction = match.groups()
-    return (
-        int(hours) * 3600
-        + int(minutes) * 60
-        + int(seconds)
-        + int(fraction) / (10 ** len(fraction))
-    )
-
-
-def parse_ass_cues(path: Path) -> list[dict]:
-    """Parse ASS/SSA dialogue lines, including the drawing events of the style."""
-    cues: list[dict] = []
-    fields: list[str] | None = None
-    in_events = False
-    content = path.read_text(encoding="utf-8-sig", errors="replace")
-    for line in content.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("["):
-            in_events = stripped.lower() == "[events]"
-            fields = None
-            continue
-        if not in_events:
-            continue
-        lowered = stripped.lower()
-        if lowered.startswith("format:"):
-            fields = [item.strip().lower() for item in stripped.split(":", 1)[1].split(",")]
-        elif lowered.startswith("dialogue:"):
-            if not fields or "start" not in fields or "end" not in fields:
-                raise ValueError(f"ASS file has a Dialogue before its Format line: {path.name}")
-            values = stripped.split(":", 1)[1].lstrip().split(",", len(fields) - 1)
-            if len(values) < len(fields):
-                raise ValueError(f"ASS file has a malformed Dialogue line: {path.name}")
-            record = dict(zip(fields, values))
-            text = record.get("text", "")
-            cues.append(
-                {
-                    "start": ass_time_to_seconds(record["start"]),
-                    "end": ass_time_to_seconds(record["end"]),
-                    "text": text,
-                    # Styles such as the caption box are vector drawings, not
-                    # spoken text; they must not drive the timing validation.
-                    "drawing": bool(re.search(r"\\p[1-9]", text)),
-                }
-            )
-    return cues
-
-
 def inspect_subtitles(path: Path, video_duration: float) -> dict:
     extension = path.suffix.lower().lstrip(".")
     drawing_cues = 0
     if extension in {"ass", "ssa"}:
-        all_cues = parse_ass_cues(path)
+        all_cues = subtitle_timing.parse_ass_cues(path)
         cues = [cue for cue in all_cues if not cue["drawing"]]
         drawing_cues = len(all_cues) - len(cues)
     else:
@@ -847,6 +798,66 @@ def summarize_render_log(stderr: str) -> tuple[int, list[str]]:
     return missing_glyphs, warnings[:20]
 
 
+def frame_rate_value(value: str | float | None, default: float = 24.0) -> float:
+    """Parse ffprobe's rational frame rate (``30000/1001``) into a float."""
+    if isinstance(value, (int, float)):
+        return float(value) if value and value > 0 else default
+    if not value:
+        return default
+    try:
+        numerator, denominator = (float(part) for part in str(value).split("/", 1))
+    except (TypeError, ValueError):
+        return default
+    if not denominator:
+        return default
+    result = numerator / denominator
+    return result if result > 0 else default
+
+
+def assess_ergonomics(
+    selection: Selection,
+    video_info: dict,
+    options: BurnOptions,
+    report: dict,
+) -> None:
+    """Run the ergonomics office and attach its summary to the hand-off."""
+    if options.ergonomics == "off":
+        return
+    if options.ergonomics not in {"warn", "strict"}:
+        raise ValueError("Ergonomics mode must be off, warn, or strict.")
+    fps = frame_rate_value(video_info["video"].get("frame_rate"))
+    result = subtitle_ergonomics.analyze_subtitle(
+        selection.subtitle,
+        fps=fps,
+        children=options.children,
+        max_cps=options.max_cps,
+    )
+    report_path = options.ergonomics_report or (
+        (selection.output_dir or selection.output.parent) / "ERGONOMICS.json"
+    )
+    subtitle_ergonomics.write_report(report_path, result)
+    summary = result["summary"]
+    report["ergonomics"] = {
+        "report": str(report_path),
+        "mode": options.ergonomics,
+        "fps": round(fps, 3),
+        "children": options.children,
+        "summary": summary,
+        "rules": result["rules"],
+    }
+    print(f"  ergonomics: {subtitle_ergonomics.summary_line(result)}")
+    if summary["violations"]:
+        report["warnings"].append(
+            f"Subtitle ergonomics: {summary['errors']} errors and "
+            f"{summary['warnings']} warnings; see {report_path.name}."
+        )
+    if options.ergonomics == "strict" and summary["errors"]:
+        raise RuntimeError(
+            f"Subtitle ergonomics has {summary['errors']} errors; "
+            f"see {report_path} before burning."
+        )
+
+
 def _file_record(path: Path) -> dict:
     stat = path.stat()
     return {
@@ -927,6 +938,7 @@ def process(selection: Selection, options: BurnOptions) -> dict:
         "fonts": {},
         "captions": {},
         "timing": {},
+        "ergonomics": {},
         "render": {},
         "burn": {},
         "outputs": {},
@@ -967,6 +979,7 @@ def process(selection: Selection, options: BurnOptions) -> dict:
         }
         if caption_sources:
             report["inputs"]["captions"] = [_file_record(path) for path in caption_sources]
+        assess_ergonomics(selection, video_info, options, report)
         if subtitle_info["overrun_seconds"] > OVERRUN_TOLERANCE:
             message = (
                 f"The subtitle runs {subtitle_info['overrun_seconds']:.3f} s past the end of "
@@ -1184,6 +1197,22 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_BOX_OPACITY,
         help=f"Presidential-blue box opacity 0-1 (default: {DEFAULT_BOX_OPACITY}).",
     )
+    parser.add_argument(
+        "--ergonomics",
+        choices=("off", "warn", "strict"),
+        default="warn",
+        help="Subtitle ergonomics: report only, warn in BURN.json, or fail on errors.",
+    )
+    parser.add_argument(
+        "--children",
+        action="store_true",
+        help="Use children's reading-speed limits (17 CPS English, 7 CPS Chinese).",
+    )
+    parser.add_argument("--max-cps", type=float, help="Override the reading-speed limit.")
+    parser.add_argument(
+        "--ergonomics-report",
+        help="Exact path of the ERGONOMICS.json report.",
+    )
     parser.add_argument("--video-id", help="Video id used in output names and the report.")
     parser.add_argument("--title", help="Event title recorded in the report.")
     parser.add_argument("--event-date", help="Event date in YYYY-MM-DD format.")
@@ -1257,6 +1286,14 @@ def main(argv: list[str] | None = None) -> int:
             report=args.report,
             caption_box=args.caption_box,
             box_opacity=args.box_opacity,
+            ergonomics=args.ergonomics,
+            children=args.children,
+            max_cps=args.max_cps,
+            ergonomics_report=(
+                Path(args.ergonomics_report).expanduser().resolve()
+                if args.ergonomics_report
+                else None
+            ),
         )
         process(selection, options)
         return 0

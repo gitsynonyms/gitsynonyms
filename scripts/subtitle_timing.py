@@ -378,6 +378,60 @@ def build_tracks(
     return tracks
 
 
+ASS_TIMESTAMP = re.compile(r"^(\d+):(\d{2}):(\d{2})[.](\d{1,2})$")
+
+
+def ass_time_to_seconds(value: str) -> float:
+    match = ASS_TIMESTAMP.fullmatch(value.strip())
+    if not match:
+        raise ValueError(f"Invalid ASS timestamp: {value!r}")
+    hours, minutes, seconds, fraction = match.groups()
+    return (
+        int(hours) * 3600
+        + int(minutes) * 60
+        + int(seconds)
+        + int(fraction) / (10 ** len(fraction))
+    )
+
+
+def parse_ass_cues(path: Path) -> list[dict]:
+    """Parse ASS/SSA dialogue lines, including the drawing events of the style."""
+    cues: list[dict] = []
+    fields: list[str] | None = None
+    in_events = False
+    content = path.read_text(encoding="utf-8-sig", errors="replace")
+    for line in content.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("["):
+            in_events = stripped.lower() == "[events]"
+            fields = None
+            continue
+        if not in_events:
+            continue
+        lowered = stripped.lower()
+        if lowered.startswith("format:"):
+            fields = [item.strip().lower() for item in stripped.split(":", 1)[1].split(",")]
+        elif lowered.startswith("dialogue:"):
+            if not fields or "start" not in fields or "end" not in fields:
+                raise ValueError(f"ASS file has a Dialogue before its Format line: {path.name}")
+            values = stripped.split(":", 1)[1].lstrip().split(",", len(fields) - 1)
+            if len(values) < len(fields):
+                raise ValueError(f"ASS file has a malformed Dialogue line: {path.name}")
+            record = dict(zip(fields, values))
+            text = record.get("text", "")
+            cues.append(
+                {
+                    "start": ass_time_to_seconds(record["start"]),
+                    "end": ass_time_to_seconds(record["end"]),
+                    "text": text,
+                    # Styles such as the caption box are vector drawings, not
+                    # spoken text; they must not drive the timing validation.
+                    "drawing": bool(re.search(r"\\p[1-9]", text)),
+                }
+            )
+    return cues
+
+
 def to_ass_cues(track: dict) -> list[dict]:
     """Convert a nanosecond track into the float cue model used by build_ass."""
     cues: list[dict] = []

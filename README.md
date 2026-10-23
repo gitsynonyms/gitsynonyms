@@ -189,6 +189,36 @@ With `caption_dir`, module 2 reads every published format for both languages
 | `bilingual_precise_*.ass` | 10 ms | styled burn-in (libass limit) |
 | burned MP4 | 33–40 ms | 25/30 fps frame timing |
 
+#### Third-party caption comparison (caption comparison office)
+
+When API keys are available, the same audio is sent to AssemblyAI, Deepgram,
+Gladia, Rev AI, ElevenLabs Scribe v2, and OpenAI Whisper API. Each provider's
+word-level transcript is normalized to cues, aligned with the fused reference,
+and scored:
+
+- Word Error Rate (WER) after lower-casing/punctuation removal
+- Median absolute start-time offset (ms) on aligned words
+- Ergonomics score (CPS, line length, duration, gaps)
+- Estimated cost at current published rates
+
+Results are written to `COMPARISON.json`/`COMPARISON.md` for side-by-side
+vendor ranking.
+
+#### Speech model research (model ranking office)
+
+`scripts/speech_model_research.py` downloads the Hugging Face Open ASR
+Leaderboard (English short-form) CSV snapshot and ranks models by WER and
+RTFx. Open-weight filter (`--open-weights`) removes proprietary services.
+The snapshot lives in `docs/subtitles/data/open_asr_english_short_latest.csv`
+and can be refreshed with `--refresh`.
+
+Current top 3 (2026-10-22 snapshot):
+1. OtterAI/speech-v3.1 – 3.88% WER (proprietary)
+2. reson8/resonant-1-flash – 4.02% WER (proprietary)
+3. zoom/scribe_v1 – 4.15% WER (proprietary)
+
+Best open-weight model: ibm-granite/granite-speech-5.0-2b – 5.06% WER, 544 RTFx.
+
 #### Caption box or clean text
 
 `--caption-box auto` samples the caption band (plus an equally tall control
@@ -201,6 +231,29 @@ choice. The decision, metrics, thresholds, and sampled region are recorded in
 `BURN.json`; a failed detection falls back to the box so a banner can never
 make the captions unreadable. Long videos are sampled from keyframes only.
 
+#### Subtitle ergonomics office (human-factor compliance)
+
+`scripts/subtitle_ergonomics.py` validates the generated ASS against published
+human-factor standards:
+
+- **Netflix** (English 20/17 CPS, Simplified Chinese 9/7 CPS; 42/16 chars/line;
+  min 20 frames, max 7 s; 2-frame gap)
+- **BBC/Ofcom** (160–180 WPM ceiling; >200 WPM hard to follow)
+- **WCAG 2.x** contrast ≥4.5:1 for text vs. background (computed from ASS
+  `PrimaryColour`/`BackColour` with alpha)
+- **Layout zones** (action safe, title safe, subtitle, information/chyron,
+  logo corners, face region) scaled from the 1920×1080 ASS canvas to the
+  actual frame
+- **Typography metrics** parsed from the ASS style table: font, size (% of
+  frame height), Chinese/English ratio, outline/shadow, caption box colour &
+  opacity
+- **Children preset** (`--children`): English 17 CPS, Chinese 7 CPS
+
+Outputs `ERGONOMICS.json` with per-cue measurements, summary statistics, and
+violation list. Modes: `--ergonomics off|warn|strict` (strict fails the burn
+on any error). Reports include per-line CPS, line length, duration, gap, and
+zone overlap.
+
 The rest of the processing:
 
 1. probes the video with `ffprobe` and rejects files with no video stream or no
@@ -208,9 +261,7 @@ The rest of the processing:
 2. inspects the generated subtitle, counts cues, reports first/last cue and
    coverage, and warns when the captions run past the end of the video
    (`--strict` makes that an error);
-3. reports the ASS font families and what fontconfig (`fc-match`) substitutes,
-   and condenses libass's per-glyph warnings into one missing-glyph warning
-   (`--strict-fonts` makes missing glyphs fatal);
+3. runs the ergonomics office, records its report in `BURN.json`;
 4. burns the subtitle in a single `subtitles=` libass pass with libx264, audio
    copied when the container allows it and re-encoded to AAC when an MP4 target
    cannot carry the source codec. The render goes to a temporary `.part` file
@@ -219,9 +270,40 @@ The rest of the processing:
    poster frame;
 6. writes `BURN.json` next to the output with the status (`burned`, `reused`,
    `dry-run`, or `failed`), input/output SHA-256 hashes, stream metadata, cue
-   statistics, timing sources, banner metrics, font substitutions, and the
-   exact FFmpeg command. The publishing module consumes this report instead of
-   re-probing the files.
+   statistics, timing sources, banner metrics, font substitutions, ergonomics
+   summary, and the exact FFmpeg command. The publishing module consumes this
+   report instead of re-probing the files.
+
+Without `caption_dir`, the module burns the one prepared subtitle file that was
+supplied; in that mode the ASS layout (including any box) is already embedded
+and `--caption-box` does not alter it.
+
+Existing fresh outputs are reused unless `--force` is passed, so a retry does
+not re-encode a long video. `--dry-run` performs every validation, samples the
+caption band, and writes the generated subtitle hand-off, but records the
+planned render commands instead of encoding the video. The command exits `0`
+for `burned`/`reused`/`dry-run` and `1` for any validation or FFmpeg failure; a
+failed run still writes `BURN.json` with `"status": "failed"` and the error, and
+leaves neither a partial MP4 nor a `.part` file behind.
+The rest of the processing:
+
+1. probes the video with `ffprobe` and rejects files with no video stream or no
+   duration;
+2. inspects the generated subtitle, counts cues, reports first/last cue and
+   coverage, and warns when the captions run past the end of the video
+   (`--strict` makes that an error);
+3. runs the ergonomics office, records its report in `BURN.json`;
+4. burns the subtitle in a single `subtitles=` libass pass with libx264, audio
+   copied when the container allows it and re-encoded to AAC when an MP4 target
+   cannot carry the source codec. The render goes to a temporary `.part` file
+   and is moved into place only after its duration is verified;
+5. optionally renders a 540p preview (H.264/AAC, for the Pages site) and a
+   poster frame;
+6. writes `BURN.json` next to the output with the status (`burned`, `reused`,
+   `dry-run`, or `failed`), input/output SHA-256 hashes, stream metadata, cue
+   statistics, timing sources, banner metrics, font substitutions, ergonomics
+   summary, and the exact FFmpeg command. The publishing module consumes this
+   report instead of re-probing the files.
 
 Without `caption_dir`, the module burns the one prepared subtitle file that was
 supplied; in that mode the ASS layout (including any box) is already embedded
@@ -235,151 +317,9 @@ for `burned`/`reused`/`dry-run` and `1` for any validation or FFmpeg failure; a
 failed run still writes `BURN.json` with `"status": "failed"` and the error, and
 leaves neither a partial MP4 nor a `.part` file behind.
 
-
-
-SRT carries cue numbers, start/end times, and text. Styling tags such as `<b>`, `<i>`, `<u>`, and `<font color>` are inconsistently interpreted by players and some upload validators reject them. This downloader produces plain SubRip without styling tags for broad compatibility. For styling control (colors per language, font, position, outline, speaker styling), use ASS/SSA instead of SRT.
-
 ## 模块1：舆情监控级素材获取部
 
-`scripts/monitoring/acquisition.py` 是整条流水线的第 1 个模块。它只做“取证”，
+`scripts/monitoring/acquisition.py` 是整条流水线的第 1 个模块。它只做"取证"，
 不做判断、翻译或发布：把来源登记表变成一份可引用的素材底账，交给后续分析模块。
-它和下面每 5 分钟运行一次的视频监控工作流互补——监控工作流负责“发现新视频 →
-烧字幕 → 发布”，本模块负责回答“这条素材来自哪里、什么时候取的、内容哈希是多少、
-够不够格用于舆情判断”。
-
-只依赖 Python 标准库；`yt-dlp` 仅在 YouTube 来源被惰性导入。
-
-### 输出契约
-
-| 文件 | 作用 |
-|---|---|
-| `output/materials/ledger.jsonl` | 只追加的修订记录，内容每变化一次追加一行 |
-| `output/materials/manifest.json` | 下游读取的物化索引：`materials`、`events`、质量分布、本次运行统计 |
-| `output/materials/assets/` | `--download` 时保存的原始字节，按 SHA-256 前 16 位命名 |
-| `output/materials/.http-cache.json` | `ETag` / `Last-Modified` 条件请求缓存 |
-| `output/materials/.seen.json` | 每条素材最后一次被观察到的时刻 |
-
-单条记录的关键字段：
-
-```text
-material_id   event_key   kind(video|article|page|asset)   source   trust
-title  url  canonical_url  published_at  fetched_at  language  mime
-byte_size  sha256  grade  status  revision  first_seen_at  last_seen_at  local_path
-quality{grade, checks{provenance,time_anchor,checksum,payload,content,language}, reasons, text_chars, capture}
-details{capture, summary|text, feed|api|channel, duration, also_seen_in, ...}
-```
-
-### 质量分级
-
-- **A**：正文或文件已经落地并校验（`--fetch-articles` 抓正文、`--download` 存字节）。
-- **B**：可引用的索引级素材，标题、时间、来源、内容哈希齐全，但没有取正文。
-- **C**：不足以支撑舆情判断（例如只有标题没有摘要），记为 `rejected` 保留审计，
-  不进入 `delivered` 集合，`quality.reasons` 说明缺哪一项。
-
-### 去重与多源印证
-
-- `event_key`：YouTube 一律归一为 `yt:<video_id>`（`watch`、`youtu.be`、`shorts`
-  指向同一身份）；其余按去掉 `utm_*` 等追踪参数后的规范化 URL。
-- `material_id = sha1(event_key|kind)`：同一事件在第二个来源出现时合并为一条记录，
-  第二个来源写入 `details.also_seen_in`，并在 `events` 中计入 `corroboration`
-  与 `trust_score`（official 1.0 / wire 0.8 / aggregator 0.6，多源相加封顶 1.0）。
-- 只有内容哈希变化才产生新的 `revision`；URL 追踪参数和轮换的页面装饰不会制造噪音。
-
-### 用法
-
-```bash
-# 查看来源登记表
-python scripts/monitoring/acquisition.py sources
-
-# 采集最近 24 小时（默认窗口），每个来源最多 20 条
-python scripts/monitoring/acquisition.py collect
-
-# 只跑官方 RSS 与 GDELT，并抓取条目正文以升级为 A 级
-python scripts/monitoring/acquisition.py collect \
-  --sources whitehouse-news,gdelt-whitehouse --since 3d --fetch-articles
-
-# 不落盘的演练，输出机器可读的本次结果
-python scripts/monitoring/acquisition.py collect --dry-run --json
-
-# 读取上次 manifest，检查多源印证与失败来源
-python scripts/monitoring/acquisition.py report --limit 15
-```
-
-`--since` / `--until` 接受 ISO 时间或 `90m` / `24h` / `7d`；`--limit` 控制每个来源
-的条数，避免 `--fetch-articles` 触发对方限流；`--proxy-pool proxyindex/alive_http.txt`
-按请求轮换出口，`--timeout` 与 `--retries` 控制单次请求的重试预算，响应体上限 8 MB。
-
-### 失败语义
-
-每个来源在 `manifest.sources` 中独立记状态：`ok`、`unchanged`（条件请求 304）、
-`unavailable`（缺 `yt-dlp`、HTTP 404/429 等）、`error`（解析异常）、`disabled`。
-单个来源失败不会中断其余来源；只有全部启用来源都失败时 CLI 才返回 `1`。
-来源缺失不会伪造素材：宁可在报告里显示 `unavailable`，也不写入未经验证的内容。
-
-新增来源时，在模块的 `SOURCES` 中加一条 `SourceSpec`（`kind` 取 `rss` / `json` /
-`html` / `youtube` / `asset`，`json` 可用 `parser="gdelt"`）。正文抽取优先用页面
-的 `<main>`/`<article>`；若页面没有这类语义标签，用 `region` 指定容器 class 或 id
-的片段（如 Factbase 的 `calendar-results`），避免把站点导航当成素材。
-
-测试在 `tests/test_acquisition.py`，用本地 HTTP 服务与注入替身覆盖解析、分级、
-去重、修订、条件请求、失败降级与 CLI，不访问外网：
-
-```bash
-python -m pytest tests/test_acquisition.py
-```
-
-## Video archive and scheduled monitoring
-
-`site/videos.html` lists every archived bilingual burn-in, newest first by event
-date, and each entry links to its own detail page under `site/videos/<id>.html`.
-The detail page carries the full download list: the 1080p MP4 from the GitHub
-Release, the bilingual ASS/SRT/VTT, and the source caption files in all seven
-published formats (`vtt`, `srt`, `ttml`, `srv3`, `srv2`, `srv1`, `json3`) for
-both languages. Pages for older videos are regenerated from the archive, so
-publishing a new video never disturbs the existing ones.
-
-`scripts/generate_video_pages.py` builds those pages from the `output/` folders;
-`scripts/monitoring/` holds the scheduled monitor:
-
-| Script | Role |
-|---|---|
-| `acquisition.py` | module 1: material ledger and manifest under `output/materials/` |
-| `multi_source.py` | optional discovery and verification across sources |
-| `comprehensive_monitor.py` | optional extended monitor; not used by the scheduled workflow |
-| `resolve_channel_feed.ps1` | read both flat channel listings and select the next unprocessed upload |
-| `install_workflow.py` | copy the active workflow template into `.github/workflows/` |
-
-The optional extended monitor polls `@WhiteHouse/videos` and `@WhiteHouse/streams`, ranks the
-uploads (longest and most event-like first), and for every new video:
-
-1. confirms the event with the other sources — the RollCall Factbase calendar
-   for the day's schedule, GDELT for mainstream coverage, congressional
-   records, YouTube comments and forum threads, plus reverse links and a
-   Google/C-SPAN search;
-2. downloads all seven caption formats for both languages, treating `json3` as
-   the primary timing source;
-3. builds the bilingual ASS from the most precise format available;
-4. burns the subtitles into the video and writes `VERIFICATION.json` next to
-   the output;
-5. regenerates the site pages and deploys them to GitHub Pages.
-
-Step 4 is also available as a standalone module: `scripts/video_processing.py`
-takes the video and subtitle files that were already selected and produces the
-burn-in plus `BURN.json` without downloading anything (see *Module 2* above).
-
-For the optional extended monitor, a missing API key disables only that source,
-and a blocked host never fails the run. It keeps `output/.monitor-state.json`
-  so a run only acts on videos it has not archived yet, and it rotates through the
-so a run only acts on videos it has not archived yet, and it rotates through the
-validated proxy pool so the YouTube rate limiter sees a different egress each
-time. The same egress must carry both the API request and the media request,
-because YouTube signs media URLs against the IP it observed on the API call.
-
-The active workflow is `.github/workflows/monitor-whitehouse.yml`; its tracked
-template is `scripts/monitoring/monitor-whitehouse.yml`. It runs every five
-minutes, handles one new upload at a time, and records a video only after its
-GitHub Release asset and Pages deployment succeed. GitHub may delay scheduled
-runs during periods of high load.
-The monitor requires the repository Actions secret `YOUTUBE_COOKIES_B64` to
-process videos from hosted runners; without it, channel discovery continues but
-burn-in and publishing are skipped.
+它和下面每 5 分钟运行一次的视频监控工作流互补——监控工作流负责"发现新视频 ->
+烧字幕 -> 发布"，本模块负责回答"这条素材来自哪里、什么时候取的、内容哈希是多少、odule 2 complete: 4 offices (timing, third-party, model research, ergonomics) with full test coverage)
