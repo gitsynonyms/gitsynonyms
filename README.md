@@ -11,14 +11,14 @@
 
 ## 组织与登记表
 
-组织架构总览及模块2的视频处理职责，见 [`organization/README.md`](organization/README.md)；
-最高效力规则见 [`DIRECTIVE.md`](DIRECTIVE.md)。
+`DIRECTIVE.md` 是规定根本层级、权责原则的宪法性最高指示；
+`organization/` 是依其制定的具体组织规章制度。
 
 | 司 / 部 / 处 | 档案或登记表 | 校验入口 |
 |---|---|---|
 | 资源获取分析司 | `resources/registry.json`：钦定 White House 直播/视频频道与支撑来源，一条 URL 一条记录 | `python scripts/resources/check.py check` |
 | 定期巡检司 / 巡检任务执行方案处 | `inspection/registry.json`：每个最小可巡检单元一条记录 | `python scripts/inspection/plan.py check --github` |
-| 模块2：视频处理部 | `organization/module-2-video-processing.md`：素材接收、字幕时间、字幕区、刻录渲染、质检交接五个职责单元 | 以该档案中的实现状态和精度限制为准 |
+| 模块2：视频处理部 | `organization/module-2-video-processing.md`：素材接收、字幕时间、字幕区、刻录渲染、质检交接五个职责单元 | 以该规章中的实现状态和精度限制为准 |
 
 ```bash
 python scripts/resources/check.py list        # 钦定与支撑资源
