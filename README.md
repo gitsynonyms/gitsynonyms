@@ -236,3 +236,6 @@ template is `scripts/monitoring/monitor-whitehouse.yml`. It runs every five
 minutes, handles one new upload at a time, and records a video only after its
 GitHub Release asset and Pages deployment succeed. GitHub may delay scheduled
 runs during periods of high load.
+The monitor requires the repository Actions secret `YOUTUBE_COOKIES_B64` to
+process videos from hosted runners; without it, channel discovery continues but
+burn-in and publishing are skipped.

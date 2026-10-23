@@ -26,11 +26,25 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 120
     outputs:
-      video_id: ${{ steps.resolve.outputs.video_id }}
+      video_id: ${{ steps.ready.outputs.video_id }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Install YouTube and video tools
+        shell: pwsh
+        run: |
+          python -m pip install "yt-dlp[default]"
+          yt-dlp --js-runtimes deno --version
 
       - name: Resolve the latest unprocessed channel upload
         id: resolve
@@ -39,29 +53,43 @@ jobs:
         shell: pwsh
         run: ./scripts/monitoring/resolve_channel_feed.ps1
 
-      - uses: actions/setup-python@v5
-        if: steps.resolve.outputs.video_id != ''
-        with:
-          python-version: "3.12"
-
-      - uses: denoland/setup-deno@v2
-        if: steps.resolve.outputs.video_id != ''
-        with:
-          deno-version: v2.x
-
-      - name: Install YouTube and video tools
-        if: steps.resolve.outputs.video_id != ''
+      - name: Check processing credentials
+        id: ready
+        env:
+          VIDEO_ID: ${{ steps.resolve.outputs.video_id }}
+          YOUTUBE_COOKIES_B64: ${{ secrets.YOUTUBE_COOKIES_B64 }}
         shell: pwsh
         run: |
-          python -m pip install "yt-dlp[default]"
+          if ([string]::IsNullOrWhiteSpace($env:VIDEO_ID)) {
+            "video_id=" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+          if ([string]::IsNullOrWhiteSpace($env:YOUTUBE_COOKIES_B64)) {
+            Write-Warning "Found upload $env:VIDEO_ID, but YOUTUBE_COOKIES_B64 is not configured; skipping download, burn-in, and publishing."
+            "video_id=" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+          $cookiePath = Join-Path $env:RUNNER_TEMP "youtube-cookies.txt"
+          $cookieBytes = [Convert]::FromBase64String($env:YOUTUBE_COOKIES_B64)
+          if ($cookieBytes.Length -eq 0) {
+            throw "YOUTUBE_COOKIES_B64 decoded to an empty file."
+          }
+          [System.IO.File]::WriteAllBytes($cookiePath, $cookieBytes)
+          "YTDLP_COOKIES_FILE=$cookiePath" >> $env:GITHUB_ENV
+          "cookie_path=$cookiePath" >> $env:GITHUB_OUTPUT
+          "video_id=$env:VIDEO_ID" >> $env:GITHUB_OUTPUT
+
+      - name: Install FFmpeg for video burn-in
+        if: steps.ready.outputs.video_id != ''
+        shell: pwsh
+        run: |
           choco install ffmpeg --yes --no-progress
-          yt-dlp --js-runtimes deno --version
           ffmpeg -version
 
       - name: Download captions and burn them into the video
-        if: steps.resolve.outputs.video_id != ''
+        if: steps.ready.outputs.video_id != ''
         env:
-          VIDEO_ID: ${{ steps.resolve.outputs.video_id }}
+          VIDEO_ID: ${{ steps.ready.outputs.video_id }}
         shell: bash
         run: |
           set -euo pipefail
@@ -79,10 +107,10 @@ jobs:
             exit 1
           fi
       - name: Publish MP4 to the video release
-        if: steps.resolve.outputs.video_id != ''
+        if: steps.ready.outputs.video_id != ''
         env:
           GH_TOKEN: ${{ github.token }}
-          VIDEO_ID: ${{ steps.resolve.outputs.video_id }}
+          VIDEO_ID: ${{ steps.ready.outputs.video_id }}
           VIDEO_TITLE: ${{ steps.resolve.outputs.video_title }}
         id: release
         shell: bash
@@ -102,9 +130,9 @@ jobs:
           fi
 
       - name: Generate video pages and publish archive files
-        if: steps.resolve.outputs.video_id != ''
+        if: steps.ready.outputs.video_id != ''
         env:
-          VIDEO_ID: ${{ steps.resolve.outputs.video_id }}
+          VIDEO_ID: ${{ steps.ready.outputs.video_id }}
         shell: bash
         run: |
           set -euo pipefail
@@ -118,10 +146,17 @@ jobs:
           fi
 
       - name: Upload the Pages artifact
-        if: steps.resolve.outputs.video_id != ''
+        if: steps.ready.outputs.video_id != ''
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
+
+      - name: Remove temporary YouTube cookies
+        if: always() && steps.ready.outputs.cookie_path != ''
+        env:
+          COOKIE_PATH: ${{ steps.ready.outputs.cookie_path }}
+        shell: pwsh
+        run: Remove-Item -LiteralPath $env:COOKIE_PATH -Force
 
   deploy:
     needs: monitor

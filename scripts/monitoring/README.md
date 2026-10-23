@@ -14,6 +14,13 @@ video ID, generates the archive pages, and deploys the Pages artifact. It
 records an ID only after the deployment succeeds, so failed runs can retry.
 The processed ID list is `.github/state/whitehouse-processed-videos.txt`.
 
+YouTube may require authentication from hosted runners. To enable processing,
+add a repository Actions secret named `YOUTUBE_COOKIES_B64` containing the
+Base64-encoded contents of an authorized yt-dlp Netscape cookies file. Without
+the secret, the five-minute scan continues but skips download, burn-in, and
+publishing. When configured, cookies are written only to the runner's temporary
+directory and removed after the processing job.
+
 `workflow_dispatch` can reprocess the latest upload with `force_check`. Manual
 runs must target `main` to publish. The workflow requires repository permissions
 to write contents and deploy GitHub Pages.

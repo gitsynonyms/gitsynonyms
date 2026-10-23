@@ -7,6 +7,7 @@ import argparse
 import html
 import json
 import math
+import os
 import re
 import shutil
 import subprocess
@@ -1793,9 +1794,15 @@ def run_ytdlp(
     if not executable:
         raise RuntimeError("yt-dlp is not installed or is not available on PATH.")
     javascript_runtime = ["--js-runtimes", "deno"] if shutil.which("deno") else []
+    cookies_file = os.environ.get("YTDLP_COOKIES_FILE")
+    cookies_arguments = []
+    if cookies_file:
+        if not Path(cookies_file).is_file():
+            raise RuntimeError("The configured yt-dlp cookies file does not exist.")
+        cookies_arguments = ["--cookies", cookies_file]
     try:
         return subprocess.run(
-            [executable, *javascript_runtime, *args],
+            [executable, *javascript_runtime, *cookies_arguments, *args],
             check=True,
             capture_output=not show_progress,
             text=True,

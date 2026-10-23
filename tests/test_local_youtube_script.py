@@ -459,6 +459,38 @@ def test_ytdlp_uses_deno_runtime_when_available(monkeypatch):
     assert captured[0][0][:3] == ["yt-dlp.exe", "--js-runtimes", "deno"]
 
 
+def test_ytdlp_uses_configured_cookies_file(monkeypatch, tmp_path):
+    captured = []
+    cookies = tmp_path / "youtube-cookies.txt"
+    cookies.write_text("# Netscape HTTP Cookie File\n", encoding="utf-8")
+
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda name: f"{name}.exe")
+    monkeypatch.setattr(
+        youtube_srt.subprocess,
+        "run",
+        lambda command, **kwargs: captured.append((command, kwargs))
+        or subprocess.CompletedProcess(command, 0, "{}", ""),
+    )
+    monkeypatch.setenv("YTDLP_COOKIES_FILE", str(cookies))
+
+    youtube_srt.run_ytdlp(["--dump-single-json", "https://youtu.be/IySF_8OArvw"])
+
+    command = captured[0][0]
+    assert command[command.index("--cookies") + 1] == str(cookies)
+
+
+def test_ytdlp_rejects_missing_configured_cookies_file(monkeypatch, tmp_path):
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda name: f"{name}.exe")
+    monkeypatch.setenv("YTDLP_COOKIES_FILE", str(tmp_path / "missing-cookies.txt"))
+
+    try:
+        youtube_srt.run_ytdlp(["--dump-single-json", "https://youtu.be/IySF_8OArvw"])
+    except RuntimeError as error:
+        assert "cookies file does not exist" in str(error)
+    else:
+        raise AssertionError("Expected missing configured cookies file to fail")
+
+
 def test_merge_preserves_source_caption_text_verbatim():
     chinese = youtube_srt.parse_srt(
         "4\n00:00:01,230 --> 00:00:02,340\n  <b>Source &amp; markup</b>  \n\n"
