@@ -4,9 +4,11 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import html
 import json
 import math
+import os
 import re
 import shutil
 import subprocess
@@ -261,6 +263,10 @@ def _single_caption_line(text: str) -> str:
     return separator.join(lines)
 
 
+def _caption_identity(text: str) -> str:
+    return re.sub(r"\s+", " ", text).strip()
+
+
 def _pair_same_end_cues(
     first: Sequence[dict], second: Sequence[dict]
 ) -> tuple[list[tuple[dict, dict]], list[dict], list[dict]]:
@@ -350,7 +356,14 @@ def align_and_merge(
     for index, segment in enumerate(segments, 1):
         start = format_timestamp(segment["start"])
         end = format_timestamp(segment["end"])
-        text = "\n".join(line for line in (segment["top"], segment["bottom"]) if line)
+        captions = [
+            line for line in (segment["top"], segment["bottom"]) if line
+        ]
+        if len(captions) == 2 and _caption_identity(captions[0]) == _caption_identity(
+            captions[1]
+        ):
+            captions.pop()
+        text = "\n".join(captions)
         blocks.append(f"{index}\n{start} --> {end}\n{text}")
     return "\n\n".join(blocks) + "\n"
 
@@ -1271,10 +1284,7 @@ def build_ass(
 
 
 def write_ass(path: Path, content: str) -> None:
-    if "[V4+ Styles]" not in content or "[Events]" not in content:
-        raise ValueError("Generated ASS is missing styles or events.")
-    if not re.search(r"(?m)^Dialogue: ", content):
-        raise ValueError("Generated ASS contains no subtitle events.")
+    validate_ass(content)
     path.write_text(content, encoding="utf-8-sig", newline="")
 
 
@@ -1302,6 +1312,139 @@ def validate_srt(content: str) -> int:
         if not any(line.strip() for line in lines[2:]):
             raise ValueError(f"Generated SRT cue {expected_number} has no caption text.")
     return len(blocks)
+
+
+def validate_ass(content: str, *, video_duration: float | None = None) -> int:
+    if "[V4+ Styles]" not in content or "[Events]" not in content:
+        raise ValueError("Generated ASS is missing styles or events.")
+    timestamp = re.compile(r"^\d+:\d{2}:\d{2}\.\d{2}$")
+    events = [
+        line for line in content.splitlines()
+        if line.startswith("Dialogue: ")
+    ]
+    if not events:
+        raise ValueError("Generated ASS contains no subtitle events.")
+    for index, line in enumerate(events, 1):
+        fields = line.removeprefix("Dialogue: ").split(",", 9)
+        if len(fields) != 10:
+            raise ValueError(f"Generated ASS event {index} has invalid fields.")
+        start_text, end_text = fields[1:3]
+        if not timestamp.fullmatch(start_text) or not timestamp.fullmatch(end_text):
+            raise ValueError(f"Generated ASS event {index} has an invalid timestamp.")
+        start = ass_timestamp_to_seconds(start_text)
+        end = ass_timestamp_to_seconds(end_text)
+        if end <= start:
+            raise ValueError(f"Generated ASS event {index} has an invalid time range.")
+        if video_duration is not None and end > video_duration + 0.01:
+            raise ValueError(f"Generated ASS event {index} exceeds the video duration.")
+        if not fields[9].strip():
+            raise ValueError(f"Generated ASS event {index} has no text or drawing.")
+    return len(events)
+
+
+def ass_timestamp_to_seconds(value: str) -> float:
+    hours, minutes, seconds = value.split(":")
+    whole_seconds, centiseconds = seconds.split(".")
+    return (
+        int(hours) * 3600
+        + int(minutes) * 60
+        + int(whole_seconds)
+        + int(centiseconds) / 100
+    )
+
+
+def validate_srt_vtt_pair(srt_content: str, vtt_content: str) -> int:
+    srt_cues = parse_srt(srt_content)
+    vtt_cues = parse_vtt(vtt_content)
+    if len(srt_cues) != len(vtt_cues):
+        raise ValueError("Generated SRT and WebVTT cue counts do not match.")
+    for index, (srt_cue, vtt_cue) in enumerate(zip(srt_cues, vtt_cues), 1):
+        if (
+            round(srt_cue["start"] * 1000) != round(vtt_cue["start"] * 1000)
+            or round(srt_cue["end"] * 1000) != round(vtt_cue["end"] * 1000)
+            or srt_cue["text"] != vtt_cue["text"]
+        ):
+            raise ValueError(
+                f"Generated SRT and WebVTT cue {index} do not match to the millisecond."
+            )
+    return len(srt_cues)
+
+
+def validate_source_tracks(
+    tracks: Sequence[tuple[Path, Sequence[dict]]], *, video_duration: float
+) -> None:
+    for path, parsed_cues in tracks:
+        if not path.is_file():
+            raise ValueError(f"Downloaded subtitle source is missing: {path}")
+        actual_cues = parse_vtt(path.read_text(encoding="utf-8-sig"))
+        if len(actual_cues) != len(parsed_cues):
+            raise ValueError(f"Subtitle source changed after download: {path}")
+        for index, cue in enumerate(actual_cues, 1):
+            parsed = parsed_cues[index - 1]
+            if (
+                round(cue["start"] * 1000) != round(parsed["start"] * 1000)
+                or round(cue["end"] * 1000) != round(parsed["end"] * 1000)
+                or cue["text"] != parsed["text"]
+            ):
+                raise ValueError(f"Subtitle source cue {index} changed after download: {path}")
+            if cue["start"] >= video_duration + 0.5 or cue["end"] > video_duration + 0.5:
+                raise ValueError(f"Subtitle source cue {index} exceeds the video duration: {path}")
+
+
+def write_source_manifest(
+    path: Path,
+    *,
+    metadata: dict,
+    tracks: Sequence[tuple[str, str, Path, Sequence[dict]]],
+) -> None:
+    source_track_records = []
+    for language, track_kind, track_path, cues in tracks:
+        source_track_records.append(
+            {
+                "language": language,
+                "track_kind": track_kind,
+                "file": track_path.name,
+                "cue_count": len(cues),
+                "sha256": hashlib.sha256(track_path.read_bytes()).hexdigest(),
+            }
+        )
+    manifest = {
+        "source": "yt-dlp",
+        "video": {
+            "id": metadata["id"],
+            "title": metadata.get("title"),
+            "upload_date": metadata.get("upload_date"),
+            "duration_seconds": metadata["duration"],
+            "language": metadata.get("language"),
+        },
+        "available_subtitle_tracks": {
+            "manual": sorted(metadata.get("subtitles", {})),
+            "automatic": sorted(metadata.get("automatic_captions", {})),
+        },
+        "downloaded_subtitle_sources": source_track_records,
+        "timing_precision": {
+            "source_vtt_srt": "milliseconds",
+            "ass": "centiseconds (10 milliseconds), as required by the ASS timestamp format",
+        },
+    }
+    serialized = json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
+    path.write_text(serialized, encoding="utf-8", newline="")
+    written = json.loads(path.read_text(encoding="utf-8"))
+    if written.get("video", {}).get("id") != metadata.get("id"):
+        raise OSError(f"Source metadata JSON failed validation after writing: {path}")
+    written_tracks = written.get("downloaded_subtitle_sources", [])
+    if len(written_tracks) != len(tracks):
+        raise OSError(f"Subtitle source manifest failed validation after writing: {path}")
+    for record, (language, track_kind, track_path, cues) in zip(written_tracks, tracks):
+        source_hash = hashlib.sha256(track_path.read_bytes()).hexdigest()
+        if (
+            record.get("language") != language
+            or record.get("track_kind") != track_kind
+            or record.get("file") != track_path.name
+            or record.get("cue_count") != len(cues)
+            or record.get("sha256") != source_hash
+        ):
+            raise OSError(f"Subtitle source manifest entry failed validation: {track_path}")
 
 
 def srt_to_vtt(content: str) -> str:
@@ -1360,9 +1503,24 @@ def run_ytdlp(
     if not executable:
         raise RuntimeError("yt-dlp is not installed or is not available on PATH.")
     javascript_runtime = ["--js-runtimes", "deno"] if shutil.which("deno") else []
+    proxy = next(
+        (
+            os.environ[name]
+            for name in (
+                "YTDLP_PROXY",
+                "HTTPS_PROXY",
+                "https_proxy",
+                "HTTP_PROXY",
+                "http_proxy",
+            )
+            if os.environ.get(name)
+        ),
+        None,
+    )
+    proxy_args = ["--proxy", proxy] if proxy else []
     try:
         return subprocess.run(
-            [executable, *javascript_runtime, *args],
+            [executable, *javascript_runtime, *proxy_args, *args],
             check=True,
             capture_output=not show_progress,
             text=True,
@@ -1371,6 +1529,8 @@ def run_ytdlp(
         )
     except subprocess.CalledProcessError as error:
         details = (error.stderr or error.stdout or str(error)).strip()
+        if proxy:
+            details = details.replace(proxy, "[configured proxy]")
         message = f"yt-dlp failed: {details}" if details else f"yt-dlp exited with code {error.returncode}."
         raise RuntimeError(message) from error
 
@@ -1449,6 +1609,7 @@ def burn_ass_into_video(
     *,
     video_encoder: str = "libx264",
     global_quality: int = 18,
+    expected_duration: float | None = None,
 ) -> None:
     executable = shutil.which("ffmpeg")
     if not executable:
@@ -1496,6 +1657,48 @@ def burn_ass_into_video(
     except subprocess.CalledProcessError as error:
         details = (error.stderr or error.stdout or str(error)).strip()
         raise RuntimeError(f"ffmpeg failed to burn in subtitles: {details}") from error
+    if not output_path.is_file() or output_path.stat().st_size == 0:
+        raise RuntimeError(f"ffmpeg did not produce a non-empty video: {output_path}")
+    probe = shutil.which("ffprobe")
+    if not probe:
+        raise RuntimeError("ffprobe is required to validate the burned video.")
+    try:
+        result = subprocess.run(
+            [
+                probe,
+                "-v",
+                "error",
+                "-show_entries",
+                "format=duration:stream=codec_type",
+                "-of",
+                "json",
+                str(output_path),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        probe_metadata = json.loads(result.stdout)
+    except (OSError, subprocess.CalledProcessError, json.JSONDecodeError) as error:
+        details = getattr(error, "stderr", None) or str(error)
+        raise RuntimeError(f"ffprobe failed to validate the burned video: {details}") from error
+    streams = probe_metadata.get("streams", [])
+    duration_value = probe_metadata.get("format", {}).get("duration")
+    try:
+        duration = float(duration_value)
+    except (TypeError, ValueError):
+        duration = math.nan
+    if not any(stream.get("codec_type") == "video" for stream in streams):
+        raise RuntimeError(f"Burned output contains no video stream: {output_path}")
+    if not math.isfinite(duration) or duration <= 0:
+        raise RuntimeError(f"Burned output has no valid duration: {output_path}")
+    if expected_duration is not None and abs(duration - expected_duration) > 0.5:
+        raise RuntimeError(
+            f"Burned output duration ({duration:.3f}s) differs from the source "
+            f"({expected_duration:.3f}s) by more than 0.5 seconds."
+        )
 
 
 def safe_name(value: str) -> str:
@@ -1613,6 +1816,10 @@ def main(argv: list[str] | None = None) -> int:
         metadata = json.loads(
             run_ytdlp(["--no-warnings", "--skip-download", "--dump-single-json", args.url]).stdout
         )
+        if not isinstance(metadata, dict) or metadata.get("id") != video_id:
+            raise ValueError(
+                f"YouTube JSON metadata does not match the requested video ID {video_id}."
+            )
         video_duration = metadata.get("duration")
         if (
             not isinstance(video_duration, (int, float))
@@ -1669,9 +1876,22 @@ def main(argv: list[str] | None = None) -> int:
             subtitle_wait(first_code, args.sleep_subtitles),
         )
 
+        validate_source_tracks(
+            ((first_path, first), (second_path, second)),
+            video_duration=video_duration,
+        )
         print("Step 4/5: Merging the unchanged downloaded tracks...", flush=True)
         combined_kind = f"{first_kind}+{second_kind}"
         output_stem = f"{combined_kind}_Bilingual_{first_code}-{second_code}"
+        manifest_output = folder / f"{output_stem}.json"
+        write_source_manifest(
+            manifest_output,
+            metadata=metadata,
+            tracks=(
+                (first_code, first_kind, first_path, first),
+                (second_code, second_kind, second_path, second),
+            ),
+        )
         merged_srt = align_and_merge(first, second)
         output = folder / f"{output_stem}.srt"
         write_srt(output, merged_srt)
@@ -1702,10 +1922,17 @@ def main(argv: list[str] | None = None) -> int:
             ),
         )
         print("Step 5/6: Validating generated subtitle files...", flush=True)
-        cue_count = validate_srt(output.read_text(encoding="utf-8-sig"))
+        written_srt = output.read_text(encoding="utf-8-sig")
+        written_vtt = vtt_output.read_text(encoding="utf-8")
+        cue_count = validate_srt_vtt_pair(written_srt, written_vtt)
+        ass_event_count = validate_ass(
+            ass_output.read_text(encoding="utf-8-sig"),
+            video_duration=video_duration,
+        )
         print(f"  OK: {output.name} ({cue_count} cues)", flush=True)
         print(f"  OK: {vtt_output.name} (WebVTT)", flush=True)
-        print(f"  OK: {ass_output.name} (ASS styles: Chinese above English)", flush=True)
+        print(f"  OK: {ass_output.name} ({ass_event_count} ASS events)", flush=True)
+        print(f"  OK: {manifest_output.name} (JSON provenance + source hashes)", flush=True)
         if args.burn_in:
             print("Step 6/6: Downloading the video and burning in the ASS subtitles...", flush=True)
             source_video = download_video(args.url, video_id, folder)
@@ -1716,8 +1943,9 @@ def main(argv: list[str] | None = None) -> int:
                 burned_output,
                 video_encoder=args.video_encoder,
                 global_quality=args.global_quality,
+                expected_duration=video_duration,
             )
-            print(f"  OK: {burned_output.name}", flush=True)
+            print(f"  OK: {burned_output.name} (ffprobe video stream and duration verified)", flush=True)
         else:
             print("Step 6/6: Video burn-in skipped; pass --burn-in to render a subtitled MP4.", flush=True)
         print("Original downloaded subtitles were left untouched:", flush=True)
@@ -1727,6 +1955,7 @@ def main(argv: list[str] | None = None) -> int:
         print(output.resolve())
         print(vtt_output.resolve())
         print(ass_output.resolve())
+        print(manifest_output.resolve())
         if args.burn_in:
             print(burned_output.resolve())
         return 0

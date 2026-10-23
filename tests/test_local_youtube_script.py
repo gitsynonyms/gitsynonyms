@@ -28,6 +28,41 @@ def test_parse_and_merge_srt_chinese_above_english():
     assert youtube_srt.validate_srt(result) == 1
 
 
+def test_merge_does_not_repeat_identical_caption_from_both_tracks():
+    first = youtube_srt.parse_srt("1\n00:00:01,000 --> 00:00:02,000\nSame caption\n\n")
+    second = youtube_srt.parse_srt("1\n00:00:01,000 --> 00:00:02,000\nSame caption\n\n")
+
+    result = youtube_srt.align_and_merge(first, second)
+
+    assert result == (
+        "1\n00:00:01,000 --> 00:00:02,000\nSame caption\n"
+    )
+
+
+def test_generated_srt_and_vtt_keep_millisecond_timings_in_sync():
+    srt = "1\n00:00:01,237 --> 00:00:02,891\nCaption\n"
+    vtt = "WEBVTT\n\n1\n00:00:01.237 --> 00:00:02.891\nCaption\n"
+
+    assert youtube_srt.validate_srt_vtt_pair(srt, vtt) == 1
+    try:
+        youtube_srt.validate_srt_vtt_pair(
+            srt,
+            "WEBVTT\n\n1\n00:00:01.230 --> 00:00:02.891\nCaption\n",
+        )
+    except ValueError as error:
+        assert "do not match to the millisecond" in str(error)
+    else:
+        raise AssertionError("Expected a one-millisecond timing mismatch to fail")
+
+
+def test_ass_validation_enforces_centisecond_timing_and_video_duration():
+    cues = youtube_srt.parse_srt("1\n00:00:01,237 --> 00:00:02,891\nCaption\n\n")
+    ass = youtube_srt.build_ass(cues, cues, video_duration=3)
+
+    assert youtube_srt.validate_ass(ass, video_duration=3) == 3
+    assert youtube_srt.ass_timestamp(1.237) == "0:00:01.24"
+
+
 def test_ass_uses_chinese_above_english_with_chinese_1_2x_size():
     chinese = youtube_srt.parse_srt(
         "1\n00:00:01,000 --> 00:00:02,000\n你好\n\n"
@@ -385,11 +420,24 @@ def test_burn_in_uses_ass_filter_and_copies_audio(monkeypatch, tmp_path):
     output = tmp_path / "burned.mp4"
     video.touch()
     ass.touch()
-    monkeypatch.setattr(youtube_srt.shutil, "which", lambda _: "ffmpeg.exe")
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda name: f"{name}.exe")
+
+    def fake_run(command, **kwargs):
+        calls.append((command, kwargs))
+        if command[0] == "ffmpeg.exe":
+            Path(command[-1]).write_bytes(b"mp4")
+            return subprocess.CompletedProcess(command, 0, "", "")
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            '{"streams":[{"codec_type":"video"}],"format":{"duration":"2"}}',
+            "",
+        )
+
     monkeypatch.setattr(
         youtube_srt.subprocess,
         "run",
-        lambda command, **kwargs: calls.append((command, kwargs)),
+        fake_run,
     )
 
     youtube_srt.burn_ass_into_video(video, ass, output)
@@ -410,11 +458,24 @@ def test_qsv_burn_in_uses_requested_one_line_ffmpeg_quality_options(monkeypatch,
     video, ass, output = (tmp_path / name for name in ("source.mp4", "captions.ass", "burned.mp4"))
     video.touch()
     ass.touch()
-    monkeypatch.setattr(youtube_srt.shutil, "which", lambda _: "ffmpeg.exe")
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda name: f"{name}.exe")
+
+    def fake_run(command, **kwargs):
+        calls.append(command)
+        if command[0] == "ffmpeg.exe":
+            Path(command[-1]).write_bytes(b"mp4")
+            return subprocess.CompletedProcess(command, 0, "", "")
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            '{"streams":[{"codec_type":"video"}],"format":{"duration":"2"}}',
+            "",
+        )
+
     monkeypatch.setattr(
         youtube_srt.subprocess,
         "run",
-        lambda command, **kwargs: calls.append(command),
+        fake_run,
     )
 
     youtube_srt.burn_ass_into_video(
@@ -425,6 +486,7 @@ def test_qsv_burn_in_uses_requested_one_line_ffmpeg_quality_options(monkeypatch,
     assert command[command.index("-c:v") + 1] == "h264_qsv"
     assert command[command.index("-global_quality") + 1] == "1"
     assert command[command.index("-c:a") + 1] == "copy"
+    assert len(calls) == 2
 
 
 def test_ass_caption_box_is_embedded_and_opacity_is_validated():
@@ -457,6 +519,34 @@ def test_ytdlp_uses_deno_runtime_when_available(monkeypatch):
     youtube_srt.run_ytdlp(["--dump-single-json", "https://youtu.be/IySF_8OArvw"])
 
     assert captured[0][0][:3] == ["yt-dlp.exe", "--js-runtimes", "deno"]
+
+
+def test_ytdlp_uses_configured_proxy_without_exposing_it_on_errors(monkeypatch):
+    proxy = "http://proxy-user:proxy-password@proxy.example:8080"
+    captured = []
+
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda name: f"{name}.exe")
+    monkeypatch.setenv("YTDLP_PROXY", proxy)
+
+    def fail(command, **kwargs):
+        captured.append(command)
+        raise subprocess.CalledProcessError(
+            1,
+            command,
+            stderr=f"Could not connect to {proxy}",
+        )
+
+    monkeypatch.setattr(youtube_srt.subprocess, "run", fail)
+
+    try:
+        youtube_srt.run_ytdlp(["--dump-single-json", "https://youtu.be/IySF_8OArvw"])
+    except RuntimeError as error:
+        assert proxy not in str(error)
+        assert "[configured proxy]" in str(error)
+    else:
+        raise AssertionError("Expected the yt-dlp failure to be reported")
+
+    assert captured[0][captured[0].index("--proxy") + 1] == proxy
 
 
 def test_merge_preserves_source_caption_text_verbatim():
@@ -967,10 +1057,16 @@ def test_main_preserves_raw_tracks_and_merges_original_caption_content(monkeypat
         for line in output_lines
         if line.startswith(str(tmp_path)) and "_Bilingual_" in line and line.endswith(".ass")
     ]
+    json_paths = [
+        Path(line)
+        for line in output_lines
+        if line.startswith(str(tmp_path)) and "_Bilingual_" in line and line.endswith(".json")
+    ]
     assert len(source_paths) == 2
     assert len(bilingual_paths) == 1
     assert len(bilingual_vtt_paths) == 1
     assert len(ass_paths) == 1
+    assert len(json_paths) == 1
     raw_files = {path.name.split(".")[-2]: path for path in source_paths}
     assert raw_files["en-orig"].read_bytes() == original_bytes["en-orig"]
     assert raw_files["zh-Hans"].read_bytes() == original_bytes["zh-Hans"]
@@ -983,6 +1079,11 @@ def test_main_preserves_raw_tracks_and_merges_original_caption_content(monkeypat
     assert "<b>你好</b>\n<i>Hello & welcome</i>" in bilingual_vtt
     assert downloaded_languages == [("en-orig", "0"), ("zh-Hans", "56")]
     assert "Style: Chinese,Microsoft YaHei,57.6," in ass_paths[0].read_text(encoding="utf-8-sig")
+    manifest = json.loads(json_paths[0].read_text(encoding="utf-8"))
+    assert manifest["video"]["id"] == "IySF_8OArvw"
+    assert len(manifest["downloaded_subtitle_sources"]) == 2
+    assert all(len(track["sha256"]) == 64 for track in manifest["downloaded_subtitle_sources"])
+    assert all("url" not in track for track in manifest["downloaded_subtitle_sources"])
 
 
 def test_main_rejects_missing_video_duration_for_persistent_box(monkeypatch, capsys):

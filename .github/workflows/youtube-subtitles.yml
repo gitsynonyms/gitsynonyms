@@ -127,8 +127,11 @@ jobs:
       - name: Install FFmpeg for video burn-in
         if: ${{ inputs.burn_in }}
         shell: pwsh
-        run: choco install ffmpeg --yes --no-progress
-      - name: Download and organize subtitle tracks
+        run: |
+          choco install ffmpeg --yes --no-progress
+          ffmpeg -version
+          ffprobe -version
+      - name: Acquire JSON metadata and VTT tracks, validate, render, and burn in
         env:
           YOUTUBE_SOURCE: ${{ inputs.source }}
           EVENT_TITLE: ${{ inputs.event }}
@@ -149,6 +152,7 @@ jobs:
           BOX_Y: ${{ inputs.box_y }}
           BOX_WIDTH: ${{ inputs.box_width }}
           BOX_HEIGHT: ${{ inputs.box_height }}
+          YTDLP_PROXY: ${{ secrets.YTDLP_PROXY }}
         shell: bash
         run: |
           source="$YOUTUBE_SOURCE"
