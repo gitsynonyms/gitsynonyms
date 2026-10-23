@@ -15,11 +15,15 @@ artifact. It records the source only after the deployment succeeds, so failed
 runs can retry.
 
 The scheduled job tries direct access first, then a configured private
-`YTDLP_PROXY` secret, followed by at most three responsive candidates selected
-from three public proxy lists. The list fetch and connectivity checks run once
-per workflow invocation. Public proxies are untrusted and can observe
-connection metadata; never send cookies or credentials through them. Manual
-video runs can set `video_url` to process a specific White House video.
+`YTDLP_PROXY` secret, followed by at most three proxies re-verified against the
+video being downloaded. Those candidates come from the published full list²
+scan (`proxyindex/top10.json`, refreshed hourly by `.github/workflows/proxy-scan.yml`)
+instead of a hand-picked shortlist; the three legacy public lists are only a
+fallback when the scan has published nothing. Scan results younger than one hour
+are reused, so the selector does not re-crawl on every five-minute invocation.
+Public proxies are untrusted and can observe connection metadata; never send
+cookies or credentials through them. Manual video runs can set `video_url` to
+process a specific White House video.
 
 Successfully deployed sources are recorded as platform-neutral JSONL entries
 in `.github/state/whitehouse-processed-videos.txt`. Records include the source

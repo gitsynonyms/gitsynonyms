@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Fetch and probe a bounded set of public HTTP proxies for YouTube downloads."""
+"""Pick the fastest verified proxy from the full list² scan for yt-dlp.
+
+The selector no longer samples three hand-picked lists.  It consumes the
+published result of ``proxyindex/full_scan.py`` -- which enumerates the whole
+Chinese/English query matrix, expands every repository x file pattern source,
+probes every candidate and publishes a top ten -- and re-probes those candidates
+against the exact YouTube video that is about to be downloaded.  When no fresh
+scan exists it runs one (bounded by a time budget) before selecting.
+"""
 
 from __future__ import annotations
 
@@ -16,6 +24,8 @@ import urllib.parse
 import urllib.request
 import uuid
 from collections.abc import Callable
+from datetime import datetime, timezone
+from pathlib import Path
 
 
 PROXY_LISTS = {
@@ -28,6 +38,11 @@ FETCH_TIMEOUT_SECONDS = 12
 PROBE_TIMEOUT_SECONDS = 4
 MAX_CANDIDATES_PER_SOURCE = 10
 MAX_SELECTED_PROXIES = 3
+INDEX_DIR = Path(__file__).resolve().parents[1] / "proxyindex"
+FULL_SCAN_SCRIPT = INDEX_DIR / "full_scan.py"
+FULL_SCAN_TTL_SECONDS = 3600.0
+FULL_SCAN_BUDGET_SECONDS = 900.0
+MAX_INDEX_CANDIDATES = 40
 MAX_WORKERS = 15
 MAX_PLAYER_RESPONSE_BYTES = 4_000_000
 IP_PORT_PATTERN = re.compile(r"^(?:https?://)?(\d{1,3}(?:\.\d{1,3}){3}):(\d{1,5})/?$")
@@ -194,20 +209,132 @@ def write_github_env(name: str, value: str, env_file: str) -> None:
         output.write(f"{name}<<{delimiter}\n{value}\n{delimiter}\n")
 
 
+def index_scan_is_fresh(index_dir: Path, ttl_seconds: float, now: datetime | None = None) -> bool:
+    try:
+        state = json.loads((index_dir / "scan-state.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    try:
+        finished = datetime.fromisoformat(
+            str(state.get("finished_at") or "").replace("Z", "+00:00")
+        )
+    except ValueError:
+        return False
+    moment = now or datetime.now(timezone.utc)
+    return (moment - finished).total_seconds() <= max(0.0, ttl_seconds)
+
+
+def load_index_candidates(
+    index_dir: Path = INDEX_DIR, limit: int = MAX_INDEX_CANDIDATES
+) -> list[str]:
+    """Candidates from the published full scan, fastest first."""
+    candidates: list[str] = []
+    try:
+        payload = json.loads((index_dir / "top10.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        payload = {}
+    entries = payload.get("top") or []
+    for entry in entries:
+        value = entry.get("proxy") if isinstance(entry, dict) else entry
+        normalized = normalize_candidate(str(value or ""))
+        if normalized and normalized not in candidates:
+            candidates.append(normalized)
+        if len(candidates) >= limit:
+            return candidates
+    if candidates:
+        return candidates
+    for line in _read_index_lines(index_dir / "alive_http.txt"):
+        normalized = normalize_candidate(line)
+        if normalized and normalized not in candidates:
+            candidates.append(normalized)
+        if len(candidates) >= limit:
+            break
+    return candidates
+
+
+def _read_index_lines(path: Path) -> list[str]:
+    try:
+        return path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return []
+
+
+def ensure_full_scan(
+    *,
+    index_dir: Path = INDEX_DIR,
+    mode: str = "full",
+    ttl_seconds: float = FULL_SCAN_TTL_SECONDS,
+    budget_seconds: float = FULL_SCAN_BUDGET_SECONDS,
+    runner=None,
+    now: datetime | None = None,
+) -> dict:
+    """Run the fixed full-scan flow unless a fresh result already exists."""
+    result = {"mode": mode, "ran": False, "status": "cached", "detail": ""}
+    if mode == "off":
+        result["status"] = "off"
+        return result
+    if mode == "auto" and index_scan_is_fresh(index_dir, ttl_seconds, now=now):
+        return result
+    script = index_dir / "full_scan.py"
+    if not script.is_file():
+        result.update(status="unavailable", detail=f"missing {script}")
+        return result
+    command = [
+        sys.executable,
+        str(script),
+        "scan",
+        "--index-dir",
+        str(index_dir),
+        "--budget-seconds",
+        str(budget_seconds),
+        "--quiet",
+    ]
+    (runner or _run_scan_command)(command)
+    result.update(ran=True, status="scanned")
+    return result
+
+
+def _run_scan_command(command: list[str]) -> None:
+    import subprocess
+
+    completed = subprocess.run(
+        command, capture_output=True, text=True, encoding="utf-8", timeout=None
+    )
+    if completed.returncode != 0:
+        raise RuntimeError((completed.stderr or completed.stdout).strip()[-300:])
+
+
 def main() -> int:
     env_file = os.environ.get("GITHUB_ENV")
     if not env_file:
         print("GITHUB_ENV is not set; run this selector inside GitHub Actions.", file=sys.stderr)
         return 1
     try:
-        candidates = fetch_candidates()
+        scan_mode = os.environ.get("PROXY_SCAN_MODE", "full").strip().lower()
+        scan_budget = float(os.environ.get("PROXY_SCAN_BUDGET", FULL_SCAN_BUDGET_SECONDS))
+        index_dir = Path(os.environ.get("PROXY_INDEX_DIR", INDEX_DIR))
+        scan = ensure_full_scan(
+            index_dir=index_dir,
+            mode="auto" if scan_mode in {"auto", "cached"} else scan_mode,
+            budget_seconds=scan_budget,
+        )
+        candidates = load_index_candidates(index_dir)
+        if not candidates and scan_mode != "bounded":
+            print(
+                "::warning::the full scan published no verified proxy; "
+                "falling back to the bounded public lists",
+                file=sys.stderr,
+            )
+            candidates = fetch_candidates()
+        if not candidates:
+            candidates = fetch_candidates()
         probe_url = os.environ.get("PROBE_VIDEO_URL", "").strip()
         video_id = youtube_video_id(probe_url) if probe_url else None
         selected, source_counts = select_proxies(candidates, video_id=video_id)
         private_proxy = os.environ.get("YTDLP_PROXY", "").strip()
         ordered = ([private_proxy] if private_proxy else []) + selected
         if not ordered:
-            print("No proxy passed the bounded YouTube HTTPS probes; direct downloads remain enabled.")
+            print("No proxy passed the YouTube HTTPS probes; direct downloads remain enabled.")
         write_github_env("YTDLP_PROXY_POOL_JSON", json.dumps(ordered), env_file)
     except (OSError, RuntimeError, ValueError) as error:
         print(f"::error::{error}", file=sys.stderr)
@@ -217,9 +344,9 @@ def main() -> int:
         f"{source}: {count}" for source, count in source_counts.items()
     )
     print(
-        f"Proxy lists checked: {len(candidates)}; candidate cap: "
-        f"{MAX_CANDIDATES_PER_SOURCE} per source; selected public proxies: "
-        f"{len(selected)}; probe target: "
+        f"Proxy scan: {scan['status']}"
+        f"{' (ran)' if scan.get('ran') else ''}; candidates checked: "
+        f"{len(candidates)}; selected public proxies: {len(selected)}; probe target: "
         f"{video_id or 'generic YouTube connectivity'}; "
         f"top-proxy source counts: {source_summary}."
     )

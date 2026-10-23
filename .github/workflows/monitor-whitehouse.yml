@@ -65,10 +65,13 @@ jobs:
           python -m pip install "yt-dlp[default]"
           yt-dlp --js-runtimes deno --version
 
-      - name: Fetch and probe a bounded public proxy set
+      - name: Load the fastest proxy from the full list² scan
         env:
           YTDLP_PROXY: ${{ secrets.YTDLP_PROXY }}
           PROBE_VIDEO_URL: ${{ inputs.video_url }}
+          PROXY_SCAN_MODE: auto
+          PROXY_SCAN_BUDGET: "600"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python scripts/select_public_ytdlp_proxies.py
 
       - name: Resolve the latest unprocessed channel upload

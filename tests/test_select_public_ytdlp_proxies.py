@@ -2,6 +2,7 @@ import importlib.util
 from pathlib import Path
 import json
 import urllib.error
+from datetime import datetime, timezone
 
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "select_public_ytdlp_proxies.py"
@@ -172,3 +173,72 @@ def test_write_github_env_stores_json_as_one_value(tmp_path):
     assert lines[0].startswith("YTDLP_PROXY_POOL_JSON<<GH_ENV_")
     assert lines[1] == '["http://192.0.2.1:8080","http://192.0.2.2:8080"]'
     assert lines[2] == lines[0].removeprefix("YTDLP_PROXY_POOL_JSON<<")
+
+
+# ---------------------------------------------------------------------------
+# Full list² scan integration
+# ---------------------------------------------------------------------------
+
+
+def test_load_index_candidates_reads_the_published_top_ten_in_speed_order(tmp_path):
+    index = tmp_path / "proxyindex"
+    index.mkdir()
+    (index / "top10.json").write_text(
+        json.dumps(
+            {
+                "top": [
+                    {"proxy": "http://203.0.113.2:80", "latency_ms": 10},
+                    {"proxy": "203.0.113.1:80", "latency_ms": 20},
+                    {"proxy": "http://203.0.113.2:80", "latency_ms": 30},
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert proxy_selector.load_index_candidates(index) == [
+        "http://203.0.113.2:80",
+        "http://203.0.113.1:80",
+    ]
+
+
+def test_load_index_candidates_falls_back_to_the_alive_list(tmp_path):
+    index = tmp_path / "proxyindex"
+    index.mkdir()
+    (index / "alive_http.txt").write_text(
+        "203.0.113.7:3128\n\nnot-a-proxy\n", encoding="utf-8"
+    )
+    assert proxy_selector.load_index_candidates(index) == ["http://203.0.113.7:3128"]
+
+
+def test_ensure_full_scan_reuses_a_fresh_result_and_runs_a_stale_one(tmp_path):
+    index = tmp_path / "proxyindex"
+    index.mkdir()
+    (index / "full_scan.py").write_text("# stub\n", encoding="utf-8")
+    (index / "scan-state.json").write_text(
+        json.dumps({"finished_at": "2026-01-01T00:00:00Z"}), encoding="utf-8"
+    )
+    now = datetime(2026, 1, 1, 0, 30, tzinfo=timezone.utc)
+
+    def never(_command):
+        raise AssertionError("a fresh scan must not run")
+
+    fresh = proxy_selector.ensure_full_scan(
+        index_dir=index, mode="auto", runner=never, now=now
+    )
+    assert fresh["status"] == "cached" and fresh["ran"] is False
+
+    calls = []
+    stale = proxy_selector.ensure_full_scan(
+        index_dir=index,
+        mode="full",
+        budget_seconds=30,
+        runner=lambda command: calls.append(command),
+        now=now,
+    )
+    assert stale["ran"] is True and stale["status"] == "scanned"
+    assert calls and calls[0][2] == "scan"
+    assert "--index-dir" in calls[0]
+
+    off = proxy_selector.ensure_full_scan(index_dir=index, mode="off", runner=never)
+    assert off["status"] == "off"
+

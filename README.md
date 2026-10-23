@@ -86,7 +86,7 @@ This prefers the automatic English original (`en-orig`) and YouTube's Simplified
 
 The GitHub Actions workflow defaults to the latest White House channel upload. Run **Download YouTube subtitles** manually to resolve the channel's latest video in the cloud and upload its English, Chinese, and bilingual SRTs as a downloadable Actions artifact. YouTube requests try a direct connection first. If that fails, the downloader retries through the single authorized proxy configured as the repository Actions secret `YTDLP_PROXY`; when the secret is absent, it reports the failure instead of selecting untrusted public proxies. To run the complete archive pipeline for a specific White House video as a new upload, manually run **Monitor White House Videos** and set its `video_url` input to the video URL; for example, `https://www.youtube.com/watch?v=HEWlaWY9Qcs`. The workflow fetches and validates metadata, downloads the best available media and subtitles without cookies, burns in bilingual captions, publishes the release asset and archive page, and deploys Pages.
 
-The scheduled White House monitor runs without YouTube cookies. On each monitor run it fetches at most 10 HTTP proxy candidates from each of three public aggregate lists, probes those candidates against YouTube's HTTPS connectivity endpoint, and keeps at most the three fastest responders. Channel checks and new-video downloads try direct first, then a configured private `YTDLP_PROXY` secret (if present), then the bounded public candidates. A public candidate that fails during the actual request is skipped in favor of the next candidate. The list fetch and probe run once per five-minute workflow invocation, not once per yt-dlp request. Public proxy operators can observe the destination and timing of connections; never send cookies or credentials through these public proxies.
+The scheduled White House monitor runs without YouTube cookies. Its proxy pool now comes from the **full list² scan** (see [全量代理扫描](#全量代理扫描全量--测速--同步-main)): the scan enumerates the whole Chinese/English synonym matrix, expands every repository × conventional file path, probes every candidate and publishes the ten fastest verified proxies to `proxyindex/top10.json`. The monitor re-probes those published candidates against the exact video it is about to download, keeps the three fastest, and only falls back to the three legacy public lists when the scan has published nothing. A public candidate that fails during the actual request is skipped in favor of the next one; list fetching and probing are not repeated per yt-dlp request. Public proxy operators can observe the destination and timing of connections; never send cookies or credentials through these public proxies.
 
 Successfully deployed sources are appended to `.github/state/whitehouse-processed-videos.txt` as one JSON object per line. The ledger is platform-neutral: it records source platform and ID, channel/account, title, canonical full source URL, publication date and normalized UTC timestamp with nine fractional digits, the timestamp's actual source precision, record time, publication status, and artifact links. Nine digits provide a stable nanosecond field shape; the precision field records whether the upstream metadata was only accurate to a day, second, or finer. Existing ID-only YouTube lines remain readable and are migrated to structured entries the next time a source is recorded.
 
@@ -341,3 +341,36 @@ leaves neither a partial MP4 nor a `.part` file behind.
 不做判断、翻译或发布：把来源登记表变成一份可引用的素材底账，交给后续分析模块。
 它和下面每 5 分钟运行一次的视频监控工作流互补——监控工作流负责"发现新视频 ->
 烧字幕 -> 发布"，本模块负责回答"这条素材来自哪里、什么时候取的、内容哈希是多少、odule 2 complete: 4 offices (timing, third-party, model research, ergonomics) with full test coverage)
+
+## 全量代理扫描：全量 → 测速 → 同步 main
+
+素材获取不再从三张手写列表各取 10 个候选，而是每次运行都走同一条固化流程
+[`proxyindex/full_scan.py`](proxyindex/full_scan.py)：
+
+```text
+matrix  →  discover  →  sources  →  collect  →  probe  →  rank  →  sync
+```
+
+| 阶段 | 全量口径 |
+| --- | --- |
+| matrix | `proxyindex/query_matrix.py` 枚举中英文同义词矩阵：代理词 22 个 × 网络/协议词 55 个 × 修饰词 43 个，双向排列，加近义词、拼音主题、中英混排二元组与三元组；约 52,000 条检索式 + 32 个 topic |
+| discover | 用 `gh` 搜索 API 按游标逐条走完矩阵（30 次/分钟），游标与覆盖率写入 `discovery-state.json` |
+| sources | list² 展开：已登记文件 URL + 每个仓库 × 33 条惯用文件名，约 68,000 个来源 |
+| collect | 全量抓取并合并去重；`collect.jsonl` 记录每个来源的状态，失败按 `missing` / `error` 分别记，不伪装成空 |
+| probe | 两段探测：先给每个候选一个 TCP 结论，再对开放的端口发真实 HTTPS 请求；未探测记为 `unknown` |
+| rank | 对最快的候选立即复验一次，只发布本轮复验通过的 10 个 |
+| sync | 把 `top10.json`、`top10.txt`、`scan-report.md`、`scan-state.json` 提交并推送到云端仓库 `main` |
+
+`scripts/monitoring/acquisition.py` 在采集前自动调用该流程（`--proxy-scan auto`，
+默认复用 1 小时内的结果），`--proxy-scan full` 强制重跑，`--proxy-scan-sync` 打开
+推送。扫描失败不会阻断素材采集：上一轮 top10 继续可用，失败状态照实记录。
+
+```bash
+python proxyindex/full_scan.py scan            # 全量流程（不推送）
+python proxyindex/full_scan.py scan --sync     # 全量流程并同步 main
+python proxyindex/full_scan.py top --json      # 当前发布的 top10
+python scripts/monitoring/acquisition.py collect --proxy-scan full
+```
+
+定时执行见 `.github/workflows/proxy-scan.yml`（每小时 + 手动），巡检单元登记为
+`gh:gitsynonyms/proxy-full-scan`。

@@ -36,6 +36,7 @@ import html
 import json
 import os
 import re
+import subprocess
 import sys
 import time
 import urllib.error
@@ -51,6 +52,10 @@ from typing import Iterable, Sequence
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUT = ROOT / "output" / "materials"
+PROXY_INDEX = ROOT / "proxyindex"
+FULL_SCAN_SCRIPT = PROXY_INDEX / "full_scan.py"
+DEFAULT_PROXY_SCAN_TTL = 3600.0
+DEFAULT_PROXY_SCAN_BUDGET = 900.0
 SCHEMA = "gitsynonyms.materials/1"
 UA = "Mozilla/5.0 (compatible; gitsynonyms-acquisition/1.0)"
 
@@ -999,6 +1004,121 @@ def load_proxies(path: Path | None = None) -> tuple[str, ...]:
     return tuple(proxies)
 
 
+def proxy_scan_is_fresh(state_path: Path, ttl_seconds: float, now: datetime | None = None) -> bool:
+    """True when the last published full scan is younger than ``ttl_seconds``."""
+    try:
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    finished = str(state.get("finished_at") or "")
+    try:
+        moment = parse_moment(finished, now=now or utc_now())
+    except ValueError:
+        return False
+    age = (now or utc_now()) - moment
+    return age.total_seconds() <= max(0.0, float(ttl_seconds))
+
+
+def load_top_proxies(index_dir: Path | None = None) -> tuple[str, ...]:
+    """Read the published scan result: the fastest verified proxies."""
+    index_dir = Path(index_dir or PROXY_INDEX)
+    try:
+        payload = json.loads((index_dir / "top10.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return ()
+    entries = payload.get("list")
+    if not isinstance(entries, list):
+        entries = [
+            entry.get("proxy")
+            for entry in payload.get("top") or []
+            if isinstance(entry, dict)
+        ]
+    proxies: list[str] = []
+    for entry in entries:
+        if not isinstance(entry, str) or not entry.strip():
+            continue
+        value = entry.strip()
+        proxies.append(value if "://" in value else f"http://{value}")
+    return tuple(dict.fromkeys(proxies))
+
+
+def refresh_proxy_pool(
+    *,
+    mode: str = "auto",
+    index_dir: Path | None = None,
+    ttl_seconds: float = DEFAULT_PROXY_SCAN_TTL,
+    budget_seconds: float = DEFAULT_PROXY_SCAN_BUDGET,
+    sync: bool = False,
+    runner=None,
+    now: datetime | None = None,
+) -> dict:
+    """Run the fixed full-scan flow before acquisition and load its top list.
+
+    ``mode`` is ``off``, ``auto`` (run when the last scan is older than the TTL)
+    or ``full`` (always run).  The scan itself enumerates the whole query matrix,
+    every list-of-lists source, probes the pool and writes ``top10.json``; the
+    acquisition run then rotates those verified proxies.  A failed scan never
+    blocks material collection: the previous top list is reused and the failure
+    is reported as ``unknown`` rather than as success.
+    """
+    index_dir = Path(index_dir or PROXY_INDEX)
+    result = {
+        "mode": mode,
+        "ran": False,
+        "status": "skipped",
+        "detail": "",
+        "proxies": load_top_proxies(index_dir),
+    }
+    if mode == "off":
+        result.update(status="off", proxies=())
+        return result
+    if mode == "auto" and proxy_scan_is_fresh(
+        index_dir / "scan-state.json", ttl_seconds, now=now
+    ):
+        result["status"] = "cached" if result["proxies"] else "cached-empty"
+        return result
+    script = index_dir / "full_scan.py"
+    if not script.is_file():
+        result.update(status="unavailable", detail=f"missing {script}")
+        return result
+    command = [
+        sys.executable,
+        str(script),
+        "scan",
+        "--index-dir",
+        str(index_dir),
+        "--budget-seconds",
+        str(budget_seconds),
+        "--quiet",
+    ]
+    if sync:
+        command.append("--sync")
+    runner = runner or subprocess.run
+    try:
+        completed = runner(
+            command,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=(budget_seconds + 600 if budget_seconds > 0 else None),
+        )
+    except (OSError, subprocess.SubprocessError) as error:
+        result.update(status="error", detail=str(error)[:300])
+        return result
+    result["ran"] = True
+    if completed.returncode != 0:
+        result.update(
+            status="error",
+            detail=(completed.stderr or completed.stdout or "").strip()[-300:],
+        )
+    else:
+        result["status"] = "scanned"
+    result["proxies"] = load_top_proxies(index_dir) or result["proxies"]
+    if result["status"] == "scanned" and not result["proxies"]:
+        result["status"] = "scanned-empty"
+    return result
+
+
 def as_int(value: object) -> int:
     """Tolerate ``"620"`` and ``620.0`` from downloader metadata."""
     try:
@@ -1801,6 +1921,29 @@ def build_parser() -> argparse.ArgumentParser:
         "--download", action="store_true", help="store asset bytes under <out>/assets"
     )
     collect.add_argument("--proxy-pool", default="", help="proxy list file to rotate")
+    collect.add_argument(
+        "--proxy-scan",
+        choices=("off", "auto", "full"),
+        default="auto",
+        help="run the full list² proxy scan before collecting (default auto)",
+    )
+    collect.add_argument(
+        "--proxy-scan-ttl",
+        type=float,
+        default=DEFAULT_PROXY_SCAN_TTL,
+        help="reuse a published scan younger than this many seconds",
+    )
+    collect.add_argument(
+        "--proxy-scan-budget",
+        type=float,
+        default=DEFAULT_PROXY_SCAN_BUDGET,
+        help="time budget for the proxy scan stage",
+    )
+    collect.add_argument(
+        "--proxy-scan-sync",
+        action="store_true",
+        help="push the scan result set to the cloud repository main branch",
+    )
     collect.add_argument("--timeout", type=float, default=20, help="per-request timeout")
     collect.add_argument("--retries", type=int, default=2, help="retries per request")
     collect.add_argument("--dry-run", action="store_true", help="do not write any file")
@@ -1849,7 +1992,30 @@ def main(argv: Sequence[str] | None = None) -> int:
     except ValueError as error:
         print(f"error: invalid window: {error}", file=sys.stderr)
         return 2
-    proxies = load_proxies(Path(args.proxy_pool)) if args.proxy_pool else ()
+    proxy_scan: dict = {"status": "off", "proxies": ()}
+    if args.proxy_pool:
+        proxies = load_proxies(Path(args.proxy_pool))
+    elif args.proxy_scan != "off":
+        proxy_scan = refresh_proxy_pool(
+            mode=args.proxy_scan,
+            ttl_seconds=args.proxy_scan_ttl,
+            budget_seconds=args.proxy_scan_budget,
+            sync=args.proxy_scan_sync,
+        )
+        proxies = proxy_scan["proxies"]
+        if proxies:
+            # Keep the direct egress in the rotation: public proxies are a
+            # fallback path, never the only one.
+            proxies = ("", *proxies)
+        if not args.quiet and not args.as_json:
+            print(
+                f"proxy scan: {proxy_scan['status']} "
+                f"({len(proxies)} verified proxies)"
+                + (f" - {proxy_scan['detail']}" if proxy_scan.get("detail") else ""),
+                file=sys.stderr,
+            )
+    else:
+        proxies = ()
     fetcher = HttpFetcher(timeout=args.timeout, retries=args.retries, proxies=proxies)
     requested = [name.strip() for name in args.sources.split(",") if name.strip()]
     known = {spec.name for spec in SOURCES}

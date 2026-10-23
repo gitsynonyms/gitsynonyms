@@ -1,0 +1,76 @@
+name: Proxy full scan
+run-name: Proxy full scan (list²)
+
+# 固化素材获取前的代理全量扫描：检索词矩阵 → list² 来源 → 全量采集 → 两段探测
+# → top10 测速排名 → 同步到云端仓库 main。巡检登记见 inspection/registry.json。
+on:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch:
+    inputs:
+      sync:
+        description: Push the published top10 to main
+        required: false
+        type: boolean
+        default: true
+      query_budget:
+        description: Matrix queries consumed this run (GitHub search is 30/min)
+        required: false
+        type: string
+        default: "1200"
+      probe_budget:
+        description: Max candidates probed this run (0 = time budget only)
+        required: false
+        type: string
+        default: "0"
+      budget_seconds:
+        description: Time budget for collection and probing
+        required: false
+        type: string
+        default: "2400"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: proxy-full-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Enumerate the full synonym matrix and walk it
+        run: |
+          SYNC=""
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.sync }}" = "true" ]; then
+            SYNC="--sync"
+          fi
+          python proxyindex/full_scan.py scan \
+            --query-budget "${{ inputs.query_budget || '1200' }}" \
+            --probe-budget "${{ inputs.probe_budget || '0' }}" \
+            --budget-seconds "${{ inputs.budget_seconds || '2400' }}" \
+            --stages all $SYNC --quiet
+
+      - name: Upload the scan report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proxy-scan-report
+          path: |
+            proxyindex/top10.json
+            proxyindex/top10.txt
+            proxyindex/scan-report.md
+            proxyindex/scan-state.json
+          if-no-files-found: warn
