@@ -39,6 +39,8 @@ The script prints numbered processing steps and streams yt-dlp's wait and downlo
 
 The GitHub Actions Windows runner installs Deno 2 and `yt-dlp[default]`, then explicitly enables Deno as yt-dlp's JavaScript runtime for YouTube extraction.
 
+For an authorized proxy in GitHub Actions, configure the repository Actions secret `YTDLP_PROXY` with the proxy URL. Both manual video downloads and the scheduled White House monitor use it for channel resolution and yt-dlp requests; if it is not configured, they connect directly. Never pass proxy credentials as workflow inputs or use an untrusted public proxy.
+
 ASS preserves source cue start times and gaps without lead-in or gap filling. WebVTT inline word timestamps control English word highlighting; when absent, a text-only estimate cannot exactly follow speech. Consult the [BBC subtitle timing guidance](https://www.bbc.co.uk/accessibility/forproducts/guides/subtitles/#Timing) and [Aegisub ASS override tags](https://aegisub.org/docs/latest/ass_tags/) for format details.
 
 The original WebVTT language files are retained byte-for-byte as yt-dlp downloads them. The bilingual SRT uses sequential block numbers and standard blank-line separation while preserving each bottom-track cue's source timing; styling markup already present in source captions is not stripped. SRT styling support varies between players; use the generated ASS for consistent font, color, position, and background-box styling.

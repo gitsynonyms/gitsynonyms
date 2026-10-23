@@ -149,6 +149,7 @@ jobs:
           BOX_Y: ${{ inputs.box_y }}
           BOX_WIDTH: ${{ inputs.box_width }}
           BOX_HEIGHT: ${{ inputs.box_height }}
+          YTDLP_PROXY: ${{ secrets.YTDLP_PROXY }}
         shell: bash
         run: |
           source="$YOUTUBE_SOURCE"
@@ -157,7 +158,9 @@ jobs:
             exit 1
           fi
           if [[ "$source" == *youtube.com/@*"/videos"* || "$source" == *youtube.com/channel/*"/videos"* ]]; then
-            video_id="$(yt-dlp --no-warnings --flat-playlist --playlist-end 1 --print '%(id)s' "$source" | head -n 1)"
+            proxy_args=()
+            if [[ -n "${YTDLP_PROXY:-}" ]]; then proxy_args+=(--proxy "$YTDLP_PROXY"); fi
+            video_id="$(yt-dlp "${proxy_args[@]}" --no-warnings --flat-playlist --playlist-end 1 --print '%(id)s' "$source" | head -n 1)"
             if [[ -z "$video_id" ]]; then
               echo "Could not resolve the latest channel video from: $source" >&2
               exit 1

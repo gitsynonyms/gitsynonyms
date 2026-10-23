@@ -13,9 +13,13 @@ $channels = @(
       "https://www.youtube.com/@WhiteHouse/videos",
       "https://www.youtube.com/@WhiteHouse/streams"
 )
+$proxyArguments = @()
+if (-not [string]::IsNullOrWhiteSpace($env:YTDLP_PROXY)) {
+    $proxyArguments = @("--proxy", $env:YTDLP_PROXY)
+}
 $foundItems = 0
 foreach ($channel in $channels) {
-      $listing = & yt-dlp --js-runtimes deno --no-warnings --ignore-errors --flat-playlist --playlist-end 10 --print "%(id)s|%(title)s" $channel
+      $listing = & yt-dlp @proxyArguments --js-runtimes deno --no-warnings --ignore-errors --flat-playlist --playlist-end 10 --print "%(id)s|%(title)s" $channel
       if ($LASTEXITCODE -ne 0 -and $listing.Count -eq 0) {
           throw "Could not inspect White House channel: $channel"
       }
