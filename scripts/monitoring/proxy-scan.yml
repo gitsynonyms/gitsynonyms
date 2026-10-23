@@ -1,13 +1,14 @@
-name: Proxy full scan
-run-name: Proxy full scan (list²)
+name: Proxy full scan + video download & mirror
+run-name: Proxy full scan (list²) + video mirror
 
 # 固化素材获取前的代理全量扫描：检索词矩阵 → list² 来源 → 全量采集 → 两段探测
 # → top10 测速排名 → 同步到云端仓库 main。
+# 扫描完成后，用刚发布的 top10 代理下载指定视频并生成双语字幕，
+# 再上传到 Filebin、temp.sh、GoFile 三个免登录网盘，记录上传/下载速度与限制。
 #
 # 这是受版本控制的“活动工作流源文件”，与 monitor-whitehouse.yml 同一约定：创建
 # .github/workflows 下的文件需要带 workflows 权限的令牌。用 install_workflow.py
-# 安装后再推送（步骤见 scripts/monitoring/README.md）。安装前，扫描仍由现有的
-# monitor-whitehouse.yml 通过 select_public_ytdlp_proxies.py 自动触发。
+# 安装后再推送（步骤见 scripts/monitoring/README.md）。
 on:
   schedule:
     - cron: "23 * * * *"
@@ -33,6 +34,15 @@ on:
         required: false
         type: string
         default: "2400"
+      video_url:
+        description: "YouTube video URL to download and mirror (optional; example: https://www.youtube.com/watch?v=5E09UkJq4Jo)"
+        required: false
+        type: string
+      upload_min_ok:
+        description: Minimum successful mirror uploads required
+        required: false
+        type: string
+        default: "2"
 
 permissions:
   contents: write
@@ -47,6 +57,10 @@ jobs:
     timeout-minutes: 60
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    outputs:
+      top10_json: ${{ steps.capture_top10.outputs.top10_json }}
+      video_url: ${{ steps.auto_detect.outputs.video_url }}
+      auto_detected: ${{ steps.auto_detect.outputs.auto_detected }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -57,16 +71,53 @@ jobs:
           python-version: "3.12"
 
       - name: Enumerate the full synonym matrix and walk it
+        id: scan
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QUERY_BUDGET: ${{ inputs.query_budget || '1200' }}
+          PROBE_BUDGET: ${{ inputs.probe_budget || '0' }}
+          BUDGET_SECONDS: ${{ inputs.budget_seconds || '2400' }}
         run: |
           SYNC=""
           if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.sync }}" = "true" ]; then
             SYNC="--sync"
           fi
           python proxyindex/full_scan.py scan \
-            --query-budget "${{ inputs.query_budget || '1200' }}" \
-            --probe-budget "${{ inputs.probe_budget || '0' }}" \
-            --budget-seconds "${{ inputs.budget_seconds || '2400' }}" \
+            --query-budget "$QUERY_BUDGET" \
+            --probe-budget "$PROBE_BUDGET" \
+            --budget-seconds "$BUDGET_SECONDS" \
             --stages all $SYNC --quiet
+
+      - name: Capture top10.json for downstream job
+        id: capture_top10
+        run: |
+          top10_json="$(python -c 'import json; p=json.load(open("proxyindex/top10.json", encoding="utf-8")); print(json.dumps([x.get("proxy") if isinstance(x, dict) else x for x in p.get("top", []) if x]))')"
+          echo "top10_json=$top10_json" >> "$GITHUB_OUTPUT"
+
+      - name: Install yt-dlp for scheduled video detection
+        if: ${{ github.event_name == 'schedule' }}
+        run: python -m pip install --quiet "yt-dlp[default]"
+
+      - name: Set up Deno for scheduled video detection
+        if: ${{ github.event_name == 'schedule' }}
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Auto-detect new videos on schedule
+        if: ${{ github.event_name == 'schedule' }}
+        id: auto_detect
+        run: |
+          python scripts/monitoring/resolve_channel_feed.py \
+            --output-json auto_detect.json
+          video_url="$(jq -r '.video_url // empty' auto_detect.json)"
+          if [ -n "$video_url" ]; then
+            echo "video_url=$video_url" >> $GITHUB_OUTPUT
+            echo "auto_detected=true" >> $GITHUB_OUTPUT
+          else
+            echo "video_url=" >> $GITHUB_OUTPUT
+            echo "auto_detected=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Upload the scan report
         if: always()
@@ -79,3 +130,65 @@ jobs:
             proxyindex/scan-report.md
             proxyindex/scan-state.json
           if-no-files-found: warn
+
+  mirror:
+    needs: scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.video_url != '') || needs.scan.outputs.auto_detected == 'true' }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install yt-dlp, deno, ffmpeg and deps
+        run: |
+          python -m pip install -q --trusted-host pypi.org --trusted-host files.pythonhosted.org \
+            'yt-dlp>=2025.1' 'deep-translator>=1.11.4,<2.0' 'youtube-transcript-api>=0.6.2'
+          which deno || curl -fsSL https://deno.land/install.sh | sh -s -- -y
+          export PATH="$HOME/.deno/bin:$PATH"
+          echo "$HOME/.deno/bin" >> $GITHUB_PATH
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: Download and mirror videos
+        id: mirror
+        env:
+          YTDLP_PROXY_POOL_JSON: ${{ needs.scan.outputs.top10_json }}
+          MANUAL_URLS: ${{ inputs.video_url }}
+          AUTO_URL: ${{ needs.scan.outputs.video_url }}
+          UPLOAD_MIN_OK: ${{ inputs.upload_min_ok || '2' }}
+        run: |
+          for url in "$MANUAL_URLS" "$AUTO_URL"; do
+            if [ -z "$url" ]; then continue; fi
+            echo "Processing: $url"
+            python scripts/download_youtube_bilingual_srt.py "$url" \
+              --languages zh-Hans,en-orig \
+              --output-dir output \
+              --burn-in \
+              --upload \
+              --filebin-bin https://filebin.net/f8l40pcd28jo8bl0 \
+              --upload-min-ok "$UPLOAD_MIN_OK"
+          done
+
+      - name: Upload mirror report as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-mirror-report
+          path: |
+            output/UPLOAD_MIRRORS.json
+            output/UPLOAD_MIRRORS.md
+          if-no-files-found: warn
+
+      - name: Print mirror URLs
+        if: always()
+        run: |
+          if [ -f output/UPLOAD_MIRRORS.md ]; then
+            cat output/UPLOAD_MIRRORS.md
+          fi
