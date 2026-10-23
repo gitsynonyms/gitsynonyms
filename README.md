@@ -110,11 +110,11 @@ publishing a new video never disturbs the existing ones.
 
 | Script | Role |
 |---|---|
-| `multi_source.py` | discovery and verification across every source |
-| `comprehensive_monitor.py` | poll, verify, download, burn, record |
-| `install_workflow.py` | copy the workflow into `.github/workflows/` |
+| `multi_source.py` | optional discovery and verification across sources |
+| `comprehensive_monitor.py` | optional extended monitor; not used by the scheduled workflow |
+| `install_workflow.py` | copy the active workflow template into `.github/workflows/` |
 
-The monitor polls `@WhiteHouse/videos` and `@WhiteHouse/streams`, ranks the
+The optional extended monitor polls `@WhiteHouse/videos` and `@WhiteHouse/streams`, ranks the
 uploads (longest and most event-like first), and for every new video:
 
 1. confirms the event with the other sources — the RollCall Factbase calendar
@@ -128,24 +128,15 @@ uploads (longest and most event-like first), and for every new video:
    the output;
 5. regenerates the site pages and deploys them to GitHub Pages.
 
-Every source is optional: a missing API key disables only that source, and a
-blocked host never fails the run. The monitor keeps `output/.monitor-state.json`
+For the optional extended monitor, a missing API key disables only that source,
+and a blocked host never fails the run. It keeps `output/.monitor-state.json`
 so a run only acts on videos it has not archived yet, and it rotates through the
 validated proxy pool so the YouTube rate limiter sees a different egress each
 time. The same egress must carry both the API request and the media request,
 because YouTube signs media URLs against the IP it observed on the API call.
 
-The scheduled workflow lives in `scripts/monitoring/monitor-whitehouse.yml`.
-Creating a file under `.github/workflows/` needs a token with the `workflows`
-permission, so install it with:
-
-```bash
-python3 scripts/monitoring/install_workflow.py
-git add .github/workflows/monitor-whitehouse.yml
-git commit -m "Add the White House video monitor workflow"
-git push
-```
-
-Optional secrets: `YOUTUBE_API_KEY`, `GOOGLE_CSE_ID`, `GOOGLE_CSE_API_KEY`,
-`GDELT_API_KEY`, `NEWSBANK_API_KEY`. Without them the monitor still polls the
-two official channels and the Factbase calendar.
+The active workflow is `.github/workflows/monitor-whitehouse.yml`; its tracked
+template is `scripts/monitoring/monitor-whitehouse.yml`. It runs every five
+minutes, handles one new upload at a time, and records a video only after its
+GitHub Release asset and Pages deployment succeed. GitHub may delay scheduled
+runs during periods of high load.

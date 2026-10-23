@@ -1,0 +1,201 @@
+name: Monitor White House Videos
+run-name: ${{ github.event_name == 'schedule' && 'White House channel scan' || format('White House video {0}', github.run_id) }}
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+    inputs:
+      force_check:
+        description: Reprocess the latest upload even if it was already recorded
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: whitehouse-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    outputs:
+      video_id: ${{ steps.resolve.outputs.video_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Install YouTube and video tools
+        shell: pwsh
+        run: |
+          python -m pip install "yt-dlp[default]"
+          choco install ffmpeg --yes --no-progress
+          yt-dlp --js-runtimes deno --version
+          ffmpeg -version
+
+      - name: Resolve the latest unprocessed channel upload
+        id: resolve
+        env:
+          FORCE_CHECK: ${{ inputs.force_check }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "::error::The White House monitor must run from main to publish the site."
+            exit 1
+          fi
+          state_file=".github/state/whitehouse-processed-videos.txt"
+          mkdir -p "$(dirname "$state_file")"
+          touch "$state_file"
+          video_id=""
+          video_title=""
+          for channel in \
+            "https://www.youtube.com/@WhiteHouse/videos" \
+            "https://www.youtube.com/@WhiteHouse/streams"; do
+            listing="$(yt-dlp --js-runtimes deno --no-warnings --flat-playlist --playlist-end 10 --print '%(id)s|%(live_status)s' "$channel")" || {
+              echo "::error::Could not inspect White House channel: $channel"
+              exit 1
+            }
+            while IFS='|' read -r candidate live_status; do
+              [[ "$candidate" =~ ^[A-Za-z0-9_-]{11}$ ]] || continue
+              [[ "$live_status" == "is_live" || "$live_status" == "is_upcoming" ]] && continue
+              if [[ "$FORCE_CHECK" != "true" ]] && grep -Fxq "$candidate" "$state_file"; then
+                continue
+              fi
+              video_id="$candidate"
+              break
+            done <<< "$listing"
+            [[ -n "$video_id" ]] && break
+          done
+          if [[ -n "$video_id" ]]; then
+            video_title="$(yt-dlp --js-runtimes deno --no-warnings --skip-download --print '%(title)s' "https://www.youtube.com/watch?v=$video_id" | sed -n '1p' | tr '\r\n' ' ')"
+            [[ -n "$video_title" ]] || video_title="$video_id"
+            video_title="${video_title//'%'/'%25'}"
+            video_title="${video_title//$'\r'/'%0D'}"
+            video_title="${video_title//$'\n'/'%0A'}"
+            echo "Discovered $video_id: $video_title"
+          else
+            echo "No unprocessed uploads found in the latest channel entries."
+          fi
+          printf 'video_id=%s\n' "$video_id" >> "$GITHUB_OUTPUT"
+          printf 'video_title=%s\n' "$video_title" >> "$GITHUB_OUTPUT"
+
+      - name: Download captions and burn them into the video
+        if: steps.resolve.outputs.video_id != ''
+        env:
+          VIDEO_ID: ${{ steps.resolve.outputs.video_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/download_youtube_bilingual_srt.py \
+            "https://www.youtube.com/watch?v=$VIDEO_ID" \
+            --output-dir output \
+            --languages zh-Hans,en-orig \
+            --box-display always \
+            --burn-in \
+            --video-encoder libx264 \
+            --global-quality 18
+          mp4="$(find output -type f -name "Burned_Bilingual_${VIDEO_ID}.mp4" -print -quit)"
+          if [[ -z "$mp4" || ! -f "$mp4" ]]; then
+            echo "::error::The downloader did not produce a burned MP4 for $VIDEO_ID."
+            exit 1
+          fi
+      - name: Publish MP4 to the video release
+        if: steps.resolve.outputs.video_id != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VIDEO_ID: ${{ steps.resolve.outputs.video_id }}
+          VIDEO_TITLE: ${{ steps.resolve.outputs.video_title }}
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          mp4="$(find output -type f -name "Burned_Bilingual_${VIDEO_ID}.mp4" -print -quit)"
+          if [[ -z "$mp4" || ! -f "$mp4" ]]; then
+            echo "::error::The burned MP4 for $VIDEO_ID disappeared before release upload."
+            exit 1
+          fi
+          if gh release view "$VIDEO_ID" >/dev/null 2>&1; then
+            gh release upload "$VIDEO_ID" "$mp4" --clobber
+          else
+            gh release create "$VIDEO_ID" "$mp4" \
+              --title "$VIDEO_TITLE" \
+              --notes "Automatically archived from the White House YouTube channel with Chinese and English subtitles burned in."
+          fi
+
+      - name: Generate video pages and publish archive files
+        if: steps.resolve.outputs.video_id != ''
+        env:
+          VIDEO_ID: ${{ steps.resolve.outputs.video_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/generate_video_pages.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add output/ site/
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish White House bilingual video $VIDEO_ID"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+
+      - name: Upload the Pages artifact
+        if: steps.resolve.outputs.video_id != ''
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: monitor
+    if: needs.monitor.outputs.video_id != ''
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy the updated video archive
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  mark-processed:
+    needs: [monitor, deploy]
+    if: needs.monitor.outputs.video_id != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Record the successfully deployed video
+        env:
+          VIDEO_ID: ${{ needs.monitor.outputs.video_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          state_file=".github/state/whitehouse-processed-videos.txt"
+          mkdir -p "$(dirname "$state_file")"
+          touch "$state_file"
+          if ! grep -Fxq "$VIDEO_ID" "$state_file"; then
+            printf '%s\n' "$VIDEO_ID" >> "$state_file"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add "$state_file"
+            git commit -m "Record deployed White House video $VIDEO_ID"
+            git push origin main
+          fi
