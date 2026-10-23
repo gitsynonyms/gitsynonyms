@@ -107,8 +107,8 @@ def test_shipped_registry_passes_the_minimum_granularity_check():
     registry = inspection.load_registry()
     assert inspection.validate(registry) == []
     report = inspection.coverage(registry)
-    assert report["units"] == 3
-    assert report["active_units"] == 3
+    assert report["units"] == 5
+    assert report["active_units"] == 5
     assert report["mechanism_coverage"] == 1.0
     assert report["inventory_complete"] is False
     assert "cline-schedule" in report["pending_inventory"]
@@ -356,6 +356,5 @@ def test_cli_missing_registry_exits_two():
         ["coverage", "--registry", "/nonexistent/registry.json", "--json"]
     )
     assert code == 2
-
 
 

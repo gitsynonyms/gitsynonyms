@@ -1,17 +1,17 @@
 # 信息差公示处 GitHub Actions 部署指南
 
-此文件夹是工作流模板归档目录；GitHub 只会执行 `.github/workflows/` 中的
-工作流。模板部署后每 6 小时运行，并可手动触发。所有在线研究与抓取仅在
+此文件夹是工作流模板归档目录；活动工作流位于
+`.github/workflows/infogap.yml`，每 6 小时运行并可手动触发。所有在线研究与抓取仅在
 GitHub-hosted runner 上执行。
 
 ## 文件位置
 
 - **工作流源文件**: `.github/workflows-deploy/infogap.yml`
-- **目标部署位置**: `.github/workflows/infogap.yml`
+- **活动工作流**: `.github/workflows/infogap.yml`
 - **生成脚本**: `scripts/infogap/generate.py`
 - **输出目录**: `site/infogap/`
 
-## 部署步骤
+## Pages 设置
 
 ### 1. 启用 GitHub Pages
 
@@ -21,19 +21,8 @@ Settings → Pages → Build and deployment
 Source: GitHub Actions
 ```
 
-### 2. 安装工作流
-
-在仓库根目录执行：
-
-```powershell
-New-Item -ItemType Directory -Force .github\workflows | Out-Null
-Copy-Item .github\workflows-deploy\infogap.yml .github\workflows\infogap.yml
-```
-
-The copied workflow needs to be committed and pushed before GitHub can run it.
-If enabled, register its scheduled and manual trigger as two separate GitHub
-workflow MIUs in `inspection/registry.json`; the inspection checker treats each
-trigger mode independently.
+The active workflow and its schedule/manual triggers are already registered as
+separate GitHub workflow MIUs in `inspection/registry.json`.
 
 ## 工作流说明
 
@@ -68,5 +57,5 @@ $python = Join-Path $env:USERPROFILE "anaconda3\python.exe"
 上游 `last30days-skill` 的可用来源和认证要求以其文档为准，本工作流不伪称
 启用了未配置的 API key 或本地评分模型。
 
-If the workflow is copied into `.github/workflows/`, it becomes active; keeping
-it in this archive directory alone does not schedule or deploy anything.
+The archived template does not run independently; `.github/workflows/infogap.yml`
+is the active workflow.

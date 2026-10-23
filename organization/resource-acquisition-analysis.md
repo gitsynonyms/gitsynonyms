@@ -19,10 +19,11 @@ HTML 与 JSON 报告。默认计划周期为 6 小时，另支持手动运行。
 | --- | --- |
 | 资源登记 | `resources/registry.json` 中的 `harness:infogap-last30days` |
 | 生成器 | `scripts/infogap/generate.py` |
+| 活动工作流 | `.github/workflows/infogap.yml` |
 | 工作流模板 | `.github/workflows-deploy/infogap.yml` |
 | 发布指南 | `.github/workflows-deploy/README.md` |
 | 输出 | `site/infogap/index.html`、`report.json`、按日期归档的历史 JSON |
 
-工作流模板需复制到 `.github/workflows/` 才会运行。启用后，定时与手动触发分别作为
-两个最小可巡检单元登记；模板归档目录本身不构成活动工作流。公开研究和抓取仅在
-GitHub-hosted runner 上执行。
+活动工作流每 6 小时运行并支持手动触发；两个触发方式已分别登记为最小可巡检单元。
+归档模板用于维护和复用，不单独触发运行。公开研究和抓取仅在 GitHub-hosted runner
+上执行。

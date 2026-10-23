@@ -1,6 +1,6 @@
 {
   "schema": "gitsynonyms.inspection.registry/1",
-  "updated_at": "2026-10-23T02:15:00Z",
+  "updated_at": "2026-10-23T04:47:00Z",
   "directive": "DIRECTIVE.md",
   "principle": "minimum-granularity",
   "cadence_policy": {
@@ -81,6 +81,46 @@
         "gh api repos/gitsynonyms/gitsynonyms/actions/workflows/387528345"
       ],
       "note": "按需触发；巡检关注产物是否随运行上传以及最近一次结论。"
+    },
+    {
+      "id": "gh:gitsynonyms/infogap-schedule",
+      "mechanism": "github-workflow",
+      "title": "Generate Information Gap Report (schedule)",
+      "target": {
+        "repo": "gitsynonyms/gitsynonyms",
+        "workflow": "Generate Information Gap Report",
+        "path": ".github/workflows/infogap.yml"
+      },
+      "trigger": "schedule",
+      "cadence": "6h",
+      "severity": "P2",
+      "owner": "巡检任务执行方案处",
+      "status": "active",
+      "evidence": [
+        "gh run list --workflow \"Generate Information Gap Report\" --limit 20 --json conclusion,createdAt,event",
+        "gh api repos/gitsynonyms/gitsynonyms/actions/workflows/infogap.yml"
+      ],
+      "note": "每 6 小时运行；质量门禁通过后发布多源信息差报告至 GitHub Pages。"
+    },
+    {
+      "id": "gh:gitsynonyms/infogap-dispatch",
+      "mechanism": "github-workflow",
+      "title": "Generate Information Gap Report (manual)",
+      "target": {
+        "repo": "gitsynonyms/gitsynonyms",
+        "workflow": "Generate Information Gap Report",
+        "path": ".github/workflows/infogap.yml"
+      },
+      "trigger": "workflow_dispatch",
+      "cadence": "1d",
+      "severity": "P3",
+      "owner": "巡检任务执行方案处",
+      "status": "active",
+      "evidence": [
+        "gh run list --workflow \"Generate Information Gap Report\" --limit 20 --json conclusion,createdAt,event",
+        "gh api repos/gitsynonyms/gitsynonyms/actions/workflows/infogap.yml"
+      ],
+      "note": "按需手动运行；巡检关注研究结果、质量门禁及 Pages 发布结论。"
     }
   ],
   "gaps": [

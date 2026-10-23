@@ -1,0 +1,88 @@
+name: Generate Information Gap Report
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      topics:
+        description: "Comma-separated research topics (optional)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: python -m pip install -e . pytest
+      - name: Run tests
+        run: python -m pytest -q
+      - name: Check registries
+        run: |
+          python scripts/resources/check.py check
+          python scripts/inspection/plan.py check --github
+
+  generate:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      status: ${{ steps.gen.outputs.status }}
+    env:
+      LAST30DAYS_STORE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install last30days-skill
+        run: pip install git+https://github.com/mvanhorn/last30days-skill.git
+      - name: Generate information gap report
+        id: gen
+        env:
+          INFOGAP_TOPICS: ${{ github.event.inputs.topics }}
+        run: |
+          if [[ -n "$INFOGAP_TOPICS" ]]; then
+            IFS=',' read -r -a topics <<< "$INFOGAP_TOPICS"
+            python scripts/infogap/generate.py --topics "${topics[@]}" --strict
+          else
+            python scripts/infogap/generate.py --strict
+          fi
+          echo "status=$(jq -r .status site/infogap/.last-run.json)" >> "$GITHUB_OUTPUT"
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Upload Pages artifact
+        if: steps.gen.outputs.status == 'ok'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: generate
+    if: needs.generate.outputs.status == 'ok'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
