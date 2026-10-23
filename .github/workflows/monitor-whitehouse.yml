@@ -31,6 +31,16 @@ jobs:
     timeout-minutes: 120
     outputs:
       video_id: ${{ steps.ready.outputs.video_id }}
+      source_platform: ${{ steps.ready.outputs.source_platform }}
+      source_channel: ${{ steps.ready.outputs.source_channel }}
+      source_channel_id: ${{ steps.ready.outputs.source_channel_id }}
+      source_title: ${{ steps.ready.outputs.source_title }}
+      source_url: ${{ steps.ready.outputs.source_url }}
+      published_at_ns: ${{ steps.ready.outputs.published_at_ns }}
+      published_epoch_ns: ${{ steps.ready.outputs.published_epoch_ns }}
+      published_date: ${{ steps.ready.outputs.published_date }}
+      published_time_source: ${{ steps.ready.outputs.published_time_source }}
+      published_time_precision: ${{ steps.ready.outputs.published_time_precision }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -67,13 +77,54 @@ jobs:
         id: ready
         env:
           VIDEO_ID: ${{ steps.resolve.outputs.video_id }}
+          SOURCE_PLATFORM: ${{ steps.resolve.outputs.source_platform }}
+          SOURCE_CHANNEL: ${{ steps.resolve.outputs.source_channel }}
+          SOURCE_CHANNEL_ID: ${{ steps.resolve.outputs.source_channel_id }}
+          SOURCE_TITLE: ${{ steps.resolve.outputs.source_title }}
+          SOURCE_URL: ${{ steps.resolve.outputs.source_url }}
+          PUBLISHED_AT_NS: ${{ steps.resolve.outputs.published_at_ns }}
+          PUBLISHED_EPOCH_NS: ${{ steps.resolve.outputs.published_epoch_ns }}
+          PUBLISHED_DATE: ${{ steps.resolve.outputs.published_date }}
+          PUBLISHED_TIME_SOURCE: ${{ steps.resolve.outputs.published_time_source }}
+          PUBLISHED_TIME_PRECISION: ${{ steps.resolve.outputs.published_time_precision }}
         shell: pwsh
         run: |
           if ([string]::IsNullOrWhiteSpace($env:VIDEO_ID)) {
-            "video_id=" >> $env:GITHUB_OUTPUT
+            @(
+              "video_id=",
+              "source_platform=",
+              "source_channel=",
+              "source_channel_id=",
+              "source_title=",
+              "source_url=",
+              "published_at_ns=",
+              "published_epoch_ns=",
+              "published_date=",
+              "published_time_source=",
+              "published_time_precision="
+            ) | Add-Content -Path $env:GITHUB_OUTPUT -Encoding utf8
             exit 0
           }
-          "video_id=$env:VIDEO_ID" >> $env:GITHUB_OUTPUT
+          foreach ($name in @(
+            "VIDEO_ID",
+            "SOURCE_PLATFORM",
+            "SOURCE_CHANNEL",
+            "SOURCE_CHANNEL_ID",
+            "SOURCE_TITLE",
+            "SOURCE_URL",
+            "PUBLISHED_AT_NS",
+            "PUBLISHED_EPOCH_NS",
+            "PUBLISHED_DATE",
+            "PUBLISHED_TIME_SOURCE",
+            "PUBLISHED_TIME_PRECISION"
+          )) {
+            $key = $name.ToLowerInvariant()
+            $value = [Environment]::GetEnvironmentVariable($name)
+            $delimiter = [Guid]::NewGuid().ToString()
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "$key<<$delimiter" -Encoding utf8
+            Add-Content -Path $env:GITHUB_OUTPUT -Value $value -Encoding utf8
+            Add-Content -Path $env:GITHUB_OUTPUT -Value $delimiter -Encoding utf8
+          }
 
       - name: Install FFmpeg for video burn-in
         if: steps.ready.outputs.video_id != ''
@@ -173,17 +224,45 @@ jobs:
       - name: Record the successfully deployed video
         env:
           VIDEO_ID: ${{ needs.monitor.outputs.video_id }}
+          SOURCE_PLATFORM: ${{ needs.monitor.outputs.source_platform }}
+          SOURCE_CHANNEL: ${{ needs.monitor.outputs.source_channel }}
+          SOURCE_CHANNEL_ID: ${{ needs.monitor.outputs.source_channel_id }}
+          SOURCE_TITLE: ${{ needs.monitor.outputs.source_title }}
+          SOURCE_URL: ${{ needs.monitor.outputs.source_url }}
+          PUBLISHED_AT_NS: ${{ needs.monitor.outputs.published_at_ns }}
+          PUBLISHED_EPOCH_NS: ${{ needs.monitor.outputs.published_epoch_ns }}
+          PUBLISHED_DATE: ${{ needs.monitor.outputs.published_date }}
+          PUBLISHED_TIME_SOURCE: ${{ needs.monitor.outputs.published_time_source }}
+          PUBLISHED_TIME_PRECISION: ${{ needs.monitor.outputs.published_time_precision }}
         shell: bash
         run: |
           set -euo pipefail
           state_file=".github/state/whitehouse-processed-videos.txt"
-          mkdir -p "$(dirname "$state_file")"
-          touch "$state_file"
-          if ! grep -Fxq "$VIDEO_ID" "$state_file"; then
-            printf '%s\n' "$VIDEO_ID" >> "$state_file"
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add "$state_file"
-            git commit -m "Record deployed White House video $VIDEO_ID"
+          source_url="${SOURCE_URL:-https://www.youtube.com/watch?v=$VIDEO_ID}"
+          artifacts_json="$(python -c 'import json,os; print(json.dumps([{"type":"captioned_video_release","url":"https://github.com/gitsynonyms/gitsynonyms/releases/tag/"+os.environ["VIDEO_ID"]}]))')"
+          args=(
+            scripts/monitoring/record_processed_source.py
+            --state-file "$state_file"
+            --source-platform "${SOURCE_PLATFORM:-youtube}"
+            --source-id "$VIDEO_ID"
+            --source-channel "${SOURCE_CHANNEL:-}"
+            --source-channel-id "${SOURCE_CHANNEL_ID:-}"
+            --title "${SOURCE_TITLE:-}"
+            --source-url "$source_url"
+            --published-at "${PUBLISHED_AT_NS:-}"
+            --published-date "${PUBLISHED_DATE:-}"
+            --published-time-source "${PUBLISHED_TIME_SOURCE:-}"
+            --published-time-precision "${PUBLISHED_TIME_PRECISION:-unknown}"
+            --artifacts "$artifacts_json"
+          )
+          if [[ -n "${PUBLISHED_EPOCH_NS:-}" ]]; then
+            args+=(--published-epoch-ns "$PUBLISHED_EPOCH_NS")
+          fi
+          python "${args[@]}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$state_file"
+          if ! git diff --cached --quiet; then
+            git commit -m "Record published source $VIDEO_ID"
             git push origin main
           fi
