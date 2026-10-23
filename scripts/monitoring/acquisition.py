@@ -109,6 +109,7 @@ class SourceSpec:
     language: str = "en"
     enabled: bool = True
     parser: str = ""
+    region: str = ""
     note: str = ""
 
 
@@ -146,6 +147,7 @@ SOURCES: tuple[SourceSpec, ...] = (
         kind="html",
         url="https://rollcall.com/factbase/trump/calendar/",
         trust="wire",
+        region="calendar-results",
         note="Independent day-by-day schedule used to confirm events.",
     ),
     SourceSpec(
@@ -375,34 +377,83 @@ _BOILERPLATE = re.compile(
 )
 
 
-class _TextExtractor(HTMLParser):
-    """Collect visible text, the document title and the declared language."""
+_MAIN_TAGS = {"main", "article"}
+_CONTENT_HINTS = (
+    "entry-content",
+    "article-content",
+    "article-body",
+    "story-body",
+    "post-content",
+)
 
-    def __init__(self) -> None:
+
+class _TextExtractor(HTMLParser):
+    """Collect visible text, the document title and the declared language.
+
+    Text is accumulated three ways: the whole document, ``<main>``/``<article>``
+    regions, and elements whose class/id matches a content hint. The caller
+    picks the most specific region that is substantial.
+    """
+
+    def __init__(self, hints: Sequence[str] = ()) -> None:
         super().__init__(convert_charrefs=True)
         self.title = ""
         self.language = ""
         self.parts: list[str] = []
+        self.main_parts: list[str] = []
+        self.regions: list[list[str]] = []
+        self._hints = tuple(hint for hint in hints if hint) or _CONTENT_HINTS
+        self._frames: list[dict] = []
         self._in_title = False
         self._skip = 0
+        self._main_depth = 0
+
+    def _matches(self, marker: str) -> bool:
+        return any(hint in marker for hint in self._hints)
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         if tag == "html" and not self.language:
             self.language = dict(attrs).get("lang") or ""
-        if tag == "title":
-            self._in_title = True
+        for frame in self._frames:
+            frame["depth"] += 1
+        marker = " ".join(
+            value for key, value in attrs if key in ("class", "id") and value
+        )
+        if marker and self._matches(marker):
+            self.regions.append([])
+            self._frames.append(
+                {"tag": tag, "depth": 1, "index": len(self.regions) - 1}
+            )
         if tag in _SKIP_TAGS:
             self._skip += 1
-        elif tag in _BLOCK_TAGS:
+        if tag in _MAIN_TAGS:
+            self._main_depth += 1
+        if tag == "title" and not self._skip and not self.title and not self._in_title:
+            self._in_title = True
+        if tag in _BLOCK_TAGS:
             self.parts.append("\n")
+            if self._main_depth:
+                self.main_parts.append("\n")
+            for frame in self._frames:
+                self.regions[frame["index"]].append("\n")
 
     def handle_endtag(self, tag: str) -> None:
         if tag == "title":
             self._in_title = False
         if tag in _SKIP_TAGS and self._skip:
             self._skip -= 1
-        elif tag in _BLOCK_TAGS:
+        if tag in _MAIN_TAGS and self._main_depth:
+            self._main_depth -= 1
+        for frame in list(self._frames):
+            if frame["tag"] != tag:
+                continue
+            frame["depth"] -= 1
+            if frame["depth"] <= 0:
+                self._frames.remove(frame)
+        if tag in _BLOCK_TAGS:
             self.parts.append("\n")
+            if self._main_depth:
+                self.main_parts.append("\n")
 
     def handle_data(self, data: str) -> None:
         if self._in_title:
@@ -412,6 +463,12 @@ class _TextExtractor(HTMLParser):
             return
         if data.strip():
             self.parts.append(data)
+            if self._main_depth:
+                self.main_parts.append(data)
+            for frame in self._frames:
+                self.regions[frame["index"]].append(data)
+
+
 
 
 _KNOWN_LANGUAGES = {"en", "zh", "ja", "ko", "fr", "de", "es", "ru", "ar"}
@@ -439,22 +496,43 @@ def language_code(value: str) -> str:
     return short if short in _KNOWN_LANGUAGES else ""
 
 
-def extract_readable(source: str) -> dict:
-    """Return ``title``, ``text``, ``language`` and ``text_chars`` for a page."""
+def _clean_parts(parts: list[str]) -> str:
+    lines = []
+    for line in "".join(parts).splitlines():
+        cleaned = re.sub(r"[ \t\u00a0]+", " ", line).strip()
+        if cleaned:
+            lines.append(cleaned)
+    return _BOILERPLATE.sub("", "\n".join(lines)).strip()
+
+
+def extract_readable(source: str, hints: Sequence[str] = ()) -> dict:
+    """Return ``title``, ``text``, ``language`` and ``text_chars`` for a page.
+
+    The most specific substantial region wins: a source-declared container,
+    then ``<main>``/``<article>``, then the whole document. Site navigation
+    around the story therefore does not become material.
+    """
     if not source:
         return {"title": "", "text": "", "language": "", "text_chars": 0}
-    extractor = _TextExtractor()
+    extractor = _TextExtractor(hints)
     try:
         extractor.feed(source)
         extractor.close()
     except Exception:  # noqa: BLE001 - malformed markup must not lose the text
         pass
-    lines = []
-    for line in "".join(extractor.parts).splitlines():
-        cleaned = re.sub(r"[ \t\u00a0]+", " ", line).strip()
-        if cleaned:
-            lines.append(cleaned)
-    text = _BOILERPLATE.sub("", "\n".join(lines)).strip()
+    whole = _clean_parts(extractor.parts)
+    main = _clean_parts(extractor.main_parts)
+    best_region = ""
+    for parts in extractor.regions:
+        candidate = _clean_parts(parts)
+        if len(candidate) > len(best_region):
+            best_region = candidate
+    if len(best_region) >= 200:
+        text = best_region
+    elif len(main) >= 200:
+        text = main
+    else:
+        text = whole
     language = (extractor.language or "").split("-")[0].lower()
     return {
         "title": re.sub(r"\s+", " ", html.unescape(extractor.title)).strip(),
@@ -915,7 +993,17 @@ def load_proxies(path: Path | None = None) -> tuple[str, ...]:
         if not entry or entry.startswith("#"):
             continue
         proxies.append(entry if "://" in entry else f"http://{entry}")
+        if len(proxies) >= 200:
+            break
     return tuple(proxies)
+
+
+def as_int(value: object) -> int:
+    """Tolerate ``"620"`` and ``620.0`` from downloader metadata."""
+    try:
+        return int(float(value or 0))
+    except (TypeError, ValueError):
+        return 0
 
 
 def counter(values: Iterable) -> dict[str, int]:
@@ -1259,7 +1347,9 @@ class Acquisition:
             )
             if self.fetch_articles:
                 try:
-                    self._capture_page(material, entry.link)
+                    self._capture_page(
+                        material, entry.link, (spec.region,) if spec.region else ()
+                    )
                 except SourceUnavailable as error:
                     material.details["page_error"] = str(error)
             materials.append(material)
@@ -1268,12 +1358,14 @@ class Acquisition:
             note=f"{len(entries)} entries, {len(materials)} inside the window",
         )
 
-    def _capture_page(self, material: Material, url: str) -> None:
+    def _capture_page(
+        self, material: Material, url: str, hints: Sequence[str] = ()
+    ) -> None:
         """Upgrade an entry to a full-text capture; A grade needs the body."""
         result = self._fetch(url, headers={"Accept": "text/html, application/xhtml+xml"})
         if result.status != "ok":
             raise SourceUnavailable(self._http_note(result))
-        page = extract_readable(result.body.decode("utf-8", "replace"))
+        page = extract_readable(result.body.decode("utf-8", "replace"), hints)
         if page["text_chars"] < 40:
             raise SourceUnavailable("page has no readable text")
         material.details.update(
@@ -1307,7 +1399,10 @@ class Acquisition:
             return SourceRun(status="unchanged", note="page not modified since the last run")
         if result.status != "ok":
             raise SourceUnavailable(self._http_note(result))
-        page = extract_readable(result.body.decode("utf-8", "replace"))
+        page = extract_readable(
+            result.body.decode("utf-8", "replace"),
+            (spec.region,) if spec.region else (),
+        )
         if page["text_chars"] < 40:
             return SourceRun(status="ok", note="page has no readable text")
         material = Material(
@@ -1433,7 +1528,7 @@ class Acquisition:
                 details={
                     "capture": "reference",
                     "channel": spec.url,
-                    "duration": int(entry.get("duration") or 0),
+                    "duration": as_int(entry.get("duration")),
                     "live_status": entry.get("live_status") or "",
                     "text_chars": len(title),
                 },
@@ -1755,6 +1850,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
     proxies = load_proxies(Path(args.proxy_pool)) if args.proxy_pool else ()
     fetcher = HttpFetcher(timeout=args.timeout, retries=args.retries, proxies=proxies)
+    requested = [name.strip() for name in args.sources.split(",") if name.strip()]
+    known = {spec.name for spec in SOURCES}
+    unknown = sorted(set(requested) - known)
+    if unknown:
+        print(
+            f"error: unknown source(s): {', '.join(unknown)}; "
+            f"known: {', '.join(sorted(known))}",
+            file=sys.stderr,
+        )
+        return 2
     run = Acquisition(
         args.out,
         fetcher=fetcher,
@@ -1766,7 +1871,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         since=since,
         until=until,
         limit=args.limit,
-        source_names=[name.strip() for name in args.sources.split(",") if name.strip()],
+        source_names=requested,
         dry_run=args.dry_run,
     )
     if args.as_json:

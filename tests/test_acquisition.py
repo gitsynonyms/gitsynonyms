@@ -86,9 +86,10 @@ GDELT = {
 
 PAGE = (
     "<!doctype html><html lang='en'><head><title>Trade remarks</title></head>"
-    "<body><nav>Menu that should be ignored</nav><script>var track = 1;</script>"
-    f"<article><h1>Trade remarks</h1><p>{ARTICLE_BODY}</p>"
-    f"<p>{ARTICLE_BODY}</p></article></body></html>"
+    "<body><div class='site-nav'>Menu that should be ignored</div>"
+    "<svg><title>RollCall logo</title></svg><script>var track = 1;</script>"
+    f"<main><article><h1>Trade remarks</h1><p>{ARTICLE_BODY}</p>"
+    f"<p>{ARTICLE_BODY}</p></article></main></body></html>"
 )
 
 
@@ -240,6 +241,31 @@ def test_parse_gdelt_maps_language_and_time():
     assert entries[0].published == "2026-10-22T19:15:00Z"
     assert entries[0].language == "en"
     assert entries[1].language == "es"
+
+
+def test_extract_readable_prefers_the_main_region():
+    page = acquisition.extract_readable(PAGE)
+    assert page["title"] == "Trade remarks"
+    assert "Menu that should be ignored" not in page["text"]
+    assert "Rose Garden" in page["text"]
+    fallback = acquisition.extract_readable(
+        "<html><body><div>Short nav</div><p>Only a short body.</p></body></html>"
+    )
+    assert "Only a short body." in fallback["text"]
+
+
+def test_source_region_hint_beats_page_chrome():
+    page = (
+        "<html><body><div class='nav'>Menu that should be ignored</div>"
+        f"<div id='calendar-results'><p>{ARTICLE_BODY}</p><p>{ARTICLE_BODY}</p></div>"
+        "<footer>Footer chrome</footer></body></html>"
+    )
+    hinted = acquisition.extract_readable(page, ("calendar-results",))
+    assert "Rose Garden" in hinted["text"]
+    assert "Menu that should be ignored" not in hinted["text"]
+    assert "Footer chrome" not in hinted["text"]
+    unhinted = acquisition.extract_readable(page)
+    assert "Menu that should be ignored" in unhinted["text"]
 
 
 def test_quality_grades_payload_reference_and_rejection():
@@ -573,6 +599,19 @@ def test_report_without_a_manifest_exits_with_usage_error():
         with redirect_stdout(io.StringIO()), redirect_stderr(stderr):
             assert acquisition.main(["report", "--out", tmp]) == 2
         assert "no manifest" in stderr.getvalue()
+
+
+def test_cli_rejects_an_unknown_source_name():
+    with tempfile.TemporaryDirectory() as tmp:
+        stderr = io.StringIO()
+        with redirect_stdout(io.StringIO()), redirect_stderr(stderr):
+            code = acquisition.main(
+                ["collect", "--out", tmp, "--sources", "whitehouse-news,nope"]
+            )
+        assert code == 2
+        assert "unknown source(s): nope" in stderr.getvalue()
+        assert not Path(tmp, "manifest.json").exists()
+
 
 
 

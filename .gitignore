@@ -29,3 +29,8 @@ proxyindex/*.log
 # Monitor state and verification scratch.
 output/.monitor-state.json
 output/unknown_*/
+
+# Module 1 acquisition state: the ledger and manifest are deliverables, the
+# conditional-request cache and observation clock are local state.
+output/materials/.http-cache.json
+output/materials/.seen.json
