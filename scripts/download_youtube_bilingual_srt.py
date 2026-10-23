@@ -2080,6 +2080,69 @@ def suggested_date(title: str, upload_date: str) -> str:
     return date.today().isoformat()
 
 
+def build_bundle(video_dir: Path, video_id: str) -> Path:
+    """Zip one video's source/ and processed/ into a portable artifact named with video_id."""
+    from zipfile import ZIP_DEFLATED, ZipFile
+
+    bundle = video_dir.parent / f"bilingual_subtitles_bundle_{video_id}.zip"
+    with ZipFile(bundle, "w", ZIP_DEFLATED) as archive:
+        for path in video_dir.rglob("*"):
+            if path.is_file():
+                # Keep relative structure: source/..., processed/...
+                arcname = path.relative_to(video_dir.parent)
+                archive.write(path, arcname=arcname)
+    return bundle
+
+
+def mirror_artifacts(
+    output_root: Path,
+    *,
+    filebin_bin: str = "",
+    min_ok: int = 5,
+) -> tuple[int, int, Path]:
+    """Traverse output_root for video directories, bundle each, upload all, write summary report."""
+    import importlib.util
+    import json
+
+    module_path = Path(__file__).resolve().parent / "monitoring" / "upload_mirrors.py"
+    spec = importlib.util.spec_from_file_location("upload_mirrors", module_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("cannot load upload_mirrors.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    # Find all video directories (each named with video_id)
+    bundles = []
+    for video_dir in output_root.iterdir():
+        if not video_dir.is_dir():
+            continue
+        # Skip non-video directories (e.g., hidden dirs)
+        if video_dir.name.startswith("."):
+            continue
+        bundle = build_bundle(video_dir, video_dir.name)
+        bundles.append(bundle)
+
+    if not bundles:
+        report_md = output_root / "UPLOAD_MIRRORS.md"
+        report_md.write_text("# No video directories found\n", encoding="utf-8")
+        return 0, 0, report_md
+
+    # Upload all bundles, generate summary report at output_root
+    payload = module.upload_artifacts(
+        bundles,
+        filebin_bin=filebin_bin or module.DEFAULT_FILEBIN_BIN,
+        quiet=False,
+    )
+    report_json = output_root / "UPLOAD_MIRRORS.json"
+    report_md = output_root / "UPLOAD_MIRRORS.md"
+    report_json.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    report_md.write_text(module.render_markdown(payload), encoding="utf-8")
+    summary = payload["summary"]
+    return summary["ok"], summary["attempted"], report_md
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Download two YouTube subtitle tracks and merge them into one bilingual SRT."
@@ -2154,6 +2217,22 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--source-video",
         help="Existing video file to burn the subtitles into instead of downloading it again.",
+    )
+    parser.add_argument(
+        "--upload",
+        action="store_true",
+        help="Mirror the finished subtitles to the anonymous upload hosts and record speeds.",
+    )
+    parser.add_argument(
+        "--upload-min-ok",
+        type=int,
+        default=5,
+        help="Require this many successful mirror uploads before warning (default 5).",
+    )
+    parser.add_argument(
+        "--filebin-bin",
+        default="",
+        help="filebin.net bin URL used by --upload (default: the recorded public bin).",
     )
     parser.add_argument(
         "--local-file",
@@ -2346,6 +2425,28 @@ def main(argv: list[str] | None = None) -> int:
         print(ass_output.resolve())
         if args.burn_in:
             print(burned_output.resolve())
+        if args.upload:
+            print("Step 7/7: Mirroring all downloaded videos to anonymous hosts...", flush=True)
+            try:
+                # mirror_artifacts now traverses output_root for all video directories,
+                # bundles each, uploads all, and writes a summary report at output_root
+                ok, attempted, report = mirror_artifacts(
+                    Path(args.output_dir),
+                    filebin_bin=args.filebin_bin,
+                    min_ok=args.upload_min_ok,
+                )
+                print(f"  mirrors: {ok}/{attempted} uploaded", flush=True)
+                print(f"  report: {report.resolve()}", flush=True)
+                if ok < args.upload_min_ok:
+                    print(
+                        f"Warning: only {ok} mirrors succeeded; "
+                        f"{args.upload_min_ok} were required.",
+                        file=sys.stderr,
+                    )
+            except (OSError, RuntimeError, ValueError) as error:
+                print(f"Warning: mirror upload failed: {error}", file=sys.stderr)
+        return 0
+
         return 0
     except (OSError, ValueError, RuntimeError) as error:
         print(f"Error: {error}", file=sys.stderr)
