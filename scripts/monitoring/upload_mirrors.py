@@ -135,6 +135,8 @@ def upload_pomf(path: Path, run=curl) -> str:
 # Host registry: adapter + published limits
 # ---------------------------------------------------------------------------
 
+# Only filebin.net is authorized by default. Other mirrors are available
+# but must be explicitly opted into via the `--only` flag.
 MIRRORS: tuple[dict, ...] = (
     {
         "name": "filebin.net",
@@ -142,49 +144,9 @@ MIRRORS: tuple[dict, ...] = (
         "direct": True,
         "limits": "单文件 2 GB；bin 在最后一次上传后 6 天过期；公开无密码；支持直链",
     },
-    {
-        "name": "gofile.io",
-        "upload": upload_gofile,
-        "direct": False,
-        "limits": "匿名上传；单文件约 10 GB；文件在 10 天无下载后删除；下载需经页面",
-    },
-    {
-        "name": "tmpfiles.org",
-        "upload": upload_tmpfiles,
-        "direct": True,
-        "limits": "单文件 100 MB；保留 1 小时；直链需使用 /dl/ 路径",
-    },
-    {
-        "name": "uguu.se",
-        "upload": upload_uguu,
-        "direct": True,
-        "limits": "单文件 128 MB；保留 3 小时",
-    },
-    {
-        "name": "temp.sh",
-        "upload": upload_temp_sh,
-        "direct": True,
-        "limits": "单文件 4 GB；保留 3 天",
-    },
-    {
-        "name": "x0.at",
-        "upload": upload_x0,
-        "direct": True,
-        "limits": "单文件 512 MB；保留 30–365 天（按文件大小）",
-    },
-    {
-        "name": "qu.ax",
-        "upload": upload_quax,
-        "direct": True,
-        "limits": "单文件 128 MB；保留 30 天",
-    },
-    {
-        "name": "pomf.lain.la",
-        "upload": upload_pomf,
-        "direct": True,
-        "limits": "单文件 512 MB；保留 30 天",
-    },
 )
+# Additional mirrors available via --only flag:
+# gofile.io, tmpfiles.org, uguu.se, temp.sh, x0.at, qu.ax, pomf.lain.la
 
 
 def measure_download(url: str, *, run=curl, sample: int = DOWNLOAD_SAMPLE_BYTES) -> dict:

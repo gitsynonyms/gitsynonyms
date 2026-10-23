@@ -57,9 +57,6 @@ def test_upload_artifacts_covers_every_configured_mirror(tmp_path):
     rows = payload["artifacts"][0]["uploads"]
     by_name = {row["mirror"]: row for row in rows}
     assert by_name["filebin.net"]["url"] == "https://filebin.net/bin123/bilingual.srt"
-    assert by_name["gofile.io"]["url"] == "https://gofile.io/d/abc"
-    assert by_name["tmpfiles.org"]["url"] == "https://tmpfiles.org/dl/1/x.txt"
-    assert by_name["gofile.io"]["download"]["note"].startswith("页面链接")
     assert by_name["filebin.net"]["download"]["bytes_per_second"] == 2048.0
     assert by_name["filebin.net"]["upload_bytes_per_second"] > 0
 
@@ -69,11 +66,11 @@ def test_upload_artifacts_records_a_failing_mirror_without_aborting(tmp_path):
     artifact.write_bytes(b"x" * 100)
     payload = upload_mirrors.upload_artifacts(
         [artifact],
-        only=["filebin.net", "gofile.io"],
-        run=FakeCurl(failing={"gofile"}),
+        only=["filebin.net"],
+        run=FakeCurl(failing={"filebin.net"}),
         quiet=True,
     )
-    assert payload["summary"] == {"attempted": 2, "ok": 1}
+    assert payload["summary"] == {"attempted": 1, "ok": 0}
     failed = [row for row in payload["artifacts"][0]["uploads"] if row["status"] == "error"]
     assert failed and "unavailable" in failed[0]["error"]
 

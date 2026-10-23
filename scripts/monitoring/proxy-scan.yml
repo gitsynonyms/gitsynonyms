@@ -58,7 +58,9 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     outputs:
-      top10_json: ${{ steps.scan.outputs.top10_json }}
+      top10_json: ${{ steps.capture_top10.outputs.top10_json }}
+      video_url: ${{ steps.auto_detect.outputs.video_url }}
+      auto_detected: ${{ steps.auto_detect.outputs.auto_detected }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -90,6 +92,21 @@ jobs:
           cat proxyindex/top10.json >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+      - name: Auto-detect new videos on schedule
+        if: ${{ github.event_name == 'schedule' }}
+        id: auto_detect
+        run: |
+          # Use monitor-whitehouse logic to find latest unprocessed video
+          python scripts/monitoring/resolve_channel_feed.py \
+            --output-json auto_detect.json
+          if [ -s auto_detect.json ]; then
+            video_url=$(jq -r '.video_url' auto_detect.json)
+            echo "video_url=$video_url" >> $GITHUB_OUTPUT
+            echo "auto_detected=true" >> $GITHUB_OUTPUT
+          else
+            echo "auto_detected=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Upload the scan report
         if: always()
         uses: actions/upload-artifact@v4
@@ -106,7 +123,7 @@ jobs:
     needs: scan
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    if: ${{ inputs.video_url != '' }}
+    if: ${{ inputs.video_url != '' || needs.scan.outputs.auto_detected == 'true' }}
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -131,9 +148,23 @@ jobs:
         id: mirror
         env:
           YTDLP_PROXY_POOL_JSON: ${{ needs.scan.outputs.top10_json }}
+          MANUAL_URLS: ${{ inputs.video_url }}
+          AUTO_URL: ${{ needs.scan.outputs.video_url }}
         run: |
-          # Split comma-separated URLs
-          IFS=',' read -ra URLS <<< "${{ inputs.video_url }}"
+          # Build URL list from env vars (safe, no shell interpolation)
+          urls=""
+          if [ -n "$MANUAL_URLS" ]; then
+            urls="$MANUAL_URLS"
+          fi
+          if [ -n "$AUTO_URL" ]; then
+            if [ -n "$urls" ]; then
+              urls="$urls,$AUTO_URL"
+            else
+              urls="$AUTO_URL"
+            fi
+          fi
+
+          IFS=',' read -ra URLS <<< "$urls"
           for url in "${URLS[@]}"; do
             url=$(echo "$url" | xargs)  # trim whitespace
             if [ -z "$url" ]; then continue; fi

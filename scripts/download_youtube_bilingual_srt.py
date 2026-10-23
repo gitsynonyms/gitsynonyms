@@ -2087,10 +2087,29 @@ def build_bundle(video_dir: Path, video_id: str) -> Path:
     bundle = video_dir.parent / f"bilingual_subtitles_bundle_{video_id}.zip"
     with ZipFile(bundle, "w", ZIP_DEFLATED) as archive:
         for path in video_dir.rglob("*"):
-            if path.is_file():
-                # Keep relative structure: source/..., processed/...
-                arcname = path.relative_to(video_dir.parent)
-                archive.write(path, arcname=arcname)
+            if not path.is_file():
+                continue
+            # Determine virtual path: source/ or processed/
+            rel = path.name
+            stem_lower = path.stem.lower()
+            # source: original video, original subtitle files
+            if (
+                rel.endswith(".source.mp4")
+                or any(rel.lower().endswith(f".{lang}.{ext}") for lang in ("en-orig", "zh-hans") for ext in ("json3", "srv3", "srv2", "srv1", "vtt", "ttml", "srt"))
+            ):
+                arcname = f"source/{rel}"
+            # processed: bilingual subtitles, burned video
+            elif (
+                "bilingual" in stem_lower
+                or rel.startswith("auto-translated")
+                or rel.startswith("machine-translated")
+                or rel.startswith("Burned_Bilingual")
+            ):
+                arcname = f"processed/{rel}"
+            else:
+                # Default to source for unknown files
+                arcname = f"source/{rel}"
+            archive.write(path, arcname=arcname)
     return bundle
 
 
