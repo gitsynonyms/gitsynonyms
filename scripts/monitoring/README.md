@@ -35,6 +35,15 @@ metadata for the same source becomes available.
 runs must target `main` to publish. The workflow requires repository permissions
 to write contents and deploy GitHub Pages.
 
+Before publishing, the workflow extracts every video frame in a 30-second
+subtitle-dense sample and runs Tesseract OCR. `output/FRAME_QA.json` records
+duplicate visible lines, repeated source cues, OCR confidence, minimum text
+height, and safe-screen margins. Hard frame-layout or duplicate-text errors
+stop publication; repeated source cues and low OCR confidence are reported as
+warnings. The check requires FFmpeg, ffprobe, and Tesseract with English and
+Simplified Chinese language data. The Chinese model is downloaded from a pinned
+upstream revision and verified against its SHA-256 checksum before use.
+
 `install_workflow.py` copies the tracked workflow template into
 `.github/workflows/`; keep `monitor-whitehouse.yml` and
 `.github/workflows/monitor-whitehouse.yml` in sync.

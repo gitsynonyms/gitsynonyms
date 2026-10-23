@@ -131,7 +131,19 @@ jobs:
         shell: pwsh
         run: |
           choco install ffmpeg --yes --no-progress
+          choco install tesseract --yes --no-progress
           ffmpeg -version
+          tesseract --version
+          $tessdata = Join-Path (Split-Path (Get-Command tesseract).Source) "tessdata"
+          $model = Join-Path $tessdata "chi_sim.traineddata"
+          Invoke-WebRequest `
+            -Uri "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/87416418657359cb625c412a48b6e1d6d41c29bd/chi_sim.traineddata" `
+            -OutFile $model
+          $modelHash = (Get-FileHash $model -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($modelHash -ne "a5fcb6f0db1e1d6d8522f39db4e848f05984669172e584e8d76b6b3141e1f730") {
+            throw "The pinned Simplified Chinese Tesseract model failed its SHA-256 check."
+          }
+          tesseract --list-langs
 
       - name: Download captions and burn them into the video
         if: steps.ready.outputs.video_id != ''
@@ -154,6 +166,16 @@ jobs:
             echo "::error::The downloader did not produce a burned MP4 for $VIDEO_ID."
             exit 1
           fi
+          ass="$(find output -type f -name "*Bilingual_zh-Hans-en-orig.ass" -print -quit)"
+          if [[ -z "$ass" || ! -f "$ass" ]]; then
+            echo "::error::The downloader did not produce the ASS subtitles for $VIDEO_ID."
+            exit 1
+          fi
+          python scripts/subtitle_frame_qa.py \
+            --video "$mp4" \
+            --ass "$ass" \
+            --language eng+chi_sim \
+            --report output/FRAME_QA.json
       - name: Publish MP4 to the video release
         if: steps.ready.outputs.video_id != ''
         env:
