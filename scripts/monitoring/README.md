@@ -4,8 +4,8 @@
 `@WhiteHouse/videos` and `@WhiteHouse/streams` every five minutes, GitHub
 Actions' shortest supported schedule interval. GitHub may delay scheduled jobs
 during periods of high load.
-It reads the channel's public Atom feed for upload IDs and titles, avoiding
-per-video metadata requests during discovery.
+It reads flat channel listings and ignores individual metadata failures during
+discovery, then downloads the selected video's captions and media.
 
 The workflow handles one unprocessed upload per run. It downloads both
 `zh-Hans` and `en-orig` captions, burns the bilingual ASS into an MP4 on the
