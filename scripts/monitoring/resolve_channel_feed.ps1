@@ -76,10 +76,10 @@ function Write-VideoOutputs {
             [Globalization.NumberStyles]::Float,
             $culture
         )
-        $epochNanoseconds = $timestampDecimal * 1000000000m
+        $epochNanoseconds = $timestampDecimal * [decimal]1000000000
         $epochNs = [long][decimal]::Round($epochNanoseconds, 0, [MidpointRounding]::AwayFromZero)
-        $wholeSeconds = [long][Math]::Floor($epochNs / 1000000000m)
-        $fractionNs = [long]($epochNs - ($wholeSeconds * 1000000000L))
+        $wholeSeconds = [long][Math]::Floor($epochNs / [decimal]1000000000)
+        $fractionNs = [long]($epochNs - ($wholeSeconds * [long]1000000000))
         $datePart = [DateTimeOffset]::FromUnixTimeSeconds($wholeSeconds).UtcDateTime.ToString(
             "yyyy-MM-dd'T'HH:mm:ss",
             $culture
