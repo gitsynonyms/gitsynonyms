@@ -84,6 +84,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Capture top10.json for downstream job
+        id: capture_top10
         run: |
           echo "top10_json<<EOF" >> $GITHUB_OUTPUT
           cat proxyindex/top10.json >> $GITHUB_OUTPUT
@@ -126,18 +127,25 @@ jobs:
           echo "$HOME/.deno/bin" >> $GITHUB_PATH
           sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
 
-      - name: Download video with bilingual subtitles using fresh proxies
-        id: download
+      - name: Download and mirror videos
+        id: mirror
         env:
           YTDLP_PROXY_POOL_JSON: ${{ needs.scan.outputs.top10_json }}
         run: |
-          python scripts/download_youtube_bilingual_srt.py "${{ inputs.video_url }}" \
-            --languages zh-Hans,en-orig \
-            --output-dir output \
-            --burn-in \
-            --upload \
-            --filebin-bin https://filebin.net/f8l40pcd28jo8bl0 \
-            --upload-min-ok ${{ inputs.upload_min_ok }}
+          # Split comma-separated URLs
+          IFS=',' read -ra URLS <<< "${{ inputs.video_url }}"
+          for url in "${URLS[@]}"; do
+            url=$(echo "$url" | xargs)  # trim whitespace
+            if [ -z "$url" ]; then continue; fi
+            echo "Processing: $url"
+            python scripts/download_youtube_bilingual_srt.py "$url" \
+              --languages zh-Hans,en-orig \
+              --output-dir output \
+              --burn-in \
+              --upload \
+              --filebin-bin https://filebin.net/f8l40pcd28jo8bl0 \
+              --upload-min-ok ${{ inputs.upload_min_ok }}
+          done
 
       - name: Upload mirror report as artifact
         if: always()
