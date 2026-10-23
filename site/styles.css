@@ -48,6 +48,7 @@ h1 {
 
 .page-nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 22px;
 }
