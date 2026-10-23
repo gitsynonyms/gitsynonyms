@@ -32,6 +32,20 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Install YouTube and video tools
+        shell: pwsh
+        run: |
+          python -m pip install "yt-dlp[default]"
+          yt-dlp --js-runtimes deno --version
+
       - name: Resolve the latest unprocessed channel upload
         id: resolve
         env:
@@ -39,23 +53,11 @@ jobs:
         shell: pwsh
         run: ./scripts/monitoring/resolve_channel_feed.ps1
 
-      - uses: actions/setup-python@v5
-        if: steps.resolve.outputs.video_id != ''
-        with:
-          python-version: "3.12"
-
-      - uses: denoland/setup-deno@v2
-        if: steps.resolve.outputs.video_id != ''
-        with:
-          deno-version: v2.x
-
-      - name: Install YouTube and video tools
+      - name: Install FFmpeg for video burn-in
         if: steps.resolve.outputs.video_id != ''
         shell: pwsh
         run: |
-          python -m pip install "yt-dlp[default]"
           choco install ffmpeg --yes --no-progress
-          yt-dlp --js-runtimes deno --version
           ffmpeg -version
 
       - name: Download captions and burn them into the video
