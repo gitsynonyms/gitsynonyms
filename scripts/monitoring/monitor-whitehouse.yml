@@ -68,6 +68,7 @@ jobs:
       - name: Fetch and probe a bounded public proxy set
         env:
           YTDLP_PROXY: ${{ secrets.YTDLP_PROXY }}
+          PROBE_VIDEO_URL: ${{ inputs.video_url }}
         run: python scripts/select_public_ytdlp_proxies.py
 
       - name: Resolve the latest unprocessed channel upload
