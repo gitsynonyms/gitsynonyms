@@ -173,9 +173,9 @@ python scripts/monitoring/acquisition.py report --limit 15
 来源缺失不会伪造素材：宁可在报告里显示 `unavailable`，也不写入未经验证的内容。
 
 新增来源时，在模块的 `SOURCES` 中加一条 `SourceSpec`（`kind` 取 `rss` / `json` /
-`html` / `youtube` / `asset`，`json` 可用 `parser="gdelt"`）。若页面正文不在
-`<main>`/`<article>` 里，用 `region` 指定容器 class 或 id 的片段（如 Factbase 的
-`calendar-results`），抽取时会优先取该区域，避免把站点导航当成素材。
+`html` / `youtube` / `asset`，`json` 可用 `parser="gdelt"`）。正文抽取优先用页面
+的 `<main>`/`<article>`；若页面没有这类语义标签，用 `region` 指定容器 class 或 id
+的片段（如 Factbase 的 `calendar-results`），避免把站点导航当成素材。
 
 测试在 `tests/test_acquisition.py`，用本地 HTTP 服务与注入替身覆盖解析、分级、
 去重、修订、条件请求、失败降级与 CLI，不访问外网：

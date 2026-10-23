@@ -508,9 +508,10 @@ def _clean_parts(parts: list[str]) -> str:
 def extract_readable(source: str, hints: Sequence[str] = ()) -> dict:
     """Return ``title``, ``text``, ``language`` and ``text_chars`` for a page.
 
-    The most specific substantial region wins: a source-declared container,
-    then ``<main>``/``<article>``, then the whole document. Site navigation
-    around the story therefore does not become material.
+    The most specific substantial region wins: ``<main>``/``<article>`` when the
+    page has one, otherwise a source-declared container, otherwise the whole
+    document. Site navigation around the story therefore does not become
+    material.
     """
     if not source:
         return {"title": "", "text": "", "language": "", "text_chars": 0}
@@ -527,10 +528,10 @@ def extract_readable(source: str, hints: Sequence[str] = ()) -> dict:
         candidate = _clean_parts(parts)
         if len(candidate) > len(best_region):
             best_region = candidate
-    if len(best_region) >= 200:
-        text = best_region
-    elif len(main) >= 200:
+    if len(main) >= 200:
         text = main
+    elif len(best_region) >= 200:
+        text = best_region
     else:
         text = whole
     language = (extractor.language or "").split("-")[0].lower()
