@@ -2,6 +2,7 @@ import importlib.util
 import json
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "infogap" / "generate.py"
 SPEC = importlib.util.spec_from_file_location("infogap_generator", SCRIPT)
@@ -63,3 +64,49 @@ def test_build_report_records_selected_topics():
     report = generator.build_report([], topics=["selected topic"])
 
     assert report.topics == ["selected topic"]
+
+
+def test_run_last30days_research_uses_upstream_script_and_normalizes_export(tmp_path, monkeypatch):
+    script = tmp_path / "last30days.py"
+    script.touch()
+    monkeypatch.setenv("LAST30DAYS_SCRIPT", str(script))
+    upstream_export = {
+        "query": "selected topic",
+        "clusters": [{"summary": "Cluster summary", "sources": ["reddit"]}],
+        "results": [
+            {
+                "title": "Result title",
+                "url": "https://example.test/result",
+                "summary": "Result summary",
+            }
+        ],
+    }
+    calls = []
+
+    def fake_run(command, **kwargs):
+        calls.append((command, kwargs))
+        return SimpleNamespace(
+            returncode=0,
+            stdout=json.dumps(upstream_export),
+            stderr="",
+        )
+
+    monkeypatch.setattr(generator.subprocess, "run", fake_run)
+
+    success, data = generator.run_last30days_research("selected topic", tmp_path / "save")
+
+    assert success
+    assert calls[0][0] == [
+        sys.executable,
+        str(script),
+        "selected topic",
+        "--research-only",
+        "--save-dir",
+        str(tmp_path / "save"),
+        "--emit=json",
+    ]
+    assert data["sources"] == [
+        {"url": "https://example.test/result", "title": "Result title"}
+    ]
+    assert data["findings"] == upstream_export["results"]
+    assert data["summary"] == "Cluster summary"

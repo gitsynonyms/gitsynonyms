@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import shutil
+import subprocess
 import sys
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
@@ -65,7 +66,11 @@ def run_id() -> str:
 def check_prereqs() -> list[str]:
     """Check required tools and environment."""
     problems = []
-    if shutil.which("last30days") is None:
+    script = os.environ.get("LAST30DAYS_SCRIPT")
+    if script:
+        if not Path(script).is_file():
+            problems.append(f"last30days script not found: {script}")
+    elif shutil.which("last30days") is None:
         problems.append("last30days CLI not in PATH; research will be unavailable")
     if shutil.which("node") is None:
         problems.append("Node.js not available; X/Twitter search may be disabled")
@@ -74,22 +79,46 @@ def check_prereqs() -> list[str]:
 
 def run_last30days_research(topic: str, save_dir: Path) -> tuple[bool, dict]:
     """Invoke last30days skill for a topic. Returns (success, data)."""
-    cmd = [
-        "last30days",
-        "research",
-        topic,
-        "--save-dir", str(save_dir),
-        "--format", "json",
-        "--max-results", "20",
-        "--recency-days", "30",
-    ]
+    script = os.environ.get("LAST30DAYS_SCRIPT")
+    if script:
+        cmd = [
+            sys.executable,
+            script,
+            topic,
+            "--research-only",
+            "--save-dir", str(save_dir),
+            "--emit=json",
+        ]
+    else:
+        cmd = [
+            "last30days",
+            "research",
+            topic,
+            "--save-dir", str(save_dir),
+            "--format", "json",
+            "--max-results", "20",
+            "--recency-days", "30",
+        ]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
         if result.returncode == 0:
             try:
-                return True, json.loads(result.stdout)
+                data = json.loads(result.stdout)
             except json.JSONDecodeError:
                 return False, {"error": "Invalid JSON from last30days"}
+            if script and "sources" not in data and "results" in data:
+                data["sources"] = [
+                    {"url": item.get("url", ""), "title": item.get("title", "")}
+                    for item in data["results"]
+                    if item.get("url")
+                ]
+                data["findings"] = data["results"]
+                data["summary"] = "\n".join(
+                    cluster.get("summary", "")
+                    for cluster in data.get("clusters", [])
+                    if cluster.get("summary")
+                )
+            return True, data
         else:
             return False, {"error": result.stderr or f"exit code {result.returncode}"}
     except FileNotFoundError:
