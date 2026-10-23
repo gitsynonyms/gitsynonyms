@@ -15,6 +15,11 @@ on:
         required: false
         type: boolean
         default: false
+      compare_captions:
+        description: Opt in to a 3-minute third-party ASR comparison (uses configured provider API keys)
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -157,18 +162,49 @@ jobs:
             "https://www.youtube.com/watch?v=$VIDEO_ID" \
             --output-dir output \
             --languages zh-Hans,en-orig \
-            --box-display always \
-            --burn-in \
-            --video-encoder libx264 \
-            --global-quality 18
+            --download-source-video
+          folder="$(find output -mindepth 1 -maxdepth 1 -type d -name "*_${VIDEO_ID}" -print -quit)"
+          if [[ -z "$folder" || ! -d "$folder" ]]; then
+            echo "::error::The downloader did not create the caption archive for $VIDEO_ID."
+            exit 1
+          fi
+          source="$(find "$folder" -maxdepth 1 -type f -name "${VIDEO_ID}.source.*" -print -quit)"
+          if [[ -z "$source" || ! -f "$source" ]]; then
+            echo "::error::The downloader did not preserve the source video for $VIDEO_ID."
+            exit 1
+          fi
+          python scripts/video_processing.py \
+            --video "$source" \
+            --caption-dir "$folder" \
+            --video-id "$VIDEO_ID" \
+            --languages zh-Hans,en-orig \
+            --caption-box auto \
+            --box-opacity 0.85 \
+            --output-dir "$folder" \
+            --output "$folder/Burned_Bilingual_${VIDEO_ID}.mp4" \
+            --ass-output "$folder/bilingual_precise_zh-Hans-en-orig.ass" \
+            --timing-report "$folder/TIMING.json" \
+            --ergonomics warn \
+            --no-font-check
           mp4="$(find output -type f -name "Burned_Bilingual_${VIDEO_ID}.mp4" -print -quit)"
           if [[ -z "$mp4" || ! -f "$mp4" ]]; then
             echo "::error::The downloader did not produce a burned MP4 for $VIDEO_ID."
             exit 1
           fi
-          ass="$(find output -type f -name "*Bilingual_zh-Hans-en-orig.ass" -print -quit)"
+          ass="$(find output -type f -name "bilingual_precise_zh-Hans-en-orig.ass" -print -quit)"
           if [[ -z "$ass" || ! -f "$ass" ]]; then
             echo "::error::The downloader did not produce the ASS subtitles for $VIDEO_ID."
+            exit 1
+          fi
+          for report in "$folder/TIMING.json" "$folder/BURN.json"; do
+            if [[ ! -f "$report" ]]; then
+              echo "::error::The precise caption pipeline did not produce $report."
+              exit 1
+            fi
+          done
+          precision_vtt="$(find "$folder" -maxdepth 1 -type f -name "bilingual_precise_zh-Hans-en-orig.*.precision.vtt" -print -quit)"
+          if [[ -z "$precision_vtt" || ! -f "$precision_vtt" ]]; then
+            echo "::error::The precise caption pipeline did not produce a millisecond VTT."
             exit 1
           fi
           python scripts/subtitle_frame_qa.py \
@@ -176,6 +212,31 @@ jobs:
             --ass "$ass" \
             --language eng+chi_sim \
             --report output/FRAME_QA.json
+      - name: Compare a bounded excerpt with configured caption providers
+        if: steps.ready.outputs.video_id != '' && inputs.compare_captions
+        continue-on-error: true
+        env:
+          VIDEO_ID: ${{ steps.ready.outputs.video_id }}
+          ASSEMBLYAI_API_KEY: ${{ secrets.ASSEMBLYAI_API_KEY }}
+          DEEPGRAM_API_KEY: ${{ secrets.DEEPGRAM_API_KEY }}
+          GLADIA_API_KEY: ${{ secrets.GLADIA_API_KEY }}
+          REVAI_API_KEY: ${{ secrets.REVAI_API_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          folder="$(find output -mindepth 1 -maxdepth 1 -type d -name "*_${VIDEO_ID}" -print -quit)"
+          source="$(find "$folder" -maxdepth 1 -type f -name "${VIDEO_ID}.source.*" -print -quit)"
+          python scripts/third_party_captions.py \
+            --audio "$source" \
+            --reference "$folder" \
+            --reference-language en-orig \
+            --video-id "$VIDEO_ID" \
+            --language en \
+            --limit-seconds 180 \
+            --work-dir "$folder/thirdparty" \
+            --json
       - name: Publish MP4 to the video release
         if: steps.ready.outputs.video_id != ''
         env:

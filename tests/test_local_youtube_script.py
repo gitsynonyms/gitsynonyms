@@ -61,6 +61,63 @@ def test_ass_uses_chinese_above_english_with_chinese_1_2x_size():
     assert "Style: English,Arial,48,&H00FFD700,&H00FFFFFF," in result
 
 
+def test_ass_does_not_accumulate_stale_overlapping_cues():
+    chinese = [
+        {
+            "start": 8.88,
+            "end": 13.599,
+            "text": "。",
+            "word_timings": [{"start": 8.88, "end": 13.599, "text": "。"}],
+        },
+        {"start": 11.84, "end": 14.88, "text": "为什么有人要听"},
+        {"start": 13.599, "end": 16.64, "text": "母亲的话？"},
+    ]
+    english = [
+        {
+            "start": 8.88,
+            "end": 13.599,
+            "text": "her stepdad was indicted for raping her.",
+            "word_timings": [
+                {"start": 8.88, "end": 9.2, "text": "her"},
+                {"start": 9.2, "end": 9.76, "text": "stepdad"},
+                {"start": 9.76, "end": 9.92, "text": "was"},
+                {"start": 9.92, "end": 10.4, "text": "indicted"},
+                {"start": 10.4, "end": 10.72, "text": "for"},
+                {"start": 10.72, "end": 11.2, "text": "raping"},
+                {"start": 11.2, "end": 13.599, "text": "her."},
+            ],
+        },
+        {
+            "start": 11.84,
+            "end": 14.88,
+            "text": "Why should anyone listen to what the mother has to say?",
+        },
+    ]
+
+    result = youtube_srt.build_ass(chinese, english, box_style="none")
+    dialogues = [
+        line for line in result.splitlines() if line.startswith("Dialogue: 1,")
+    ]
+    overlapping_event = next(
+        line for line in dialogues if line.startswith("Dialogue: 1,0:00:11.84,")
+    )
+    plain_event = without_karaoke_tags(overlapping_event)
+
+    assert "stepdad" not in plain_event
+    assert "her." not in plain_event
+    assert "为什么有人要听" in plain_event
+    assert "Why should anyone listen" in plain_event
+    assert any(
+        line.startswith("Dialogue: 1,0:00:08.88,0:00:11.84,")
+        and "her stepdad" in without_karaoke_tags(line)
+        for line in dialogues
+    )
+    assert all(
+        line.split(",", 3)[2] != line.split(",", 3)[1]
+        for line in dialogues
+    )
+
+
 def test_ass_highlights_english_words_in_sequence():
     chinese = youtube_srt.parse_srt("1\n00:00:01,000 --> 00:00:03,000\n你好\n\n")
     english = youtube_srt.parse_srt(
@@ -1486,6 +1543,62 @@ def test_burn_in_reuses_the_given_source_video(monkeypatch, tmp_path):
     assert captured["video"] == source
     assert captured["ass"].suffix == ".ass"
     assert captured["output"].name == "Burned_Bilingual_IySF_8OArvw.mp4"
+
+
+def test_download_source_video_without_legacy_burn_in(monkeypatch, tmp_path):
+    metadata = {
+        "id": "IySF_8OArvw",
+        "title": "Example event",
+        "upload_date": "20261018",
+        "duration": 2,
+        "language": "en",
+        "subtitles": {
+            "en-orig": [{"ext": "vtt"}],
+            "zh-Hans": [{"ext": "vtt"}],
+        },
+        "automatic_captions": {},
+    }
+    video_downloads = []
+
+    def fake_run_yt_dlp(arguments, **_kwargs):
+        assert "--dump-single-json" in arguments
+        return subprocess.CompletedProcess([], 0, json.dumps(metadata), "")
+
+    def fake_download_video(url, video_id, directory):
+        video_downloads.append((url, video_id))
+        source = directory / f"{video_id}.source.mp4"
+        source.write_bytes(b"video")
+        return source
+
+    monkeypatch.setattr(youtube_srt, "run_ytdlp", fake_run_yt_dlp)
+    monkeypatch.setattr(youtube_srt, "download_video", fake_download_video)
+
+    chinese = tmp_path / "chinese.srt"
+    english = tmp_path / "english.srt"
+    chinese.write_text("1\n00:00:01,000 --> 00:00:02,000\n你好\n", encoding="utf-8")
+    english.write_text("1\n00:00:01,000 --> 00:00:02,000\nHello\n", encoding="utf-8")
+    archive = tmp_path / "archive"
+    url = "https://www.youtube.com/watch?v=IySF_8OArvw"
+
+    assert youtube_srt.main(
+        [
+            url,
+            "--output-dir",
+            str(archive),
+            "--sleep-subtitles",
+            "0",
+            "--local-file",
+            f"zh-Hans={chinese}",
+            "--local-file",
+            f"en-orig={english}",
+            "--download-source-video",
+        ]
+    ) == 0
+
+    assert video_downloads == [(url, "IySF_8OArvw")]
+    source = next(archive.rglob("IySF_8OArvw.source.mp4"))
+    assert source.read_bytes() == b"video"
+    assert not list(archive.rglob("Burned_Bilingual_IySF_8OArvw.mp4"))
 
 
 def test_main_preserves_raw_tracks_and_merges_original_caption_content(monkeypatch, tmp_path, capsys):

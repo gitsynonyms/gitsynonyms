@@ -10,16 +10,15 @@
 | 子部门 | 职责 | 实现 |
 |---|---|---|
 | 素材接收组 | 读取上游选择清单；校验视频与字幕目录、语言对、文件完整性和输出路径 | `scripts/video_processing.py` |
-| 字幕时间精确刻录司 | 发现并保留 YouTube 七种字幕格式；以 JSON3 逐词时间为主，结合其余格式交叉校验、对齐与回退；融合时间轴并生成 ASS | `scripts/subtitle_timing.py`；格式解析复用 `scripts/download_youtube_bilingual_srt.py` |
+| 字幕时间精确刻录司 | 统筹字幕源采集、七格式时间融合、第三方平台比较、语音模型研究和字幕人体工学；内部处室与实测边界见 [`subtitle-office-research.md`](subtitle-office-research.md) | `scripts/subtitle_timing.py`、`scripts/third_party_captions.py`、`scripts/speech_model_research.py`、`scripts/subtitle_ergonomics.py` |
 | 字幕区判定组 | 检测片源字幕区是否被横幅遮挡；有遮挡时启用半透明总统蓝背景，无横幅的干净片源则直接显示字幕、不画背景框 | `scripts/video_processing.py` |
 | 刻录渲染组 | 单遍 libass 硬字幕；按需生成 540p 预览和封面；成功后原子替换最终输出，避免留下半成品 | `scripts/video_processing.py` |
 | 质检交接组 | 使用 ffprobe 校验输入/输出；检查字体与缺字；输出 `BURN.json`、`TIMING.json` 及可复核的处理结果 | `scripts/video_processing.py`、`scripts/subtitle_timing.py` |
 
-第三方字幕比较、ASR 模型研究和字幕人体工学由
-`scripts/third_party_captions.py`、`scripts/speech_model_research.py`、
-`scripts/subtitle_ergonomics.py` 提供支撑能力，归入上述五个职责单元协作，不另增
-正式子部门。根目录旧档案 [`../MODULE2_ORG.md`](../MODULE2_ORG.md) 仅保留为本页入口，
-本页是当前五单元架构的唯一详细说明。
+字幕时间精确刻录司内部设置五个处室，负责研究与可复核评估；处室制度不等同于已经
+完成的在线实测或已取得的第三方服务结果。根目录旧档案
+[`../MODULE2_ORG.md`](../MODULE2_ORG.md) 仅保留为本页入口，本页是当前模块2职责的
+详细说明。
 
 ## 时间轴精度规则
 
@@ -53,8 +52,11 @@
   `TIMING.json` 和毫秒级 precision VTT。ASS 输出的 10 毫秒粒度与 5 毫秒最大量化误差
   是格式/渲染器边界，不得描述为亚毫秒精度。
 - `subtitle_ergonomics.py` 检查字幕人体工学约束，并由视频处理流程汇总告警/结果。
-- `third_party_captions.py` 与 `speech_model_research.py` 是可选比较/研究工具，不是
-  刻录主链路的必要依赖。
+- White House 主 workflow 将下载的字幕原始格式交给 `video_processing.py`；七格式融合、
+  纳秒内部时间轴、精确 ASS、`TIMING.json` 和自动字幕框判定由该流程生成。ASS/libass
+  的最终刻录粒度仍为 10 毫秒。
+- `third_party_captions.py` 与 `speech_model_research.py` 是可选研究工具，不是刻录主
+  链路的必要依赖；需要 API 凭据的厂商实测不可用代码存在性代替。
 - 独立模块本身已有实现和离线测试；是否接入具体的上游自动任务，应以对应 workflow
   调用和运行证据为准，不因模块存在就宣称云端端到端自动发布已完成。
 

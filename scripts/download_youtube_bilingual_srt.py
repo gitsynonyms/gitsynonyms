@@ -1469,6 +1469,29 @@ def _serialize_same_end_cues(
     return sorted(serialized, key=lambda cue: (cue["start"], cue["end"]))
 
 
+def _clip_timed_overlaps_at_next_cue(cues: Sequence[dict]) -> list[dict]:
+    """End timed rolling captions when the next caption replaces their text."""
+    ordered = sorted(cues, key=lambda cue: (cue["start"], cue["end"]))
+    starts = sorted({float(cue["start"]) for cue in ordered})
+    next_start_for = {
+        start: starts[index + 1]
+        for index, start in enumerate(starts[:-1])
+    }
+    clipped = []
+    for cue in ordered:
+        next_start = next_start_for.get(float(cue["start"]))
+        timings = cue.get("word_timings") or []
+        if (
+            next_start is not None
+            and cue["end"] > next_start
+            and timings
+        ):
+            clipped.append({**cue, "end": next_start})
+        else:
+            clipped.append(cue)
+    return clipped
+
+
 def build_ass(
     first: Sequence[dict],
     second: Sequence[dict],
@@ -1569,6 +1592,8 @@ def build_ass(
         second,
         paired_group_signatures=paired_group_signatures,
     )
+    first = _clip_timed_overlaps_at_next_cue(first)
+    second = _clip_timed_overlaps_at_next_cue(second)
     cues = [*first, *second]
     if any(cue["end"] <= cue["start"] or not cue["text"].strip() for cue in cues):
         raise ValueError("Cannot serialize empty or invalid subtitle cues.")
@@ -2117,6 +2142,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--box-width", type=int, default=1786, help="Caption-box width on the 1920x1080 canvas.")
     parser.add_argument("--box-height", type=int, default=139, help="Caption-box height on the 1920x1080 canvas.")
     parser.add_argument(
+        "--download-source-video",
+        action="store_true",
+        help="Download and keep the source video without burning subtitles into it.",
+    )
+    parser.add_argument(
         "--burn-in",
         action="store_true",
         help="Download and keep the source video, then create an MP4 with the ASS subtitles burned in.",
@@ -2200,6 +2230,11 @@ def main(argv: list[str] | None = None) -> int:
             raise ValueError("--date must use YYYY-MM-DD format.") from error
         folder = Path(args.output_dir) / f"{event_date}_{safe_name(title)}_{video_id}"
         folder.mkdir(parents=True, exist_ok=True)
+        downloaded_source = (
+            download_video(args.url, video_id, folder)
+            if args.download_source_video
+            else None
+        )
 
         print("Step 2/5: Downloading bottom track ({}) first...".format(second_code), flush=True)
         local_tracks = {}
@@ -2284,6 +2319,9 @@ def main(argv: list[str] | None = None) -> int:
                 source_video = Path(args.source_video)
                 if not source_video.is_file():
                     raise ValueError(f"--source-video file not found: {source_video}")
+                print(f"Step 6/6: Burning in the ASS subtitles into {source_video.name}...", flush=True)
+            elif downloaded_source is not None:
+                source_video = downloaded_source
                 print(f"Step 6/6: Burning in the ASS subtitles into {source_video.name}...", flush=True)
             else:
                 print("Step 6/6: Downloading the video and burning in the ASS subtitles...", flush=True)
