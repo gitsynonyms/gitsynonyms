@@ -27,3 +27,22 @@ to write contents and deploy GitHub Pages.
 
 `install_workflow.py` copies the tracked workflow template into
 `.github/workflows/`; the template and installed workflow should be kept in sync.
+
+## Module 1: material acquisition
+
+`acquisition.py` is the evidence-gathering layer. It reads a source registry
+(official RSS, GDELT, the Factbase calendar, the White House YouTube channels)
+and maintains `output/materials/ledger.jsonl` plus a materialised
+`manifest.json` for downstream analysis. Each record carries its source, URL,
+fetch time, content checksum, revision and a quality grade:
+
+- `A` payload captured and hashed (`--fetch-articles`, `--download`),
+- `B` citable reference, no payload,
+- `C` rejected as insufficient (`status` stays `rejected` for audit).
+
+The same event seen in two sources is merged once and counted as corroboration
+(`details.also_seen_in`, `events[].corroboration`). A dead source is reported
+as `unavailable`/`error` and never stops the rest of the run. `sources`,
+`collect` and `report` subcommands are documented in the repository README;
+`tests/test_acquisition.py` covers the behaviour offline.
+

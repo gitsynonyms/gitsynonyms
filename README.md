@@ -2,6 +2,26 @@
 
 `gitsynonyms` is a tiny Git command lookup tool focused on common aliases and close synonyms.
 
+> **最高指示**：本仓库的组织与巡检制度以 [`DIRECTIVE.md`](DIRECTIVE.md) 为最高效力
+> 文件；登记表为 [`inspection/registry.json`](inspection/registry.json) 与
+> [`resources/registry.json`](resources/registry.json)，执行入口分别为
+> `python scripts/inspection/plan.py check --github` 与
+> `python scripts/resources/check.py check`。任何 agent、账号、主机或
+> harness 在开始工作前必须先读该文件。
+
+## 组织与登记表
+
+| 司 / 处 | 登记表 | 校验入口 |
+|---|---|---|
+| 资源获取分析司 | `resources/registry.json`：钦定 White House 直播/视频频道与支撑来源，一条 URL 一条记录 | `python scripts/resources/check.py check` |
+| 定期巡检司 / 巡检任务执行方案处 | `inspection/registry.json`：每个最小可巡检单元一条记录 | `python scripts/inspection/plan.py check --github` |
+
+```bash
+python scripts/resources/check.py list        # 钦定与支撑资源
+python scripts/resources/check.py coverage    # 钦定资源覆盖率
+python scripts/inspection/plan.py plan        # 下一轮到期巡检单元
+```
+
 ## Install
 
 ```bash
@@ -95,6 +115,95 @@ The settings page also provides instant cross-page synchronization, a subtitle p
 
 SRT carries cue numbers, start/end times, and text. Styling tags such as `<b>`, `<i>`, `<u>`, and `<font color>` are inconsistently interpreted by players and some upload validators reject them. This downloader produces plain SubRip without styling tags for broad compatibility. For styling control (colors per language, font, position, outline, speaker styling), use ASS/SSA instead of SRT.
 
+## 模块1：舆情监控级素材获取部
+
+`scripts/monitoring/acquisition.py` 是整条流水线的第 1 个模块。它只做“取证”，
+不做判断、翻译或发布：把来源登记表变成一份可引用的素材底账，交给后续分析模块。
+它和下面每 5 分钟运行一次的视频监控工作流互补——监控工作流负责“发现新视频 →
+烧字幕 → 发布”，本模块负责回答“这条素材来自哪里、什么时候取的、内容哈希是多少、
+够不够格用于舆情判断”。
+
+只依赖 Python 标准库；`yt-dlp` 仅在 YouTube 来源被惰性导入。
+
+### 输出契约
+
+| 文件 | 作用 |
+|---|---|
+| `output/materials/ledger.jsonl` | 只追加的修订记录，内容每变化一次追加一行 |
+| `output/materials/manifest.json` | 下游读取的物化索引：`materials`、`events`、质量分布、本次运行统计 |
+| `output/materials/assets/` | `--download` 时保存的原始字节，按 SHA-256 前 16 位命名 |
+| `output/materials/.http-cache.json` | `ETag` / `Last-Modified` 条件请求缓存 |
+| `output/materials/.seen.json` | 每条素材最后一次被观察到的时刻 |
+
+单条记录的关键字段：
+
+```text
+material_id   event_key   kind(video|article|page|asset)   source   trust
+title  url  canonical_url  published_at  fetched_at  language  mime
+byte_size  sha256  grade  status  revision  first_seen_at  last_seen_at  local_path
+quality{grade, checks{provenance,time_anchor,checksum,payload,content,language}, reasons, text_chars, capture}
+details{capture, summary|text, feed|api|channel, duration, also_seen_in, ...}
+```
+
+### 质量分级
+
+- **A**：正文或文件已经落地并校验（`--fetch-articles` 抓正文、`--download` 存字节）。
+- **B**：可引用的索引级素材，标题、时间、来源、内容哈希齐全，但没有取正文。
+- **C**：不足以支撑舆情判断（例如只有标题没有摘要），记为 `rejected` 保留审计，
+  不进入 `delivered` 集合，`quality.reasons` 说明缺哪一项。
+
+### 去重与多源印证
+
+- `event_key`：YouTube 一律归一为 `yt:<video_id>`（`watch`、`youtu.be`、`shorts`
+  指向同一身份）；其余按去掉 `utm_*` 等追踪参数后的规范化 URL。
+- `material_id = sha1(event_key|kind)`：同一事件在第二个来源出现时合并为一条记录，
+  第二个来源写入 `details.also_seen_in`，并在 `events` 中计入 `corroboration`
+  与 `trust_score`（official 1.0 / wire 0.8 / aggregator 0.6，多源相加封顶 1.0）。
+- 只有内容哈希变化才产生新的 `revision`；URL 追踪参数和轮换的页面装饰不会制造噪音。
+
+### 用法
+
+```bash
+# 查看来源登记表
+python scripts/monitoring/acquisition.py sources
+
+# 采集最近 24 小时（默认窗口），每个来源最多 20 条
+python scripts/monitoring/acquisition.py collect
+
+# 只跑官方 RSS 与 GDELT，并抓取条目正文以升级为 A 级
+python scripts/monitoring/acquisition.py collect \
+  --sources whitehouse-news,gdelt-whitehouse --since 3d --fetch-articles
+
+# 不落盘的演练，输出机器可读的本次结果
+python scripts/monitoring/acquisition.py collect --dry-run --json
+
+# 读取上次 manifest，检查多源印证与失败来源
+python scripts/monitoring/acquisition.py report --limit 15
+```
+
+`--since` / `--until` 接受 ISO 时间或 `90m` / `24h` / `7d`；`--limit` 控制每个来源
+的条数，避免 `--fetch-articles` 触发对方限流；`--proxy-pool proxyindex/alive_http.txt`
+按请求轮换出口，`--timeout` 与 `--retries` 控制单次请求的重试预算，响应体上限 8 MB。
+
+### 失败语义
+
+每个来源在 `manifest.sources` 中独立记状态：`ok`、`unchanged`（条件请求 304）、
+`unavailable`（缺 `yt-dlp`、HTTP 404/429 等）、`error`（解析异常）、`disabled`。
+单个来源失败不会中断其余来源；只有全部启用来源都失败时 CLI 才返回 `1`。
+来源缺失不会伪造素材：宁可在报告里显示 `unavailable`，也不写入未经验证的内容。
+
+新增来源时，在模块的 `SOURCES` 中加一条 `SourceSpec`（`kind` 取 `rss` / `json` /
+`html` / `youtube` / `asset`，`json` 可用 `parser="gdelt"`）。正文抽取优先用页面
+的 `<main>`/`<article>`；若页面没有这类语义标签，用 `region` 指定容器 class 或 id
+的片段（如 Factbase 的 `calendar-results`），避免把站点导航当成素材。
+
+测试在 `tests/test_acquisition.py`，用本地 HTTP 服务与注入替身覆盖解析、分级、
+去重、修订、条件请求、失败降级与 CLI，不访问外网：
+
+```bash
+python -m pytest tests/test_acquisition.py
+```
+
 ## Video archive and scheduled monitoring
 
 `site/videos.html` lists every archived bilingual burn-in, newest first by event
@@ -110,6 +219,7 @@ publishing a new video never disturbs the existing ones.
 
 | Script | Role |
 |---|---|
+| `acquisition.py` | module 1: material ledger and manifest under `output/materials/` |
 | `multi_source.py` | optional discovery and verification across sources |
 | `comprehensive_monitor.py` | optional extended monitor; not used by the scheduled workflow |
 | `resolve_channel_feed.ps1` | read both flat channel listings and select the next unprocessed upload |
