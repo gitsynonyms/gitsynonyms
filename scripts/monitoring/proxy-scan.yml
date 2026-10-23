@@ -48,7 +48,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: proxy-full-scan
+  group: ${{ github.event_name == 'workflow_dispatch' && inputs.sync == false && format('proxy-full-scan-manual-{0}', github.run_id) || 'proxy-full-scan' }}
   cancel-in-progress: false
 
 jobs:
