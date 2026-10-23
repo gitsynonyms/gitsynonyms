@@ -39,7 +39,7 @@ The script prints numbered processing steps and streams yt-dlp's wait and downlo
 
 The GitHub Actions Windows runner installs Deno 2 and `yt-dlp[default]`, then explicitly enables Deno as yt-dlp's JavaScript runtime for YouTube extraction.
 
-For an authorized proxy in GitHub Actions, configure the repository Actions secret `YTDLP_PROXY` with the proxy URL. Both manual video downloads and the scheduled White House monitor use it for channel resolution and yt-dlp requests; if it is not configured, they connect directly. Never pass proxy credentials as workflow inputs or use an untrusted public proxy.
+For manual GitHub Actions downloads, the workflow selects a responsive HTTP proxy from at least two public lists and checks it against YouTube's HTTPS connectivity endpoint. Public proxies are untrusted and may expose connection metadata; the manual downloader does not send cookies. Configure the repository Actions secret `YTDLP_PROXY` to use a private proxy instead. The scheduled White House monitor never selects a public proxy and only uses that private secret, if configured, because it may use YouTube cookies.
 
 ASS preserves source cue start times and gaps without lead-in or gap filling. WebVTT inline word timestamps control English word highlighting; when absent, a text-only estimate cannot exactly follow speech. Consult the [BBC subtitle timing guidance](https://www.bbc.co.uk/accessibility/forproducts/guides/subtitles/#Timing) and [Aegisub ASS override tags](https://aegisub.org/docs/latest/ass_tags/) for format details.
 
