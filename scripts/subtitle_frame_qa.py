@@ -129,6 +129,7 @@ def analyze_frames(
     visible_lines = 0
     confidence_values = []
     repeated_caption_keys: dict[str, dict] = {}
+    previous_caption_by_language: dict[str, dict] = {}
     sample_end = start + SAMPLE_SECONDS
 
     for cue_index, cue in enumerate(sorted(cues, key=lambda item: float(item["start"]))):
@@ -150,6 +151,35 @@ def analyze_frames(
                         "previous_cue": prior["index"],
                     }
                 )
+            language = subtitle_ergonomics.line_language(text)
+            previous_caption = previous_caption_by_language.get(language)
+            if previous_caption:
+                gap = cue_start - previous_caption["end"]
+                prior_key = previous_caption["key"]
+                is_cumulative_prefix = (
+                    gap <= 1.0
+                    and len(prior_key) >= 8
+                    and key.startswith(prior_key)
+                    and len(prior_key) / len(key) >= 0.65
+                )
+                if is_cumulative_prefix:
+                    issues.append(
+                        {
+                            "code": "rolling_caption_repeats_prefix",
+                            "severity": "warning",
+                            "start": round(cue_start, 3),
+                            "text": text,
+                            "repeated_prefix": previous_caption["text"],
+                            "repeated_characters": len(prior_key),
+                            "previous_cue": previous_caption["index"],
+                        }
+                    )
+            previous_caption_by_language[language] = {
+                "end": cue_end,
+                "index": cue_index,
+                "key": key,
+                "text": text,
+            }
             repeated_caption_keys[key] = {
                 "end": cue_end,
                 "index": cue_index,
