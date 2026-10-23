@@ -1,5 +1,6 @@
 import importlib.util
 from pathlib import Path
+import json
 import urllib.error
 
 
@@ -17,6 +18,52 @@ def test_normalize_candidate_rejects_invalid_addresses():
     assert proxy_selector.normalize_candidate("256.1.1.1:80") is None
     assert proxy_selector.normalize_candidate("203.0.113.5:0") is None
     assert proxy_selector.normalize_candidate("proxy.example:8080") is None
+
+
+def test_youtube_video_id_accepts_supported_video_url_shapes():
+    assert proxy_selector.youtube_video_id(
+        "https://www.youtube.com/watch?v=5E09UkJq4Jo"
+    ) == "5E09UkJq4Jo"
+    assert proxy_selector.youtube_video_id(
+        "https://youtu.be/5E09UkJq4Jo"
+    ) == "5E09UkJq4Jo"
+    assert proxy_selector.youtube_video_id(
+        "https://m.youtube.com/shorts/5E09UkJq4Jo"
+    ) == "5E09UkJq4Jo"
+
+
+def test_youtube_video_id_rejects_unsupported_hosts_and_invalid_ids():
+    for url in (
+        "https://example.com/watch?v=5E09UkJq4Jo",
+        "https://youtube.com/watch?v=invalid",
+        "not-a-url",
+    ):
+        try:
+            proxy_selector.youtube_video_id(url)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"Expected invalid probe URL to be rejected: {url}")
+
+
+def test_player_page_is_available_only_for_requested_playable_video():
+    player_response = {
+        "playabilityStatus": {"status": "OK"},
+        "videoDetails": {"videoId": "5E09UkJq4Jo"},
+    }
+    page = (
+        b"<html>ytInitialPlayerResponse = "
+        + json.dumps(player_response).encode()
+        + b";</html>"
+    )
+
+    assert proxy_selector.player_page_is_available(page, "5E09UkJq4Jo")
+    assert not proxy_selector.player_page_is_available(page, "otherVideo01")
+    blocked_page = page.replace(b'"status": "OK"', b'"status": "LOGIN_REQUIRED"')
+    assert not proxy_selector.player_page_is_available(
+        blocked_page,
+        "5E09UkJq4Jo",
+    )
 
 
 def test_fetch_candidates_reads_multiple_lists_and_caps_each_source():
@@ -82,6 +129,25 @@ def test_select_proxies_returns_fastest_bounded_candidates():
 
     assert selected == ["http://192.0.2.2:80", "http://192.0.2.3:80", "http://192.0.2.1:80"]
     assert source_counts == {"source-a": 2, "source-b": 2}
+
+
+def test_select_proxies_probes_requested_video_when_no_custom_probe_is_given(monkeypatch):
+    probed = []
+
+    def fake_probe(proxy, video_id=None):
+        probed.append((proxy, video_id))
+        return 0.1
+
+    monkeypatch.setattr(proxy_selector, "probe_proxy", fake_probe)
+    candidates = {"source-a": ["http://192.0.2.1:80"]}
+
+    selected, _source_counts = proxy_selector.select_proxies(
+        candidates,
+        video_id="5E09UkJq4Jo",
+    )
+
+    assert selected == ["http://192.0.2.1:80"]
+    assert probed == [("http://192.0.2.1:80", "5E09UkJq4Jo")]
 
 
 def test_select_proxies_returns_empty_when_none_pass_probe():
