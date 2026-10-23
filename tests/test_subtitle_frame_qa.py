@@ -130,6 +130,24 @@ def test_exact_repeated_cues_are_reported_as_warnings_not_duplicates():
     assert any(issue["code"] == "repeated_caption" for issue in result["issues"])
 
 
+def test_cumulative_rolling_cues_report_the_repeated_prefix():
+    cues = [
+        {"start": 2, "end": 4, "text": "总统先生艾米阿特金斯的母亲"},
+        {"start": 4.5, "end": 6, "text": "总统先生艾米阿特金斯的母亲后来受到威胁"},
+    ]
+    frames = [{"index": 0, "lines": [tesseract_line("总统先生")]}]
+
+    result = subtitle_frame_qa.analyze_frames(frames, 1920, 1080, cues, 0)
+
+    issue = next(
+        item
+        for item in result["issues"]
+        if item["code"] == "rolling_caption_repeats_prefix"
+    )
+    assert issue["severity"] == "warning"
+    assert issue["repeated_characters"] == 13
+
+
 def test_empty_ocr_result_fails_instead_of_claiming_the_frames_passed():
     result = subtitle_frame_qa.analyze_frames(
         [{"index": 0, "lines": []}], 1920, 1080, [], 0

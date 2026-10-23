@@ -54,6 +54,7 @@ ENGLISH_HIGHLIGHT_COLOR = "#00D7FF"
 # YouTube rounds rolling-caption boundary timestamps to the millisecond, so an
 # inline word timestamp can land a few milliseconds outside its own cue.
 INLINE_TIMESTAMP_TOLERANCE = 0.5
+ROLLING_CUE_GAP_TOLERANCE = 1.0
 
 
 def video_id_from_url(value: str) -> str:
@@ -1143,7 +1144,7 @@ def _rolling_cue_groups(cues: Sequence[dict]) -> list[list[dict]]:
             )
             temporally_contiguous = cue["start"] <= max(
                 prior["end"] for prior in current_group
-            ) + 0.25
+            ) + ROLLING_CUE_GAP_TOLERANCE
             rolling = _rolling_delta(
                 previous_text,
                 current_text,

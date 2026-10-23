@@ -275,6 +275,25 @@ def test_ass_serializes_rolling_cues_with_different_end_times_without_repeats():
     )
 
 
+def test_ass_recognizes_cumulative_cues_after_a_short_gap():
+    cues = youtube_srt.parse_srt(
+        "1\n00:00:01,000 --> 00:00:02,000\n"
+        "总统先生，艾米·阿特金斯的母亲\n\n"
+        "2\n00:00:02,600 --> 00:00:04,000\n"
+        "总统先生，艾米·阿特金斯的母亲后来受到威胁\n"
+    )
+
+    serialized = youtube_srt._serialize_same_end_cues(cues)
+
+    assert [(cue["start"], cue["end"]) for cue in serialized] == [
+        (1.0, 2.6),
+        (2.6, 4.0),
+    ]
+    assert "".join(cue["text"] for cue in serialized) == (
+        "总统先生，艾米·阿特金斯的母亲后来受到威胁"
+    )
+
+
 def test_ass_rolls_overlapping_youtube_caption_window_into_one_line():
     chinese = youtube_srt.parse_srt(
         "1\n00:00:04,160 --> 00:00:08,720\n女士们先生们，美国总统\n\n"
