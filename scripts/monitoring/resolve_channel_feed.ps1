@@ -13,14 +13,22 @@ $channels = @(
       "https://www.youtube.com/@WhiteHouse/videos",
       "https://www.youtube.com/@WhiteHouse/streams"
 )
-$proxyArguments = @()
-if (-not [string]::IsNullOrWhiteSpace($env:YTDLP_PROXY)) {
-    $proxyArguments = @("--proxy", $env:YTDLP_PROXY)
+$proxyCandidates = @()
+if (-not [string]::IsNullOrWhiteSpace($env:YTDLP_PROXY_POOL_JSON)) {
+    $proxyCandidates = @($env:YTDLP_PROXY_POOL_JSON | ConvertFrom-Json)
 }
 $foundItems = 0
 foreach ($channel in $channels) {
-      $listing = & yt-dlp @proxyArguments --js-runtimes deno --no-warnings --ignore-errors --flat-playlist --playlist-end 10 --print "%(id)s|%(title)s" $channel
-      if ($LASTEXITCODE -ne 0 -and $listing.Count -eq 0) {
+      $listing = & yt-dlp --js-runtimes deno --no-warnings --ignore-errors --flat-playlist --playlist-end 10 --print "%(id)s|%(title)s" $channel 2>$null
+      $listingExitCode = $LASTEXITCODE
+      if ($listingExitCode -ne 0 -and $proxyCandidates.Count -gt 0) {
+          foreach ($proxy in $proxyCandidates) {
+              $listing = & yt-dlp --proxy $proxy --js-runtimes deno --no-warnings --ignore-errors --flat-playlist --playlist-end 10 --print "%(id)s|%(title)s" $channel 2>$null
+              $listingExitCode = $LASTEXITCODE
+              if ($listingExitCode -eq 0 -and $listing.Count -gt 0) { break }
+          }
+      }
+      if ($listingExitCode -ne 0 -and $listing.Count -eq 0) {
           throw "Could not inspect White House channel: $channel"
       }
       foreach ($line in $listing) {

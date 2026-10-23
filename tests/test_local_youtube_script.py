@@ -551,6 +551,48 @@ def test_ytdlp_reports_both_direct_and_proxy_failures(monkeypatch):
     assert calls[1][calls[1].index("--proxy") + 1] == proxy
 
 
+def test_ytdlp_tries_public_proxy_pool_in_order_after_direct_failure(monkeypatch):
+    proxies = [
+        "http://192.0.2.1:8080",
+        "http://192.0.2.2:8080",
+        "http://192.0.2.3:8080",
+        "http://192.0.2.4:8080",
+        "http://192.0.2.5:8080",
+    ]
+    calls = []
+
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda name: f"{name}.exe")
+    monkeypatch.delenv("YTDLP_PROXY", raising=False)
+    monkeypatch.setenv("YTDLP_PROXY_POOL_JSON", json.dumps(proxies))
+
+    def run(command, **kwargs):
+        calls.append(command)
+        if len(calls) <= 3:
+            raise subprocess.CalledProcessError(1, command, stderr="Proxy unavailable")
+        return subprocess.CompletedProcess(command, 0, "{}", "")
+
+    monkeypatch.setattr(youtube_srt.subprocess, "run", run)
+
+    result = youtube_srt.run_ytdlp(["--dump-single-json", "https://youtu.be/IySF_8OArvw"])
+
+    assert result.returncode == 0
+    assert len(calls) == 4
+    assert "--proxy" not in calls[0]
+    assert [calls[index][calls[index].index("--proxy") + 1] for index in range(1, 4)] == proxies[:3]
+
+
+def test_ytdlp_rejects_invalid_proxy_pool_json(monkeypatch):
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda name: f"{name}.exe")
+    monkeypatch.setenv("YTDLP_PROXY_POOL_JSON", "not-json")
+
+    try:
+        youtube_srt.run_ytdlp(["--dump-single-json", "https://youtu.be/IySF_8OArvw"])
+    except RuntimeError as error:
+        assert "not valid JSON" in str(error)
+    else:
+        raise AssertionError("Expected invalid proxy-pool JSON to fail")
+
+
 def test_ytdlp_uses_configured_cookies_file(monkeypatch, tmp_path):
     captured = []
     cookies = tmp_path / "youtube-cookies.txt"
