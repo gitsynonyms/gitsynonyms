@@ -1,0 +1,106 @@
+# 复制到 .github/workflows/patrol.yml 即可启用（bot 令牌没有 workflows 权限，无法直接推送到该路径）。
+# 职责：每 5 分钟（GitHub 允许的最小间隔）检查 @WhiteHouse/videos 最新一条，未发布则做双语字幕 + 硬字幕刻录并提交回 main。
+name: White House latest video patrol
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: wh-latest-video-patrol
+  cancel-in-progress: true
+
+jobs:
+  patrol:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Install yt-dlp and FFmpeg
+        shell: bash
+        run: |
+          python -m pip install "yt-dlp[default]"
+          choco install ffmpeg --yes --no-progress
+
+      - name: Resolve the latest upload
+        id: latest
+        shell: bash
+        run: |
+          set -euo pipefail
+          id="$(yt-dlp --no-warnings --flat-playlist --playlist-end 1 --print '%(id)s' https://www.youtube.com/@WhiteHouse/videos | head -n 1)"
+          test -n "$id"
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+          if [ -f "site/media/${id}.bilingual.mp4" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Subtitles (zh-Hans above en-orig)
+        if: steps.latest.outputs.skip == 'false'
+        shell: bash
+        run: |
+          python scripts/download_youtube_bilingual_srt.py \
+            "https://www.youtube.com/watch?v=${{ steps.latest.outputs.id }}" \
+            --output-dir output --languages zh-Hans,en-orig
+
+      - name: Download the video through a working proxy
+        if: steps.latest.outputs.skip == 'false'
+        shell: bash
+        run: |
+          python scripts/fetch_youtube_video.py \
+            "https://www.youtube.com/watch?v=${{ steps.latest.outputs.id }}" \
+            --output-dir work --refresh --workers 96
+
+      - name: Burn the ASS into the MP4 and publish the caption files
+        if: steps.latest.outputs.skip == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          id="${{ steps.latest.outputs.id }}"
+          folder="$(ls -d output/*_"$id")"
+          ass="$(ls "$folder"/*_Bilingual_*.ass | head -n 1)"
+          mkdir -p site/media
+          ffmpeg -y -i work/source.mp4 -vf "subtitles='${ass//\\//\\\\}'" \
+            -c:v libx264 -preset veryfast -crf 26 -c:a aac -b:a 64k -ac 1 \
+            "site/media/${id}.bilingual.mp4"
+          cp "$(ls "$folder"/*_Bilingual_*.srt | head -n 1)" "site/media/${id}.zh-en.srt"
+          cp "$(ls "$folder"/*_Bilingual_*.vtt | head -n 1)" "site/media/${id}.zh-en.vtt"
+          cp "$ass" "site/media/${id}.zh-en.ass"
+          # Git 单文件上限 100 MB；超出时重跑并加 scale=-2:480 或提高 CRF
+          size=$(stat -c%s "site/media/${id}.bilingual.mp4")
+          test "$size" -lt 97000000
+
+      - name: Commit the published package
+        if: steps.latest.outputs.skip == 'false'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site/media
+          git commit -m "patrol: publish ${{ steps.latest.outputs.id }} captions and burned MP4"
+          git push
+
+      # GITHUB_TOKEN 的推送不会触发其它 workflow，所以显式触发 Pages 部署
+      - name: Deploy the updated page
+        if: steps.latest.outputs.skip == 'false'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run deploy-pages.yml --ref main
