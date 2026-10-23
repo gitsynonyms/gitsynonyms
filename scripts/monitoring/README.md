@@ -7,6 +7,33 @@ during periods of high load.
 It reads flat channel listings and ignores individual metadata failures during
 discovery, then downloads the selected video's captions and media.
 
+## Proxy full scan (list of lists squared)
+
+The monitor consumes the published result of the full proxy scan. The scan is one
+fixed flow, `proxyindex/full_scan.py`: enumerate the Chinese/English synonym
+matrix, walk it through the GitHub search API with a resumable cursor, expand
+every repository x conventional file path, fetch every source, probe every
+candidate (TCP, then a real HTTPS request), re-verify the fastest candidates and
+publish the ten fastest to `proxyindex/top10.json`. See
+[`proxyindex/README.md`](../../proxyindex/README.md).
+
+Hourly scheduling and the push to `main` live in the tracked workflow source
+`scripts/monitoring/proxy-scan.yml`. Files under `.github/workflows` need a
+token with the `workflows` permission, so a maintainer installs it with:
+
+```bash
+python scripts/monitoring/install_workflow.py all
+```
+
+Until it is installed the scan still runs automatically: the five-minute monitor
+calls `scripts/select_public_ytdlp_proxies.py`, which reuses any scan younger
+than an hour and otherwise runs a bounded full scan in the same job. Publishing
+the result set before that is manual:
+
+```bash
+python proxyindex/full_scan.py scan --sync
+```
+
 The workflow handles one unprocessed upload per run. It downloads both
 `zh-Hans` and `en-orig` captions without cookies, burns the bilingual ASS into
 an MP4 on the GitHub-hosted Windows runner, uploads the MP4 to a GitHub Release

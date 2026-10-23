@@ -1,6 +1,6 @@
 {
   "schema": "gitsynonyms.inspection.registry/1",
-  "updated_at": "2026-10-23T12:25:00Z",
+  "updated_at": "2026-10-23T04:47:00Z",
   "directive": "DIRECTIVE.md",
   "principle": "minimum-granularity",
   "cadence_policy": {
@@ -121,27 +121,6 @@
         "gh api repos/gitsynonyms/gitsynonyms/actions/workflows/infogap.yml"
       ],
       "note": "按需手动运行；巡检关注研究结果、质量门禁及 Pages 发布结论。"
-    },
-    {
-      "id": "gh:gitsynonyms/proxy-full-scan",
-      "mechanism": "github-workflow",
-      "title": "Proxy full scan",
-      "target": {
-        "repo": "gitsynonyms/gitsynonyms",
-        "workflow": "Proxy full scan",
-        "path": ".github/workflows/proxy-scan.yml"
-      },
-      "trigger": "schedule",
-      "cadence": "1h",
-      "severity": "P2",
-      "owner": "资源获取分析司",
-      "status": "active",
-      "evidence": [
-        "gh run list --workflow \"Proxy full scan\" --limit 20 --json conclusion,createdAt,event",
-        "gh api repos/gitsynonyms/gitsynonyms/actions/workflows/proxy-scan.yml",
-        "python proxyindex/full_scan.py status --json"
-      ],
-      "note": "全量 list² 扫描并把 top10 同步到 main；失败时素材获取沿用上轮结果，按 P2 处置。"
     }
   ],
   "gaps": [

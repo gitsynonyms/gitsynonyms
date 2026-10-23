@@ -372,5 +372,15 @@ python proxyindex/full_scan.py top --json      # 当前发布的 top10
 python scripts/monitoring/acquisition.py collect --proxy-scan full
 ```
 
-定时执行见 `.github/workflows/proxy-scan.yml`（每小时 + 手动），巡检单元登记为
-`gh:gitsynonyms/proxy-full-scan`。
+定时执行的工作流源文件是 [`scripts/monitoring/proxy-scan.yml`](scripts/monitoring/proxy-scan.yml)
+（每小时 + 手动，`--sync` 同步 main）。受令牌 `workflows` 权限限制，`.github/workflows/`
+下的文件需由具备该权限的维护者用一条命令安装：
+
+```bash
+python scripts/monitoring/install_workflow.py all
+```
+
+安装前扫描仍然自动执行：现有的 `monitor-whitehouse.yml` 每 5 分钟调用
+`scripts/select_public_ytdlp_proxies.py`，没有 1 小时内的扫描结果时会在同一任务内跑一遍
+全量流程；该工作流本身已登记为巡检单元 `gh:gitsynonyms/monitor-whitehouse`。安装独立
+工作流后再补登记 `gh:gitsynonyms/proxy-full-scan`（每个工作流 × 触发方式一条 MIU）。

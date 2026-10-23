@@ -310,7 +310,7 @@ def main() -> int:
         print("GITHUB_ENV is not set; run this selector inside GitHub Actions.", file=sys.stderr)
         return 1
     try:
-        scan_mode = os.environ.get("PROXY_SCAN_MODE", "full").strip().lower()
+        scan_mode = os.environ.get("PROXY_SCAN_MODE", "auto").strip().lower()
         scan_budget = float(os.environ.get("PROXY_SCAN_BUDGET", FULL_SCAN_BUDGET_SECONDS))
         index_dir = Path(os.environ.get("PROXY_INDEX_DIR", INDEX_DIR))
         scan = ensure_full_scan(

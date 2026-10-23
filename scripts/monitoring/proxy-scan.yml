@@ -2,7 +2,12 @@ name: Proxy full scan
 run-name: Proxy full scan (list²)
 
 # 固化素材获取前的代理全量扫描：检索词矩阵 → list² 来源 → 全量采集 → 两段探测
-# → top10 测速排名 → 同步到云端仓库 main。巡检登记见 inspection/registry.json。
+# → top10 测速排名 → 同步到云端仓库 main。
+#
+# 这是受版本控制的“活动工作流源文件”，与 monitor-whitehouse.yml 同一约定：创建
+# .github/workflows 下的文件需要带 workflows 权限的令牌。用 install_workflow.py
+# 安装后再推送（步骤见 scripts/monitoring/README.md）。安装前，扫描仍由现有的
+# monitor-whitehouse.yml 通过 select_public_ytdlp_proxies.py 自动触发。
 on:
   schedule:
     - cron: "23 * * * *"

@@ -38,7 +38,7 @@ HTML 与 JSON 报告。默认计划周期为 6 小时，另支持手动运行。
 | --- | --- |
 | 检索词矩阵 | `proxyindex/query_matrix.py`（中英文同义词/近义词全排列） |
 | 全量流程 | `proxyindex/full_scan.py` |
-| 调度 | `.github/workflows/proxy-scan.yml`（每小时 + 手动） |
+| 调度 | `scripts/monitoring/proxy-scan.yml`（每小时 + 手动，源文件；经 `install_workflow.py` 安装为活动工作流） |
 | 发布物 | `proxyindex/top10.json`、`top10.txt`、`scan-report.md`、`scan-state.json` |
 | 消费方 | `scripts/monitoring/acquisition.py`、`scripts/select_public_ytdlp_proxies.py` |
 
@@ -48,5 +48,7 @@ HTML 与 JSON 报告。默认计划周期为 6 小时，另支持手动运行。
 2. 单轮受时间预算约束时，必须写出游标与覆盖率；未探测候选记为 `unknown`，不得计入可用。
 3. 采集失败按 `missing`（永久）与 `error`（18 小时后重试）分别登记，不得静默丢弃来源。
 4. 发布前必须对候选做一次立即复验；只有复验通过的 10 个可以进入 `top10.json`。
-5. 发布物同步到云端仓库 `main`；推送失败按 P2 处置，不得改写已发布结果。
+5. 发布物同步到云端仓库 `main`；推送失败按 P2 处置，不得改写已发布结果。活动工作流
+   安装前，扫描跟随 `monitor-whitehouse.yml` 的巡检单元执行，独立工作流安装后再登记
+   `gh:gitsynonyms/proxy-full-scan`。
 6. 只采集 `ip:port` 形式的 HTTP 代理，不采集 SOCKS 与订阅明文，不在任何公共代理上传输凭据、Cookie 或密钥。
