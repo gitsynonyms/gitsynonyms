@@ -42,6 +42,10 @@ gitsynonyms checkout pull
 gitsynonyms --json checkout
 ```
 
+## Last30Days independent demo
+
+The static page at [`site/last30days/`](./site/last30days/) demonstrates the upstream Last30Days skill as a standalone tool. It generates agent-skill and CLI usage commands for any topic; it does not run research in the browser or connect to the separate presidential-monitoring report.
+
 ## Python API
 
 ```python
