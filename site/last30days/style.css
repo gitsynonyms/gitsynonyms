@@ -113,6 +113,37 @@ input {
   font: inherit;
 }
 
+input:disabled {
+  opacity: .65;
+}
+
+.video-meta {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid #28334c;
+  border-radius: 10px;
+  background: #0b1020;
+}
+
+.video-meta dt {
+  color: #8490a9;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.video-meta dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.video-meta dd:empty {
+  min-height: 1em;
+}
+
 .example {
   display: grid;
   gap: 10px;
@@ -154,6 +185,11 @@ button {
 
 button:hover {
   background: rgb(99 102 241 / 28%);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
 }
 
 .status,

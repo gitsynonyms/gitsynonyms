@@ -4,16 +4,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#0b1020">
-    <meta name="description" content="独立体验 Last30Days research skill：围绕任意主题研究过去 30 天的公开讨论。">
-    <title>Last30Days · 独立演示</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="description" content="独立体验 Last30Days research skill，并以最新归档的白宫 YouTube 视频为研究选题。">
+    <title>Last30Days · 技能展示与最新视频选题</title>
+    <link rel="stylesheet" href="style.css?v=latest-video-research-v1">
   </head>
   <body>
     <main class="shell">
       <header>
         <p class="eyebrow">INDEPENDENT SKILL DEMO</p>
         <h1>Last30Days</h1>
-        <p class="intro">给它一个主题，研究过去 30 天里人们实际在讨论什么。这个演示页只介绍并生成独立使用命令，不连接总统监测或其他项目。</p>
+        <p class="intro">先独立体验 Last30Days 技能，再以最新白宫 YouTube 视频中的人物、新闻或话题作为研究选题。页面只生成调用命令，不会自动把研究接入监测流程。</p>
         <nav aria-label="页面导航">
           <a href="../">返回字幕工具</a>
           <a href="https://github.com/mvanhorn/last30days-skill" target="_blank" rel="noopener noreferrer">技能源仓库 ↗</a>
@@ -21,41 +21,67 @@
       </header>
 
       <section class="panel" aria-labelledby="try-title">
-        <h2 id="try-title">试一个主题</h2>
+        <h2 id="try-title">① 独立技能展示</h2>
         <p>例如：AI coding agents、某个产品、一个开源项目，或你想了解的近期话题。</p>
-        <label for="topic">研究主题</label>
-        <input id="topic" name="topic" value="AI coding agents" maxlength="200" autocomplete="off">
-        <p id="topic-error" class="error" role="alert" hidden>请输入一个主题。</p>
+        <label for="skill-topic">研究主题</label>
+        <input id="skill-topic" name="skill-topic" value="AI coding agents" maxlength="200" autocomplete="off">
+        <p id="skill-topic-error" class="error" role="alert" hidden>请输入一个主题。</p>
 
         <div class="example">
           <h3>在 AI 助手中使用</h3>
           <p>安装到支持 Agent Skills 的助手后，直接用自然语言调用技能。</p>
           <pre><code id="skill-command"></code></pre>
-          <button type="button" data-copy="skill-command">复制调用方式</button>
+          <button type="button" data-copy="skill-command" data-status="skill-copy-status">复制调用方式</button>
         </div>
 
         <div class="example">
           <h3>独立运行 CLI</h3>
-          <p>不依赖总统监测项目，可直接从技能仓库运行研究引擎。需要 Python 3.12+；先运行 preflight，并按它的输出选择解释器。</p>
+          <p>可直接从技能仓库运行研究引擎。需要 Python 3.12+；先运行 preflight，并按它的输出选择解释器。</p>
           <pre><code id="cli-command"></code></pre>
-          <button type="button" data-copy="cli-command">复制 CLI 命令</button>
+          <button type="button" data-copy="cli-command" data-status="skill-copy-status">复制 CLI 命令</button>
         </div>
 
-        <p id="copy-status" class="status" aria-live="polite"></p>
+        <p id="skill-copy-status" class="status" aria-live="polite"></p>
+      </section>
+
+      <section class="panel" aria-labelledby="video-title">
+        <h2 id="video-title">② 结合最新白宫 YouTube 视频</h2>
+        <p>页面会读取“最新成片”中最近归档的视频和英文字幕。默认研究主题为视频标题；你也可以查看字幕后换成视频里出现的人物、某条新闻或具体议题，再让 Last30Days 查找过去 30 天的公开讨论。频道刚上传但尚未归档的视频会在字幕站更新后显示。</p>
+        <p id="video-status" class="status" aria-live="polite">正在读取最新视频…</p>
+        <dl class="video-meta">
+          <div>
+            <dt>最新视频</dt>
+            <dd id="latest-video-title">尚未载入</dd>
+          </div>
+          <div>
+            <dt>来源</dt>
+            <dd><a id="latest-video-link" target="_blank" rel="noopener noreferrer" hidden>打开 YouTube 视频 ↗</a></dd>
+          </div>
+          <div>
+            <dt>字幕</dt>
+            <dd><a id="latest-caption-link" target="_blank" rel="noopener noreferrer" hidden>查看英文字幕 ↗</a></dd>
+          </div>
+        </dl>
+        <label for="video-topic">从视频中选择人物、新闻或话题</label>
+        <input id="video-topic" name="video-topic" maxlength="200" autocomplete="off" placeholder="载入视频标题后可编辑" disabled>
+        <p id="video-topic-error" class="error" role="alert" hidden>请输入一个研究对象。</p>
+        <pre><code id="video-skill-command">等待最新视频信息…</code></pre>
+        <button id="copy-video-command" type="button" data-copy="video-skill-command" data-status="video-copy-status" disabled>复制视频选题调用方式</button>
+        <p id="video-copy-status" class="status" aria-live="polite"></p>
       </section>
 
       <section class="panel" aria-labelledby="install-title">
-        <h2 id="install-title">安装为独立技能</h2>
+        <h2 id="install-title">安装 Last30Days 技能</h2>
         <p>Copilot、Codex、Cursor、Gemini CLI 等 Agent Skills 宿主可用 Skills CLI 安装：</p>
         <pre><code>npx skills add mvanhorn/last30days-skill -g</code></pre>
         <p>安装后，在支持该技能的助手中输入 <code>/last30days 你的研究主题</code>。技能会按主题和可用凭据选择数据源；未配置的数据源可能不可用。</p>
-        <p class="notice">本网页不会代替你运行研究或保存凭据。上面的命令在你自己的技能宿主或终端中执行；这里的 Last30Days 演示与总统监测保持独立。</p>
+        <p class="notice">本网页不会代替你运行研究或保存凭据。上面的命令在你自己的技能宿主或终端中执行；视频部分只是提供一个真实选题入口，并不把 Last30Days 接入白宫视频监测流程。</p>
       </section>
 
       <footer>
         <a href="https://github.com/mvanhorn/last30days-skill" target="_blank" rel="noopener noreferrer">查看 Last30Days 源码、文档与数据源要求</a>
       </footer>
     </main>
-    <script src="demo.js"></script>
+    <script src="demo.js?v=latest-video-research-v1"></script>
   </body>
 </html>
