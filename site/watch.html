@@ -4,15 +4,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#0b1020">
-    <title>总统与副总统声明 · 双语字幕包</title>
+    <title>白宫视频 · 双语硬字幕成品</title>
     <link rel="stylesheet" href="styles.css?v=caption-preview-v6">
   </head>
   <body>
     <main class="shell">
       <header>
-        <p class="eyebrow">GITSYNONYMS · CAPTION PACKAGE</p>
-        <h1>总统与副总统声明 · 双语字幕包</h1>
-        <p class="intro">原片：<em>President Trump and Vice President JD Vance Make an Announcement</em>（The White House，2026-10-20，1:42:05）。中文字幕来自 YouTube 自动翻译轨（zh-Hans），英文来自自动生成原声轨（en-orig）；两条轨道按时间对齐，未经人工校对。</p>
+        <p class="eyebrow">GITSYNONYMS · BURNED CAPTIONS</p>
+        <h1>白宫视频 · 双语硬字幕成品</h1>
+        <p class="intro">每一条都由 <code>scripts/download_youtube_bilingual_srt.py</code> 生成 ASS（中文金色在上、英文逐词亮青、全程磨砂玻璃背景框），再用 FFmpeg 烧进画面。中文字幕来自 YouTube 自动翻译轨，英文来自自动生成轨，<strong>未经人工校对</strong>。</p>
         <nav class="page-nav" aria-label="主导航">
           <a href="./">字幕生成</a>
           <a href="settings.html">字幕设置 <span aria-hidden="true">↗</span></a>
@@ -20,47 +20,39 @@
         </nav>
       </header>
 
-      <section class="panel" aria-labelledby="source-title">
-        <h2 id="source-title">原片</h2>
+      <article class="panel">
+        <h2>2026-10-22 · Gaggles with Press Upon Departure</h2>
+        <p class="hint">12:33 · 720p 硬字幕 · CRF 26 · 单文件</p>
         <div class="video-frame">
-          <iframe
-            src="https://www.youtube-nocookie.com/embed/IQKChHxD9e8"
-            title="President Trump and Vice President JD Vance Make an Announcement"
-            allow="accelerometer; encrypted-media; picture-in-picture; web-share"
-            allowfullscreen
-            loading="lazy"></iframe>
+          <video controls preload="metadata" playsinline src="media/5E09UkJq4Jo.bilingual.mp4"></video>
         </div>
-        <p class="hint">有声内容从 00:34:19 开始，此前为直播等待画面；字幕包的时间轴与原片一致。</p>
-      </section>
-
-      <section class="panel" aria-labelledby="files-title">
-        <h2 id="files-title">字幕文件</h2>
         <ul class="media-list">
-          <li>
-            <a href="media/IQKChHxD9e8.zh-en.ass">ASS</a>
-            <span class="hint">1756 条双语字幕：中文金色在上、英文白色在下并逐词高亮，含全程可见的磨砂玻璃背景框，可直接播放或用于刻录。</span>
-          </li>
-          <li>
-            <a href="media/IQKChHxD9e8.zh-en.srt">SRT</a>
-            <span class="hint">纯文本双语字幕，UTF-8 BOM + CRLF，兼容大多数播放器与上传平台。</span>
-          </li>
-          <li>
-            <a href="media/IQKChHxD9e8.zh-en.vtt">WebVTT</a>
-            <span class="hint">网页播放器使用的双语轨道。</span>
-          </li>
+          <li><a href="media/5E09UkJq4Jo.zh-en.ass">ASS</a> <span class="hint">刻录源，含样式与全程背景框</span></li>
+          <li><a href="media/5E09UkJq4Jo.zh-en.srt">SRT</a> <span class="hint">纯文本双语，UTF-8 BOM + CRLF</span></li>
+          <li><a href="media/5E09UkJq4Jo.zh-en.vtt">WebVTT</a> <span class="hint">网页播放器轨道</span></li>
+          <li><a href="https://www.youtube.com/watch?v=5E09UkJq4Jo">原片</a></li>
         </ul>
-      </section>
+      </article>
 
-      <section class="panel" aria-labelledby="burn-title">
-        <h2 id="burn-title">刻录成硬字幕视频</h2>
-        <p class="hint">本页目前只托管字幕文件，没有托管刻录版 MP4：原片媒体流在当前构建环境中被 YouTube 拒绝下载（HTTP 403），所以成片需要用下面的命令在能下载原片的机器上生成。</p>
-        <pre class="command">ffmpeg -i source.mp4 -vf "subtitles='IQKChHxD9e8.zh-en.ass'" -c:v libx264 -crf 20 -c:a copy burned.mp4</pre>
-        <p class="hint">也可以用仓库脚本一步完成下载、对齐与刻录（先安装 <code>yt-dlp</code> 与 FFmpeg）；<code>--burn-max-height 480</code> 会把成片压到适合网页分发的体积：</p>
-        <pre class="command">python scripts/download_youtube_bilingual_srt.py "https://www.youtube.com/watch?v=IQKChHxD9e8" --burn-in --burn-max-height 480 --global-quality 30 --burn-preset veryfast</pre>
-      </section>
+      <article class="panel">
+        <h2>2026-10-20 · Trump and Vance Make an Announcement</h2>
+        <p class="hint">1:42:05 · 480p 硬字幕 · CRF 30 · 因单文件超过 100 MB 而分两段，播放顺序 1 → 2；有声内容从 00:34:19 开始</p>
+        <div class="video-frame">
+          <video controls preload="metadata" playsinline src="media/IQKChHxD9e8.part1.mp4"></video>
+        </div>
+        <div class="video-frame" style="margin-top:12px">
+          <video controls preload="none" playsinline src="media/IQKChHxD9e8.part2.mp4"></video>
+        </div>
+        <ul class="media-list">
+          <li><a href="media/IQKChHxD9e8.zh-en.ass">ASS</a> <span class="hint">1756 条双语字幕</span></li>
+          <li><a href="media/IQKChHxD9e8.zh-en.srt">SRT</a></li>
+          <li><a href="media/IQKChHxD9e8.zh-en.vtt">WebVTT</a></li>
+          <li><a href="https://www.youtube.com/watch?v=IQKChHxD9e8">原片</a></li>
+        </ul>
+      </article>
 
       <footer>
-        字幕来源与时间轴由 YouTube 提供，本页只做对齐与样式渲染，不代表官方译本；自动翻译可能存在错译。需要更高质量的版本时，请提供原片文件或在本机运行上面的刻录命令。
+        字幕来源与时间轴由 YouTube 提供，本页只做对齐、样式渲染与刻录，不代表官方译本；自动翻译可能存在错译。ASS 声明 1920×1080 PlayRes，缩帧时字幕与背景框等比缩放。
       </footer>
     </main>
   </body>
