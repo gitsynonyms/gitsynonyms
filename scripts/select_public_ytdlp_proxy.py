@@ -15,6 +15,7 @@ import urllib.request
 import uuid
 from collections import defaultdict
 from collections.abc import Callable, Iterable
+from pathlib import Path
 
 
 PROXY_LISTS = {
@@ -28,6 +29,7 @@ PROBE_TIMEOUT_SECONDS = 4
 MAX_CANDIDATES_PER_SOURCE = 30
 MAX_WORKERS = 32
 IP_PORT_PATTERN = re.compile(r"^(?:https?://)?(\d{1,3}(?:\.\d{1,3}){3}):(\d{1,5})/?$")
+PROXY_INDEX_POOL = Path(__file__).resolve().parent.parent / "proxyindex" / "alive_http.txt"
 
 
 def normalize_candidate(line: str) -> str | None:
@@ -95,6 +97,84 @@ def probe_proxy(proxy: str) -> float | None:
     return time.monotonic() - started
 
 
+def working_proxies(
+    candidates: Iterable[str],
+    check_proxy: Callable[[str], float | None] = probe_proxy,
+) -> list[tuple[float, str]]:
+    """Probe every candidate concurrently and return the working ones with latency.
+
+    The result holds ``(latency, proxy)`` pairs sorted by ascending latency, so
+    the first entry is the fastest proxy that passed the check. A candidate that
+    merely accepts the connection without answering is treated as not working.
+    """
+    ordered: list[str] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        proxy = normalize_candidate(candidate)
+        if not proxy or proxy in seen:
+            continue
+        seen.add(proxy)
+        ordered.append(proxy)
+    results: list[tuple[float, str]] = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        futures = {executor.submit(check_proxy, proxy): proxy for proxy in ordered}
+        for future in concurrent.futures.as_completed(futures):
+            proxy = futures[future]
+            try:
+                latency = future.result()
+            except Exception as error:
+                raise RuntimeError(f"Proxy check failed unexpectedly for {proxy}: {error}") from error
+            if latency is not None:
+                results.append((latency, proxy))
+    results.sort()
+    return results
+
+
+def select_fastest_working(
+    candidates: Iterable[str],
+    check_proxy: Callable[[str], float | None] = probe_proxy,
+) -> tuple[str, float] | None:
+    """Iterate every candidate proxy and return the fastest one that works.
+
+    Returns ``(proxy, latency)`` or ``None`` when no candidate passed the check;
+    callers decide how to degrade (raise, retry with another source, ...).
+    """
+    working = working_proxies(candidates, check_proxy)
+    if not working:
+        return None
+    latency, proxy = working[0]
+    return proxy, latency
+
+
+def public_proxy_candidates() -> list[str]:
+    """Every public proxy known to this repository, validated pool first.
+
+    The validated pool from the proxy index collection stage wins; when it has
+    not been generated yet, the freshly fetched proxy-list sources are flattened
+    into one candidate pool. Both feed the same iterate-all-pick-fastest selection.
+    """
+    pool = load_pool()
+    if pool:
+        return pool
+    proxy_lists = fetch_lists()
+    return [proxy for proxies in proxy_lists.values() for proxy in proxies]
+
+
+def load_pool(path: Path = PROXY_INDEX_POOL) -> list[str]:
+    """Read the deduplicated proxy pool written by the proxyindex validator."""
+    if not path.exists():
+        return []
+    proxies: list[str] = []
+    seen: set[str] = set()
+    for line in path.read_text(encoding="utf-8").splitlines():
+        proxy = normalize_candidate(line.strip())
+        if not proxy or proxy in seen:
+            continue
+        seen.add(proxy)
+        proxies.append(proxy)
+    return proxies
+
+
 def select_proxy(
     proxy_lists: dict[str, list[str]],
     check_proxy: Callable[[str], float | None] = probe_proxy,
@@ -104,27 +184,17 @@ def select_proxy(
         for proxy in proxies:
             provenance[proxy].add(source)
     candidates = sorted(provenance)
-    results: list[tuple[float, str]] = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        futures = {executor.submit(check_proxy, proxy): proxy for proxy in candidates}
-        for future in concurrent.futures.as_completed(futures):
-            proxy = futures[future]
-            try:
-                latency = future.result()
-            except Exception as error:
-                raise RuntimeError(f"Proxy check failed unexpectedly for {proxy}: {error}") from error
-            if latency is not None:
-                results.append((latency, proxy))
+    working = working_proxies(candidates, check_proxy)
     source_counts = {
-        source: sum(source in provenance[proxy] for _, proxy in results)
+        source: sum(source in provenance[proxy] for _, proxy in working)
         for source in proxy_lists
     }
-    if not results:
+    if not working:
         raise RuntimeError(
             f"No working public proxy passed the HTTPS YouTube probe across "
             f"{len(proxy_lists)} proxy-list sources."
         )
-    latency, proxy = min(results)
+    latency, proxy = working[0]
     return proxy, latency, source_counts
 
 

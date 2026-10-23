@@ -75,3 +75,38 @@ def test_write_github_env_rejects_line_breaks(tmp_path):
         assert "line breaks" in str(error)
     else:
         raise AssertionError("Expected line breaks in the proxy URL to be rejected")
+
+
+def test_load_pool_reads_and_normalizes_valid_entries(tmp_path):
+    pool = tmp_path / "alive_http.txt"
+    pool.write_text("203.0.113.5:8080\nbad line\nhttps://198.51.100.10:8443/\n", encoding="utf-8")
+
+    assert proxy_selector.load_pool(pool) == [
+        "http://203.0.113.5:8080",
+        "http://198.51.100.10:8443",
+    ]
+
+
+def test_load_pool_returns_empty_list_when_pool_is_missing(tmp_path):
+    assert proxy_selector.load_pool(tmp_path / "missing.txt") == []
+
+
+def test_select_fastest_working_returns_the_fastest_candidate():
+    candidates = [
+        "http://203.0.113.1:80",
+        "http://203.0.113.2:80",
+        "http://203.0.113.3:80",
+    ]
+    latencies = {
+        "http://203.0.113.1:80": 0.3,
+        "http://203.0.113.2:80": 0.05,
+        "http://203.0.113.3:80": None,
+    }
+
+    assert proxy_selector.select_fastest_working(
+        candidates, lambda candidate: latencies[candidate]
+    ) == ("http://203.0.113.2:80", 0.05)
+
+
+def test_select_fastest_working_returns_none_when_no_candidate_works():
+    assert proxy_selector.select_fastest_working(["http://203.0.113.1:80"], lambda _: None) is None

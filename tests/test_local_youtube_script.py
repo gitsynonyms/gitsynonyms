@@ -1504,3 +1504,67 @@ def test_main_rejects_missing_video_duration_for_persistent_box(monkeypatch, cap
 
     assert youtube_srt.main(["https://www.youtube.com/watch?v=dQw4w9WgXcQ"]) == 1
     assert "Video duration is unavailable" in capsys.readouterr().err
+
+
+def test_run_ytdlp_retries_with_the_fastest_public_proxy_when_direct_fails(monkeypatch):
+    captured = []
+    fallback_proxy = "http://203.0.113.7:8080"
+
+    def fake_run(command, **kwargs):
+        captured.append(list(command))
+        if any(flag == "--proxy" for flag in command):
+            return subprocess.CompletedProcess(command, 0, "{}", "")
+        raise subprocess.CalledProcessError(
+            1, command, stderr="Unable to download webpage: HTTP Error 403"
+        )
+
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda name: f"{name}.exe")
+    for name in (
+        "YTDLP_PROXY",
+        "HTTPS_PROXY",
+        "https_proxy",
+        "HTTP_PROXY",
+        "http_proxy",
+        "ALL_PROXY",
+        "all_proxy",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setattr(youtube_srt.subprocess, "run", fake_run)
+    monkeypatch.setattr(youtube_srt, "select_fastest_public_proxy", lambda: fallback_proxy)
+
+    result = youtube_srt.run_ytdlp(["--dump-single-json", "https://youtu.be/IySF_8OArvw"])
+
+    assert result.returncode == 0
+    assert len(captured) == 2
+    assert not any(flag == "--proxy" for flag in captured[0])
+    assert captured[1][captured[1].index("--proxy") + 1] == fallback_proxy
+
+
+def test_run_ytdlp_raises_when_public_proxy_fallback_finds_no_proxy(monkeypatch):
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda name: f"{name}.exe")
+    for name in (
+        "YTDLP_PROXY",
+        "HTTPS_PROXY",
+        "https_proxy",
+        "HTTP_PROXY",
+        "http_proxy",
+        "ALL_PROXY",
+        "all_proxy",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    def fail(command, **kwargs):
+        raise subprocess.CalledProcessError(
+            1, command, stderr="Unable to download webpage: HTTP Error 403"
+        )
+
+    monkeypatch.setattr(youtube_srt.subprocess, "run", fail)
+    monkeypatch.setattr(youtube_srt, "select_fastest_public_proxy", lambda: None)
+
+    try:
+        youtube_srt.run_ytdlp(["--dump-single-json", "https://youtu.be/IySF_8OArvw"])
+    except RuntimeError as error:
+        assert "yt-dlp failed" in str(error)
+        assert "Unable to download webpage" in str(error)
+    else:
+        raise AssertionError("Expected the failed direct download to be reported")

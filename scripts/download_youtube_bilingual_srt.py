@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import importlib.util
 import json
 import math
 import os
@@ -1792,6 +1793,45 @@ def subtitle_wait(language: str, chinese_wait: int) -> int:
     return chinese_wait if language.lower().split("-")[0] == "zh" else 0
 
 
+def load_public_proxy_selector():
+    """Load the public proxy selector module from the repository scripts directory."""
+    selector_path = Path(__file__).resolve().parent / "select_public_ytdlp_proxy.py"
+    spec = importlib.util.spec_from_file_location("select_public_ytdlp_proxy", selector_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def select_fastest_public_proxy() -> str | None:
+    """Iterate every public proxy and return the fastest one that works.
+
+    Used only as a fallback when the direct connection cannot complete a YouTube
+    download, so the workflow can retry through the fastest known public proxy
+    instead of failing on the first blocked direct egress.
+    """
+    try:
+        selector = load_public_proxy_selector()
+        candidates = selector.load_pool()
+        if not candidates:
+            candidates = [
+                proxy for proxies in selector.fetch_lists().values() for proxy in proxies
+            ]
+        selected = selector.select_fastest_working(candidates, selector.probe_proxy)
+    except Exception:  # noqa: BLE001 - the fallback must never mask the real error
+        return None
+    if selected is None:
+        return None
+    return selected[0]
+
+
+def ytdlp_failure(error: subprocess.CalledProcessError, proxy: str | None) -> RuntimeError:
+    details = (error.stderr or error.stdout or str(error)).strip()
+    if proxy:
+        details = details.replace(proxy, "[configured proxy]")
+    message = f"yt-dlp failed: {details}" if details else f"yt-dlp exited with code {error.returncode}."
+    return RuntimeError(message)
+
+
 def run_ytdlp(
     args: Sequence[str], *, show_progress: bool = False
 ) -> subprocess.CompletedProcess:
@@ -1821,22 +1861,33 @@ def run_ytdlp(
         ),
         None,
     )
-    proxy_arguments = ["--proxy", proxy] if proxy else []
-    try:
+
+    def build(proxy_value: str | None) -> list[str]:
+        proxy_arguments = ["--proxy", proxy_value] if proxy_value else []
+        return [executable, *javascript_runtime, *cookies_arguments, *proxy_arguments, *args]
+
+    def execute(proxy_value: str | None) -> subprocess.CompletedProcess:
         return subprocess.run(
-            [executable, *javascript_runtime, *cookies_arguments, *proxy_arguments, *args],
+            build(proxy_value),
             check=True,
             capture_output=not show_progress,
             text=True,
             encoding="utf-8",
             errors="replace",
         )
+
+    try:
+        return execute(proxy)
     except subprocess.CalledProcessError as error:
-        details = (error.stderr or error.stdout or str(error)).strip()
         if proxy:
-            details = details.replace(proxy, "[configured proxy]")
-        message = f"yt-dlp failed: {details}" if details else f"yt-dlp exited with code {error.returncode}."
-        raise RuntimeError(message) from error
+            raise ytdlp_failure(error, proxy) from error
+        fallback_proxy = select_fastest_public_proxy()
+        if not fallback_proxy:
+            raise ytdlp_failure(error, proxy) from error
+        try:
+            return execute(fallback_proxy)
+        except subprocess.CalledProcessError as retry_error:
+            raise ytdlp_failure(retry_error, fallback_proxy) from retry_error
 
 
 def download_track(

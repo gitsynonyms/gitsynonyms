@@ -50,6 +50,7 @@ jobs:
         id: resolve
         env:
           FORCE_CHECK: ${{ inputs.force_check }}
+          YTDLP_PROXY: ${{ secrets.YTDLP_PROXY }}
         shell: pwsh
         run: ./scripts/monitoring/resolve_channel_feed.ps1
 
@@ -90,6 +91,7 @@ jobs:
         if: steps.ready.outputs.video_id != ''
         env:
           VIDEO_ID: ${{ steps.ready.outputs.video_id }}
+          YTDLP_PROXY: ${{ secrets.YTDLP_PROXY }}
         shell: bash
         run: |
           set -euo pipefail

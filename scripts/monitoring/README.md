@@ -21,6 +21,11 @@ the secret, the five-minute scan continues but skips download, burn-in, and
 publishing. When configured, cookies are written only to the runner's temporary
 directory and removed after the processing job.
 
+When no `YTDLP_PROXY` secret is set and a direct download cannot complete, the
+monitor falls back to the fastest working public proxy from the proxy index
+(the validated pool or every discovered proxy list), instead of failing on the
+first blocked direct egress.
+
 `workflow_dispatch` can reprocess the latest upload with `force_check`. Manual
 runs must target `main` to publish. The workflow requires repository permissions
 to write contents and deploy GitHub Pages.
