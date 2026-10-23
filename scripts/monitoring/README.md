@@ -52,6 +52,17 @@ Public proxies are untrusted and can observe connection metadata; never send
 cookies or credentials through them. Manual video runs can set `video_url` to
 process a specific White House video.
 
+The proxy-scan workflow checks the White House `videos` and `streams` feeds for
+unprocessed uploads. When `--upload` is enabled, it creates a ZIP containing
+the source and processed files, then uploads it anonymously to Filebin,
+temp.sh, and GoFile. Filebin advertises a 2 GB file limit and expiry six days
+after the last upload to a bin; temp.sh advertises a 4 GB file limit and
+three-day retention. GoFile's size and retention policies may change and are
+reported as server-defined. Actual upload and download speeds are measured per
+run; they depend on runner location and service load. Use this only for public
+materials authorized for redistribution; anonymous hosts may remove links
+without notice.
+
 Successfully deployed sources are recorded as platform-neutral JSONL entries
 in `.github/state/whitehouse-processed-videos.txt`. Records include the source
 platform and ID, channel/account, title, full source URL, publication date and

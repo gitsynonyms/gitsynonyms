@@ -59,6 +59,8 @@ def test_upload_artifacts_covers_every_configured_mirror(tmp_path):
     assert by_name["filebin.net"]["url"] == "https://filebin.net/bin123/bilingual.srt"
     assert by_name["filebin.net"]["download"]["bytes_per_second"] == 2048.0
     assert by_name["filebin.net"]["upload_bytes_per_second"] > 0
+    assert by_name["temp.sh"]["url"] == "https://temp.sh/abc/x.txt"
+    assert by_name["gofile.io"]["url"] == "https://gofile.io/d/abc"
 
 
 def test_upload_artifacts_records_a_failing_mirror_without_aborting(tmp_path):
@@ -94,6 +96,8 @@ def test_render_markdown_lists_links_speeds_and_limits(tmp_path):
     report = upload_mirrors.render_markdown(payload)
     assert "网盘镜像上传报告" in report
     assert "https://filebin.net/f8l40pcd28jo8bl0/a.srt" in report
+    assert "https://temp.sh/abc/x.txt" in report
+    assert "https://gofile.io/d/abc" in report
     assert "KB/s" in report
     assert "2 GB" in report
 

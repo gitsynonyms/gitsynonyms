@@ -2094,7 +2094,7 @@ def build_bundle(video_dir: Path, video_id: str) -> Path:
             stem_lower = path.stem.lower()
             # source: original video, original subtitle files
             if (
-                rel.endswith(".source.mp4")
+                ".source." in rel.lower()
                 or any(rel.lower().endswith(f".{lang}.{ext}") for lang in ("en-orig", "zh-hans") for ext in ("json3", "srv3", "srv2", "srv1", "vtt", "ttml", "srt"))
             ):
                 arcname = f"source/{rel}"
@@ -2113,11 +2113,28 @@ def build_bundle(video_dir: Path, video_id: str) -> Path:
     return bundle
 
 
+def video_id_for_dir(video_dir: Path) -> str:
+    for manifest_path in sorted(video_dir.glob("*.json")):
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(manifest, dict):
+            continue
+        video = manifest.get("video")
+        candidate = str(video.get("id") or "") if isinstance(video, dict) else ""
+        if re.fullmatch(r"[A-Za-z0-9_-]{11}", candidate):
+            return candidate
+    match = re.search(r"([A-Za-z0-9_-]{11})$", video_dir.name)
+    if match:
+        return match.group(1)
+    raise ValueError(f"Cannot determine a video ID from {video_dir}.")
+
+
 def mirror_artifacts(
     output_root: Path,
     *,
     filebin_bin: str = "",
-    min_ok: int = 5,
 ) -> tuple[int, int, Path]:
     """Traverse output_root for video directories, bundle each, upload all, write summary report."""
     import importlib.util
@@ -2138,7 +2155,7 @@ def mirror_artifacts(
         # Skip non-video directories (e.g., hidden dirs)
         if video_dir.name.startswith("."):
             continue
-        bundle = build_bundle(video_dir, video_dir.name)
+        bundle = build_bundle(video_dir, video_id_for_dir(video_dir))
         bundles.append(bundle)
 
     if not bundles:
@@ -2245,8 +2262,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--upload-min-ok",
         type=int,
-        default=5,
-        help="Require this many successful mirror uploads before warning (default 5).",
+        default=2,
+        help="Require this many successful mirror uploads or return failure (default 2).",
     )
     parser.add_argument(
         "--filebin-bin",
@@ -2273,6 +2290,8 @@ def main(argv: list[str] | None = None) -> int:
         help="FFmpeg quality value (1-51); with h264_qsv this is passed as -global_quality.",
     )
     args = parser.parse_args(argv)
+    if args.upload_min_ok < 1:
+        parser.error("--upload-min-ok must be at least 1.")
     if args.sleep_subtitles < 0:
         parser.error("--sleep-subtitles must not be negative")
     languages = [language.strip() for language in args.languages.split(",")]
@@ -2452,20 +2471,19 @@ def main(argv: list[str] | None = None) -> int:
                 ok, attempted, report = mirror_artifacts(
                     Path(args.output_dir),
                     filebin_bin=args.filebin_bin,
-                    min_ok=args.upload_min_ok,
                 )
                 print(f"  mirrors: {ok}/{attempted} uploaded", flush=True)
                 print(f"  report: {report.resolve()}", flush=True)
                 if ok < args.upload_min_ok:
                     print(
-                        f"Warning: only {ok} mirrors succeeded; "
+                        f"Error: only {ok} mirrors succeeded; "
                         f"{args.upload_min_ok} were required.",
                         file=sys.stderr,
                     )
+                    return 1
             except (OSError, RuntimeError, ValueError) as error:
-                print(f"Warning: mirror upload failed: {error}", file=sys.stderr)
-        return 0
-
+                print(f"Error: mirror upload failed: {error}", file=sys.stderr)
+                return 1
         return 0
     except (OSError, ValueError, RuntimeError) as error:
         print(f"Error: {error}", file=sys.stderr)

@@ -20,6 +20,31 @@ def test_video_id_url_variants():
     assert youtube_srt.video_id_from_url("https://youtu.be/IySF_8OArvw") == "IySF_8OArvw"
 
 
+def test_video_bundle_uses_manifest_id_and_separates_source_from_processed(tmp_path):
+    from zipfile import ZipFile
+
+    video_dir = tmp_path / "2026-10-23_example_IySF_8OArvw"
+    video_dir.mkdir()
+    (video_dir / "bilingual.json").write_text(
+        json.dumps({"video": {"id": "IySF_8OArvw"}}),
+        encoding="utf-8",
+    )
+    (video_dir / "IySF_8OArvw.source.webm").write_bytes(b"source")
+    (video_dir / "en-orig.vtt").write_text("WEBVTT\n", encoding="utf-8")
+    (video_dir / "Burned_Bilingual_IySF_8OArvw.mp4").write_bytes(b"processed")
+    (video_dir / "Bilingual_IySF_8OArvw.srt").write_text("processed", encoding="utf-8")
+
+    assert youtube_srt.video_id_for_dir(video_dir) == "IySF_8OArvw"
+    bundle = youtube_srt.build_bundle(video_dir, youtube_srt.video_id_for_dir(video_dir))
+
+    assert bundle.name == "bilingual_subtitles_bundle_IySF_8OArvw.zip"
+    with ZipFile(bundle) as archive:
+        assert "source/IySF_8OArvw.source.webm" in archive.namelist()
+        assert "source/en-orig.vtt" in archive.namelist()
+        assert "processed/Burned_Bilingual_IySF_8OArvw.mp4" in archive.namelist()
+        assert "processed/Bilingual_IySF_8OArvw.srt" in archive.namelist()
+
+
 def test_parse_and_merge_srt_chinese_above_english():
     en = youtube_srt.parse_srt("1\n00:00:01,000 --> 00:00:02,000\nHello\n\n")
     zh = youtube_srt.parse_srt("1\n00:00:01,000 --> 00:00:02,000\n你好\n\n")

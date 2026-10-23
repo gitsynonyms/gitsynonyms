@@ -2,8 +2,8 @@
 """把下载产物上传到多个匿名网盘，并实测上传/下载速度与服务限制。
 
 The download stage produces public artifacts (SRT/VTT/ASS/zip). This module
-mirrors them to several anonymous file hosts -- filebin.net and five more -- and
-records, for each host, the upload wall time, the measured upload and download
+mirrors them to a small set of anonymous file hosts and records, for each host,
+the upload wall time, the measured upload and download
 throughput, and the host's published limits. The result is a JSON record plus a
 Markdown table next to the artifact, so a later reader can tell which link is
 still alive and how fast it was at upload time.
@@ -40,7 +40,7 @@ def utc_now() -> str:
 
 def curl(args: list[str], timeout: float = 180.0) -> tuple[int, bytes, float]:
     """Run curl, returning (returncode, stdout, elapsed_seconds)."""
-    command = ["curl", "-sS", "--max-time", str(int(timeout)), *args]
+    command = ["curl", "--fail-with-body", "-sS", "--max-time", str(int(timeout)), *args]
     started = time.monotonic()
     completed = subprocess.run(command, capture_output=True)
     elapsed = time.monotonic() - started
@@ -135,8 +135,8 @@ def upload_pomf(path: Path, run=curl) -> str:
 # Host registry: adapter + published limits
 # ---------------------------------------------------------------------------
 
-# Only filebin.net is authorized by default. Other mirrors are available
-# but must be explicitly opted into via the `--only` flag.
+# These fixed hosts are explicitly enabled; upload and download speeds are
+# measured per artifact because performance varies by runner location and time.
 MIRRORS: tuple[dict, ...] = (
     {
         "name": "filebin.net",
@@ -144,9 +144,19 @@ MIRRORS: tuple[dict, ...] = (
         "direct": True,
         "limits": "单文件 2 GB；bin 在最后一次上传后 6 天过期；公开无密码；支持直链",
     },
+    {
+        "name": "temp.sh",
+        "upload": upload_temp_sh,
+        "direct": True,
+        "limits": "单文件 4 GB；文件 3 天后过期；公开无密码；支持直链",
+    },
+    {
+        "name": "gofile.io",
+        "upload": upload_gofile,
+        "direct": False,
+        "limits": "匿名 API 上传；最大容量和留存期限以服务端当前策略为准；分享页链接",
+    },
 )
-# Additional mirrors available via --only flag:
-# gofile.io, tmpfiles.org, uguu.se, temp.sh, x0.at, qu.ax, pomf.lain.la
 
 
 def measure_download(url: str, *, run=curl, sample: int = DOWNLOAD_SAMPLE_BYTES) -> dict:
@@ -342,8 +352,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--min-ok",
         type=int,
-        default=5,
-        help="fail when fewer than this many uploads succeed (default 5)",
+        default=2,
+        help="fail when fewer than this many uploads succeed (default 2)",
     )
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--json", action="store_true", dest="as_json")
