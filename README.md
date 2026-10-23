@@ -117,6 +117,9 @@ The settings page also provides instant cross-page synchronization, a subtitle p
 
 ### Module 2: processing an already-selected video
 
+Module 2's formal five-unit organization and responsibility boundaries are
+archived in [`organization/module-2-video-processing.md`](organization/module-2-video-processing.md).
+
 `scripts/video_processing.py` is the video-processing department. It starts
 after the video and its subtitles have been selected, never downloads anything,
 and turns exactly those files into a publishable burn-in. It accepts a selection

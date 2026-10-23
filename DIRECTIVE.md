@@ -42,7 +42,24 @@
 
 组织架构与职责边界的详细档案以 [`organization/README.md`](organization/README.md)
 及 [`organization/module-2-video-processing.md`](organization/module-2-video-processing.md)
-为准；本条规定其最高层级与授权边界。
+为实施档案；**任何组织架构调整必须先同步修订本文件**，下位档案不得与本条冲突。
+本条规定模块2五个职责单元及其不可降低的技术边界：
+
+| 模块2职责单元 | 责任 | 实现入口 |
+|---|---|---|
+| 素材接收组 | 读取上游选择清单；验证已选视频、字幕目录、语言和输出路径；不自行选题或抓取新来源 | `scripts/video_processing.py` |
+| 字幕时间精确刻录司 | 读取 YouTube 七种字幕格式（`json3`、`srv3`、`srv2`、`srv1`、`vtt`、`ttml`、`srt`）；以 JSON3 逐词时间为主，结合其余格式校验、补齐和融合，并生成 ASS 与时间报告 | `scripts/subtitle_timing.py` |
+| 字幕区判定组 | 检测横幅遮挡；有横幅时用半透明总统蓝 `#0F1647` 字幕背景，无横幅的干净画面不加背景框；自动检测失败时保守启用背景并记录原因 | `scripts/video_processing.py` |
+| 刻录渲染组 | 单遍 libass 硬字幕；按请求生成 540p 预览与封面；输出验证通过后原子替换最终文件 | `scripts/video_processing.py` |
+| 质检交接组 | 用 ffprobe 验证媒体；检查字体替代与缺字；交付 `BURN.json`、`TIMING.json` 和处理结果 | `scripts/video_processing.py`、`scripts/subtitle_timing.py` |
+
+**字幕时间精度边界**：融合时间轴使用整数纳秒表示，但 YouTube 字幕源最高为毫秒
+分辨率，纳秒表示不得宣称为纳秒级源精度。precision VTT 输出毫秒；ASS/libass
+刻录时间戳量化到 10 毫秒，最大误差 5 毫秒。因此不得宣称 ASS 刻录结果优于毫秒。
+这一格式限制必须在 `TIMING.json` 中如实报告，不得以插值伪造源精度。
+
+模块2可由上游选定任务独立调用；模块代码存在不等于已接入自动巡检/发布工作流。
+自动化集成必须由对应工作流调用并以运行证据验证，方可登记为端到端可用。
 
 | 层级 | 职责 | 不做什么 |
 |---|---|---|

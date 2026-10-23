@@ -1,50 +1,8 @@
-# Module 2 组织架构（视频处理部）
+# Module 2 组织架构
 
-## 下辖 4 个处
+此历史入口已由五个职责单元的正式档案取代。请以
+[`organization/module-2-video-processing.md`](organization/module-2-video-processing.md)
+为准，组织总览见 [`organization/README.md`](organization/README.md)。
 
-| 处名 | 职责 | 核心脚本 | 关键指标/交付物 |
-|------|------|----------|-----------------|
-| **字幕时间精确刻录司** | 七格式融合、纳秒时间轴、ASS 量化、TIMING.json | `subtitle_timing.py` | 1 ns 时间轴、1 ms VTT、10 ms ASS、量化误差 ≤5 ms |
-| **第三方字幕生成处** | 14 家平台适配、WER/时间戳对齐、COMPARISON.json | `third_party_captions.py` | 7 家可用/6 家不支持/1 家无 API、WER 排名、时间戳中位偏移 |
-| **语音模型研究处** | Open ASR 排行榜快照、WER/RTFx 排名、开源权重筛选 | `speech_model_research.py` | 65+ 模型、OtterAI 3.88% WER 冠军、开源模型筛选 |
-| **字幕人体工学处** | 视觉/脑科学/心理学/光学/传播学依据、分区几何、WCAG 对比度、字体度量、干净/横幅片源策略 | `subtitle_ergonomics.py` | Netflix 20/17 CPS / 9/7 CPS、42/16 字/行、WCAG 4.5:1、137 个 duration_short 实测 |
-
-## 协作流程
-
-```
-上游选择清单 → 字幕时间精确刻录司(纳秒时间轴+ASS) 
-              → 字幕人体工学处(分区/对比度/字体/横幅策略) 
-              → 视频处理部刻录渲染组(单遍 libass+预览+封面) 
-              → BURN.json + TIMING.json + ERGONOMICS.json + *.precision.vtt
-```
-
-## 质量门槛
-
-| 检查项 | 阈值 | 严格模式 |
-|--------|------|----------|
-| 读取速度 (CPS) | Netflix 20/17 / 9/7 | `--strict` 触发 |
-| 时长 | ≥20 帧 (0.833 s) | `--strict` |
-| 行宽 | 42 / 16 字 | `--strict` |
-| 对比度 | WCAG 4.5:1 | 报警 |
-| WER | <5% 优秀 / 5-10% 良 / >10% 差 | 报告 |
-
-## 实测数据（/tmp/m2/seven 真实 1080p 片源）
-
-| 维度 | 值 |
-|------|-----|
-| ASS 事件数 | 619 |
-| duration < 0.1 s | 17 个（刻录引入） |
-| duration < 0.833 s | 137 个 |
-| 字幕区行宽超限 | 819 次警告 |
-| 读取速度超限 | 841 次（含 80% 为干净片源字幕区判定导致） |
-| 字体中英比例 | 1.2× (中文 57.6 / 英文 48) |
-| 字幕区不透明度 | 0.85 (总统蓝 #0F1647) |
-
-## 分支归档
-
-分支：`cline/bdf8s4y3` → `main`
-
-提交历史：
-- `1066371` 字幕时间精确刻录司 + 横幅感知刻录
-- `610eaaf` Module 2 刻录步骤
-- `bf14fbd` 视频归档与定时监控文档
+第三方字幕比较、ASR 模型研究和字幕人体工学是支撑能力，不是新增的正式子部门。
+正式架构为：素材接收组、字幕时间精确刻录司、字幕区判定组、刻录渲染组、质检交接组。

@@ -159,9 +159,11 @@ def test_manifest_requires_a_video_and_a_subtitle(tmp_path):
 
 
 def test_escape_filter_path_protects_the_libass_argument():
-    escaped = video_processing.escape_filter_path(Path("/tmp/a:b,c[d]'e.ass"))
+    path = Path.cwd() / "a,b[d]'e.ass"
+    escaped = video_processing.escape_filter_path(path)
+    expected_parent = path.parent.resolve().as_posix().replace(":", r"\:")
 
-    assert escaped == r"/tmp/a\:b\,c\[d\]\'e.ass"
+    assert escaped == f"{expected_parent}/a\\,b\\[d\\]\\'e.ass"
 
 
 def test_burn_command_uses_one_libass_pass_and_copies_audio(tmp_path):
