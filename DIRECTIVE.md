@@ -12,6 +12,7 @@
 |---|---|---|---|
 | 1.0 | 2026-10-23 | 建立定期巡检司与巡检任务执行方案处 | 新增 `inspection/registry.json` 等 |
 | 1.1 | 2026-10-23 | 增设资源获取分析司；钦定 White House 视频与直播频道 | 新增 `resources/registry.json`；巡检司按资源映射 MIU |
+| 1.2 | 2026-10-23 | 资源获取分析司增设信息差公示处；GitHub Pages 专用页面 | 新增 `site/infogap/`、工作流与 last30days 技能集成 |
 
 
 ## 第一条 目的与效力
@@ -28,7 +29,8 @@
 ```text
 总控（本仓库最高执行者）
 ├── 资源获取分析司
-│   └── 资源跟踪与钦定清单（resources/registry.json）
+│   ├── 资源跟踪与钦定清单（resources/registry.json）
+│   └── 信息差公示处（site/infogap/，GitHub Pages 专用页面）
 └── 定期巡检司
     └── 巡检任务执行方案处
 ```
@@ -37,6 +39,7 @@
 |---|---|---|
 | 总控 | 批准本文件及修订；指定钦定资源；裁决跨司争议；对最高指示的最终解释 | 不直接执行日常巡检或素材采集 |
 | 资源获取分析司 | 跟踪各类资源；维护钦定清单与资源登记表；分析资源可用性、变更与替代路径；把新资源移交巡检司 | 不判定系统健康，不修改巡检节律，不执行巡检 |
+| 信息差公示处 | 基于 last30days 技能在 GitHub Pages 发布多源信息差分析报告；周期性对比官方/媒体/社交源；标记信息不对称与缺口 | 不做政策建议，不替代巡检结论，不存储敏感原始数据 |
 | 定期巡检司 | 制定巡检制度与节律；审批执行方案；处置异常；向总控报告 | 不擅自放宽粒度或降低频率 |
 | 巡检任务执行方案处 | 编制并执行巡检任务执行方案；负责**巡检粒度控制**与**巡检执行**；维护登记表与台账 | 不改变巡检结论，不隐瞒失败单元 |
 
@@ -44,6 +47,11 @@
 巡检司对"这些资源的执行单元是否还活着"负责。资源变更须在 24 小时内同步给
 巡检司，由巡检司决定是否新增巡检单元。巡检任务执行方案处向定期巡检司负责；
 越级报告仅在 P0 事件或方案处失联时允许。
+
+信息差公示处隶属资源获取分析司，不直接参与巡检。其产出（`site/infogap/` 页面与
+JSON 报告）可被巡检司作为佐证材料引用，但不替代巡检结论。信息差公示处的
+运行周期与资源跟踪频率解耦，默认每 6 小时运行一次，触发方式为 GitHub Actions
+定时触发与手动触发并存。
 
 ## 第三条 资源获取与分析（钦定清单）
 
@@ -84,6 +92,63 @@
 资源登记不自动等于巡检单元。资源司登记后，巡检司在 24 小时内决定是否新增
 MIU；钦定资源必须至少映射一个采集或巡检单元，映射结果分别写入
 `resources/registry.json` 的 `collector` 与 `inspection/registry.json` 的单元。
+
+
+资源登记不自动等于巡检单元。资源司登记后，巡检司在 24 小时内决定是否新增
+MIU；钦定资源必须至少映射一个采集或巡检单元，映射结果分别写入
+`resources/registry.json` 的 `collector` 与 `inspection/registry.json` 的单元。
+
+## 第三条之二 信息差公示处（Information Gap Disclosure）
+
+### 3.6.1 使命与定位
+
+信息差公示处是资源获取分析司的对外发布窗口。它不参与巡检，不做政策建议，
+不存储敏感原始数据。其核心使命是：
+
+1. **多源对比**：以钦定资源为锚点，周期性抓取官方 RSS、YouTube 频道、GDELT、
+   社交媒体、Factbase 日程等多源内容；
+2. **信息差识别**：对比同一事件在不同源的叙述差异、时间差、缺失项、夸大/缩小；
+3. **公示发布**：将分析结果以静态页面（`site/infogap/`）与机器可读 JSON 双轨发布到
+   GitHub Pages，供公众与巡检司引用；
+4. **缺口标记**：对无法通过现有资源确认的关键信息，显式标记为"待确认"，倒逼资源补齐。
+
+### 3.6.2 技术实现
+
+- **技能引擎**：集成 `last30days-skill`（mvanhorn/last30days-skill），支持 Reddit、
+  X/Twitter、YouTube、Hacker News、Polymarket、Web 搜索等多源检索与 LLM 综合。
+- **运行周期**：默认每 6 小时（`0 */6 * * *`），支持 `workflow_dispatch` 手动触发。
+- **产出物**：
+  - `site/infogap/index.html`：人类可读的交互式报告页；
+  - `site/infogap/report.json`：机器可读的结构化发现，含字段
+    `topic, sources, gaps, discrepancies, confidence, generated_at`；
+  - `site/infogap/history/`：历史快照按日期归档。
+- **部署**：GitHub Pages 多站点部署，`site/infogap/` 作为独立子路径发布；
+  `site/` 现有字幕应用不受影响。
+- **数据治理**：不落盘原始社交媒体内容，仅保留摘要、引用链接与置信度；
+  本地 SQLite（`research.db`）仅作运行期缓存，不随制品发布。
+
+### 3.6.3 资源登记与采集器映射
+
+信息差公示处在 `resources/registry.json` 登记为一条 `kind=harness` 资源，
+`collector.script` 指向 `scripts/infogap/generate.py`，
+`collector.source` 为 `infogap-last30days`。
+钦定资源（White House 两频道、官方 RSS、Factbase、GDELT）均在其 `analysis`
+字段引用，确保资源跟踪与信息差分析的双向可追溯。
+
+### 3.6.4 质量门禁
+
+每次生成前运行 `scripts/resources/check.py check --strict` 与
+`scripts/inspection/plan.py check --github`；
+发现钦定资源缺失、采集器失效或置信度低于 0.6 的发现，本次运行标记为
+`degraded` 且不发布到 Pages，仅写入 `site/infogap/.last-run.json` 供人工复核。
+
+### 3.6.5 与巡检司的协作
+
+- 巡检司可在 `inspection/registry.json` 的单元 `details.evidence` 引用
+  `site/infogap/report.json` 的具体条目；
+- 信息差公示处不判定单元成败，仅提供"同一事件在多源的呈现差异"作为佐证；
+- 发现钦定资源长期不可达（> 24h）时，信息差公示处在报告中标记，
+  资源司按 3.4 条处置。
 
 
 ## 第四条 巡检粒度控制（原则上最小）

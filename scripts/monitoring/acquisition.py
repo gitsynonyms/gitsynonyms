@@ -162,6 +162,13 @@ SOURCES: tuple[SourceSpec, ...] = (
         parser="gdelt",
         note="Mainstream coverage across outlets, no API key required.",
     ),
+    SourceSpec(
+        name="infogap-last30days",
+        kind="harness",
+        url="https://github.com/mvanhorn/last30days-skill",
+        trust="aggregator",
+        note="信息差公示处：基于 last30days-skill 的多源信息差分析与公示，每 6 小时运行。",
+    ),
 )
 
 

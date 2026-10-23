@@ -120,6 +120,25 @@
       },
       "status": "active",
       "note": "支撑来源：主流媒体覆盖，免费接口偶发 429，按来源降级处理。"
+    },
+    {
+      "id": "harness:infogap-last30days",
+      "kind": "harness",
+      "url": "https://github.com/mvanhorn/last30days-skill",
+      "designated": false,
+      "trust": "aggregator",
+      "cadence": "6h",
+      "analysis": [
+        "information-gap-detection",
+        "multi-source-corroboration",
+        "narrative-discrepancy-detection"
+      ],
+      "collector": {
+        "script": "scripts/infogap/generate.py",
+        "source": "infogap-last30days"
+      },
+      "status": "active",
+      "note": "信息差公示处：基于 last30days-skill 的多源信息差分析与公示，每 6 小时运行。"
     }
   ]
 }
