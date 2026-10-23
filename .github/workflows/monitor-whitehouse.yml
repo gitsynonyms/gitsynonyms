@@ -67,13 +67,12 @@ jobs:
           for channel in \
             "https://www.youtube.com/@WhiteHouse/videos" \
             "https://www.youtube.com/@WhiteHouse/streams"; do
-            listing="$(yt-dlp --js-runtimes deno --no-warnings --flat-playlist --playlist-end 10 --print '%(id)s|%(live_status)s' "$channel")" || {
+            listing="$(yt-dlp --js-runtimes deno --no-warnings --flat-playlist --playlist-end 10 --print '%(id)s' "$channel")" || {
               echo "::error::Could not inspect White House channel: $channel"
               exit 1
             }
-            while IFS='|' read -r candidate live_status; do
+            while IFS= read -r candidate; do
               [[ "$candidate" =~ ^[A-Za-z0-9_-]{11}$ ]] || continue
-              [[ "$live_status" == "is_live" || "$live_status" == "is_upcoming" ]] && continue
               if [[ "$FORCE_CHECK" != "true" ]] && grep -Fxq "$candidate" "$state_file"; then
                 continue
               fi
