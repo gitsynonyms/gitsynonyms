@@ -128,6 +128,10 @@ jobs:
         if: ${{ inputs.burn_in }}
         shell: pwsh
         run: choco install ffmpeg --yes --no-progress
+      - name: Select a working proxy for the manual download
+        env:
+          YTDLP_PROXY: ${{ secrets.YTDLP_PROXY }}
+        run: python scripts/select_public_ytdlp_proxy.py
       - name: Download and organize subtitle tracks
         env:
           YOUTUBE_SOURCE: ${{ inputs.source }}
@@ -149,7 +153,6 @@ jobs:
           BOX_Y: ${{ inputs.box_y }}
           BOX_WIDTH: ${{ inputs.box_width }}
           BOX_HEIGHT: ${{ inputs.box_height }}
-          YTDLP_PROXY: ${{ secrets.YTDLP_PROXY }}
         shell: bash
         run: |
           source="$YOUTUBE_SOURCE"
