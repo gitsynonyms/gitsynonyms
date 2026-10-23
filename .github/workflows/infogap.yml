@@ -53,7 +53,9 @@ jobs:
         with:
           node-version: "20"
       - name: Install last30days-skill
-        run: pip install git+https://github.com/mvanhorn/last30days-skill.git
+        run: |
+          git clone --depth 1 https://github.com/mvanhorn/last30days-skill.git "$RUNNER_TEMP/last30days-skill"
+          echo "LAST30DAYS_SCRIPT=$RUNNER_TEMP/last30days-skill/skills/last30days/scripts/last30days.py" >> "$GITHUB_ENV"
       - name: Generate information gap report
         id: gen
         env:
