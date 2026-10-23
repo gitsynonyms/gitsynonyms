@@ -7,9 +7,9 @@ Keeps ``resources/registry.json`` honest under DIRECTIVE.md article 3:
     coverage  designated resource coverage and the shape of the registry
     list      the tracked resources, one per line
 
-A resource is only "tracked" when its collector exists in
-``scripts/monitoring/acquisition.py`` and points at the same URL. Declaring a
-resource that nothing collects is a registration defect, not a gap.
+A URL resource is only "tracked" when its collector exists in
+``scripts/monitoring/acquisition.py`` and points at the same URL. Harness
+resources instead map to their own executable runner script.
 
 Only the Python standard library is required.
 """
@@ -155,6 +155,8 @@ def _resource_problems(
             problems.append(f"{label}: collector.script does not exist: {script}")
         if not source_name:
             problems.append(f"{label}: collector.source is required")
+        elif resource.get("kind") == "harness":
+            pass
         elif source_name not in sources:
             problems.append(
                 f"{label}: collector.source {source_name!r} is not in the acquisition registry"
@@ -379,6 +381,5 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-
 
 

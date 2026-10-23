@@ -524,7 +524,7 @@ def test_asset_download_is_named_by_checksum():
         assert stored.name.startswith(
             acquisition.sha256_text("material-bytes")[:16]
         )
-        assert record["local_path"].startswith("assets/")
+        assert Path(record["local_path"]).parts[0] == "assets"
 
 
 def test_dry_run_writes_nothing():
@@ -611,7 +611,6 @@ def test_cli_rejects_an_unknown_source_name():
         assert code == 2
         assert "unknown source(s): nope" in stderr.getvalue()
         assert not Path(tmp, "manifest.json").exists()
-
 
 
 

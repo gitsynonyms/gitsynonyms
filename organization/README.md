@@ -12,7 +12,8 @@
 ```text
 总控
 ├── 资源获取分析司
-│   └── 资源跟踪与钦定清单：resources/registry.json
+│   ├── 资源跟踪与钦定清单：resources/registry.json
+│   └── 信息差公示处：last30days 多源研究与报告
 ├── 定期巡检司
 │   └── 巡检任务执行方案处
 │       └── 巡检登记与台账：inspection/registry.json、inspection/ledger/
@@ -27,6 +28,8 @@
 ## 职责接口
 
 - **资源获取分析司**维护资源清单、采集器映射与资源变化；不负责视频字幕刻录。
+- 信息差公示处是资源获取分析司内部的研究与发布单元；职责、边界和实现状态见
+  [`resource-acquisition-analysis.md`](resource-acquisition-analysis.md)。
 - **定期巡检司**负责巡检制度、最小可巡检单元、证据与异常闭环。
 - **模块2：视频处理部**只接收上游已经选定的视频和字幕任务；不得自行替代上游
   选择来源、判定资源重要性或更改巡检结论。
