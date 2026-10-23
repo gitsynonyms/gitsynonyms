@@ -487,46 +487,68 @@ def test_ytdlp_uses_configured_proxy_and_redacts_it_from_errors(monkeypatch):
     monkeypatch.setattr(youtube_srt.shutil, "which", lambda name: f"{name}.exe")
     monkeypatch.setenv("YTDLP_PROXY", proxy)
 
+    def run(command, **kwargs):
+        captured.append((command, kwargs))
+        if len(captured) == 1:
+            raise subprocess.CalledProcessError(1, command, stderr="Direct connection failed")
+        return subprocess.CompletedProcess(command, 0, "{}", "")
+
+    monkeypatch.setattr(youtube_srt.subprocess, "run", run)
+
+    result = youtube_srt.run_ytdlp(["--dump-single-json", "https://youtu.be/IySF_8OArvw"])
+
+    assert result.returncode == 0
+    assert "--proxy" not in captured[0][0]
+    assert captured[1][0][captured[1][0].index("--proxy") + 1] == proxy
+    assert "HTTP_PROXY" not in captured[0][1]["env"]
+
+
+def test_ytdlp_succeeds_directly_without_using_configured_proxy(monkeypatch):
+    captured = []
+
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda name: f"{name}.exe")
+    monkeypatch.setenv("YTDLP_PROXY", "http://proxy.example:8080")
+    monkeypatch.setenv("HTTPS_PROXY", "http://proxy.example:8080")
+    monkeypatch.setattr(
+        youtube_srt.subprocess,
+        "run",
+        lambda command, **kwargs: captured.append((command, kwargs))
+        or subprocess.CompletedProcess(command, 0, "{}", ""),
+    )
+
+    youtube_srt.run_ytdlp(["--dump-single-json", "https://youtu.be/IySF_8OArvw"])
+
+    assert "--proxy" not in captured[0][0]
+    assert "HTTPS_PROXY" not in captured[0][1]["env"]
+
+
+def test_ytdlp_reports_both_direct_and_proxy_failures(monkeypatch):
+    proxy = "http://proxy.example:8080"
+    calls = []
+
+    monkeypatch.setattr(youtube_srt.shutil, "which", lambda name: f"{name}.exe")
+    monkeypatch.setenv("YTDLP_PROXY", proxy)
+
     def fail(command, **kwargs):
-        captured.append(command)
-        raise subprocess.CalledProcessError(
-            1,
-            command,
-            stderr=f"Could not connect to {proxy}",
-        )
+        calls.append(command)
+        if "--proxy" not in command:
+            raise subprocess.CalledProcessError(1, command, stderr="Direct failure")
+        raise subprocess.CalledProcessError(1, command, stderr=f"Cannot connect to {proxy}")
 
     monkeypatch.setattr(youtube_srt.subprocess, "run", fail)
 
     try:
         youtube_srt.run_ytdlp(["--dump-single-json", "https://youtu.be/IySF_8OArvw"])
     except RuntimeError as error:
-        assert proxy not in str(error)
+        assert "Direct failure" in str(error)
         assert "[configured proxy]" in str(error)
+        assert proxy not in str(error)
     else:
-        raise AssertionError("Expected the yt-dlp failure to be reported")
+        raise AssertionError("Expected both direct and proxy attempts to fail")
 
-    command = captured[0]
-    assert command[command.index("--proxy") + 1] == proxy
-    assert command.index("--proxy") < command.index("--dump-single-json")
-
-
-def test_ytdlp_uses_standard_proxy_environment_when_custom_proxy_is_unset(monkeypatch):
-    captured = []
-
-    monkeypatch.setattr(youtube_srt.shutil, "which", lambda name: f"{name}.exe")
-    monkeypatch.delenv("YTDLP_PROXY", raising=False)
-    monkeypatch.setenv("HTTPS_PROXY", "http://proxy.example:8080")
-    monkeypatch.setattr(
-        youtube_srt.subprocess,
-        "run",
-        lambda command, **kwargs: captured.append(command)
-        or subprocess.CompletedProcess(command, 0, "{}", ""),
-    )
-
-    youtube_srt.run_ytdlp(["--dump-single-json", "https://youtu.be/IySF_8OArvw"])
-
-    command = captured[0]
-    assert command[command.index("--proxy") + 1] == "http://proxy.example:8080"
+    assert len(calls) == 2
+    assert "--proxy" not in calls[0]
+    assert calls[1][calls[1].index("--proxy") + 1] == proxy
 
 
 def test_ytdlp_uses_configured_cookies_file(monkeypatch, tmp_path):

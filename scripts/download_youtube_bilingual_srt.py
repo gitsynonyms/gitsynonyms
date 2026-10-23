@@ -1805,38 +1805,59 @@ def run_ytdlp(
         if not Path(cookies_file).is_file():
             raise RuntimeError("The configured yt-dlp cookies file does not exist.")
         cookies_arguments = ["--cookies", cookies_file]
-    proxy = next(
-        (
-            os.environ[name]
-            for name in (
-                "YTDLP_PROXY",
-                "HTTPS_PROXY",
-                "https_proxy",
-                "HTTP_PROXY",
-                "http_proxy",
-                "ALL_PROXY",
-                "all_proxy",
-            )
-            if os.environ.get(name)
-        ),
-        None,
-    )
-    proxy_arguments = ["--proxy", proxy] if proxy else []
-    try:
+    proxy = os.environ.get("YTDLP_PROXY")
+    command = [executable, *javascript_runtime, *cookies_arguments]
+    direct_environment = os.environ.copy()
+    for name in tuple(direct_environment):
+        if name.upper() in {
+            "HTTP_PROXY",
+            "HTTPS_PROXY",
+            "ALL_PROXY",
+            "FTP_PROXY",
+            "NO_PROXY",
+            "YTDLP_PROXY",
+        }:
+            direct_environment.pop(name)
+
+    def run(command_proxy: str | None = None) -> subprocess.CompletedProcess:
+        proxy_arguments = ["--proxy", command_proxy] if command_proxy else []
         return subprocess.run(
-            [executable, *javascript_runtime, *cookies_arguments, *proxy_arguments, *args],
+            [*command, *proxy_arguments, *args],
             check=True,
             capture_output=not show_progress,
             text=True,
             encoding="utf-8",
             errors="replace",
+            env=direct_environment,
         )
-    except subprocess.CalledProcessError as error:
-        details = (error.stderr or error.stdout or str(error)).strip()
-        if proxy:
-            details = details.replace(proxy, "[configured proxy]")
-        message = f"yt-dlp failed: {details}" if details else f"yt-dlp exited with code {error.returncode}."
-        raise RuntimeError(message) from error
+
+    try:
+        return run()
+    except subprocess.CalledProcessError as direct_error:
+        if not proxy:
+            details = (direct_error.stderr or direct_error.stdout or str(direct_error)).strip()
+            message = (
+                f"yt-dlp failed: {details}"
+                if details
+                else f"yt-dlp exited with code {direct_error.returncode}."
+            )
+            raise RuntimeError(message) from direct_error
+        try:
+            return run(proxy)
+        except subprocess.CalledProcessError as proxy_error:
+            direct_details = (
+                direct_error.stderr or direct_error.stdout or str(direct_error)
+            ).strip()
+            direct_details = direct_details.replace(proxy, "[configured proxy]")
+            proxy_details = (
+                proxy_error.stderr or proxy_error.stdout or str(proxy_error)
+            ).strip()
+            proxy_details = proxy_details.replace(proxy, "[configured proxy]")
+            message = (
+                "yt-dlp failed both directly and with the configured YTDLP_PROXY. "
+                f"Direct error: {direct_details}; proxy error: {proxy_details}"
+            )
+            raise RuntimeError(message) from proxy_error
 
 
 def download_track(
