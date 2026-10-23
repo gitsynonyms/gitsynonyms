@@ -172,6 +172,99 @@ def test_missing_keys_are_reported_not_faked(tmp_path, monkeypatch):
     assert not (work / "deepgram" / "deepgram.srt").exists()
 
 
+def test_prepare_audio_extracts_video_audio_and_limits_the_excerpt(tmp_path, monkeypatch):
+    source = tmp_path / "source.mp4"
+    source.write_bytes(b"video")
+    commands = []
+
+    def fake_run(command, **_kwargs):
+        commands.append(command)
+        Path(command[-1]).write_bytes(b"audio")
+
+    monkeypatch.setattr(third_party.subprocess, "run", fake_run)
+
+    result = third_party.prepare_audio(
+        audio=source,
+        url=None,
+        work_dir=tmp_path / "work",
+        limit_seconds=180,
+    )
+
+    assert result == tmp_path / "work" / "excerpt.m4a"
+    assert len(commands) == 2
+    assert "-vn" in commands[0]
+    assert commands[0][-1].endswith("audio.m4a")
+    assert commands[1][commands[1].index("-t") + 1] == "180.000"
+
+
+def test_main_uses_reference_language_separate_from_provider_language(
+    tmp_path, monkeypatch
+):
+    audio = tmp_path / "audio.m4a"
+    audio.write_bytes(b"audio")
+    captured = {}
+    reference = {
+        "kind": "fused-caption-folder",
+        "path": "captions",
+        "formats": ["json3"],
+        "cues": [
+            {
+                "start": 0.0,
+                "end": 0.5,
+                "text": "hello",
+                "words": [{"text": "hello", "start": 0.0, "end": 0.5}],
+            }
+        ],
+        "words": [{"text": "hello", "start": 0.0, "end": 0.5}],
+    }
+
+    monkeypatch.setenv("DEEPGRAM_API_KEY", "test-key")
+    monkeypatch.setattr(third_party, "prepare_audio", lambda **_kwargs: audio)
+    monkeypatch.setattr(third_party, "probe_duration", lambda _path: 0.5)
+
+    def fake_load_reference(_path, *, language, video_id):
+        captured["reference_language"] = language
+        captured["video_id"] = video_id
+        return reference
+
+    monkeypatch.setattr(third_party, "load_reference", fake_load_reference)
+    monkeypatch.setitem(
+        third_party.ADAPTERS,
+        "deepgram",
+        lambda *_args: {
+            "cues": [{"start": 0.0, "end": 0.5, "text": "hello", "words": []}],
+            "words": [{"text": "hello", "start": 0.0, "end": 0.5}],
+            "model": "test",
+        },
+    )
+    work = tmp_path / "comparison"
+
+    assert third_party.main(
+        [
+            "--audio",
+            str(audio),
+            "--reference",
+            "captions",
+            "--reference-language",
+            "en-orig",
+            "--video-id",
+            "VIDEO",
+            "--language",
+            "en",
+            "--providers",
+            "deepgram",
+            "--work-dir",
+            str(work),
+        ]
+    ) == 0
+
+    report = json.loads((work / "COMPARISON.json").read_text(encoding="utf-8"))
+    assert captured == {"reference_language": "en-orig", "video_id": "VIDEO"}
+    assert report["language"] == "en"
+    assert report["reference"]["language"] == "en-orig"
+    assert report["providers"]["deepgram"]["wer_percent"] == 0.0
+
+
 def test_srt_output_is_numbered_and_millisecond(tmp_path):
     path = tmp_path / "out.srt"
 

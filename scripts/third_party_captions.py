@@ -332,6 +332,31 @@ def prepare_audio(
     source = source.expanduser().resolve()
     if not source.is_file():
         raise ValueError(f"Audio file not found: {source}")
+    if source.suffix.lower() in {".mp4", ".webm", ".mkv", ".mov"}:
+        extracted = work_dir / "audio.m4a"
+        command = [
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-y",
+            "-i",
+            str(source),
+            "-vn",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "128k",
+            str(extracted),
+        ]
+        try:
+            subprocess.run(command, check=True, capture_output=True, text=True)
+        except FileNotFoundError as error:
+            raise RuntimeError("ffmpeg is required to extract audio from video.") from error
+        except subprocess.CalledProcessError as error:
+            details = (error.stderr or error.stdout or "").strip()[-800:]
+            raise RuntimeError(f"ffmpeg could not extract audio: {details}") from error
+        source = extracted
     if limit_seconds is None or limit_seconds <= 0:
         return source
     target = work_dir / f"excerpt{source.suffix or '.m4a'}"
@@ -988,6 +1013,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--video-id", help="Video id for a caption-folder reference.")
     parser.add_argument("--language", default="en", help="Language code (default: en).")
     parser.add_argument(
+        "--reference-language",
+        help="Reference-track language code; defaults to --language.",
+    )
+    parser.add_argument(
         "--providers",
         default="all",
         help="Comma-separated provider slugs, or all (default: all).",
@@ -1057,7 +1086,7 @@ def main(argv: list[str] | None = None) -> int:
             if args.reference:
                 reference = load_reference(
                     args.reference,
-                    language=args.language,
+                    language=args.reference_language or args.language,
                     video_id=args.video_id,
                 )
                 if args.limit_seconds:
@@ -1071,6 +1100,7 @@ def main(argv: list[str] | None = None) -> int:
                     key: reference[key]
                     for key in ("kind", "path", "formats")
                 }
+                report["reference"]["language"] = args.reference_language or args.language
                 report["reference"]["cues"] = len(reference["cues"])
                 report["reference"]["words"] = len(reference["words"])
             for slug in runnable:

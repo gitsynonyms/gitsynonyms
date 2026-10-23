@@ -102,7 +102,7 @@ The downloader retains every caption format YouTube publishes for both languages
 
 The script itself uses only the Python standard library and the `yt-dlp` command already available on `PATH`. It prints each processing step and streams yt-dlp's wait/download progress directly to PowerShell, rather than hiding output until completion. It downloads the second language track first; English is requested immediately, while the Chinese track waits 56 seconds by default, and that wait is applied before every format request of the delayed track. Every downloaded caption file is kept unchanged as the original single-language track; the bilingual SRT and ASS are additional outputs. The merge and the ASS read the track format that carries the most precise timing, in the order `json3`, `srv3`, `srv2`, `srv1`, `vtt`, `ttml`, `srt`; `json3`, `srv3` and `srv2` expose YouTube's own per-word offsets, so the English karaoke highlight follows the spoken word instead of a uniform estimate. VTT cue timings are parsed, and inline word timestamps are used for ASS cut points when available. The bilingual SRT pairs cues whose end times match (to the millisecond), even if their start times differ, placing Chinese and English on separate lines in one block. A newer cue replaces an overlapping older cue in the same language, so each language contributes at most one line and rolling captions are not accumulated. Unpaired cues remain time-aligned at their source boundaries; unrelated cues are not paired merely because they are nearest in time. Original source text and markup remain unchanged in the downloaded single-language files. ASS output groups connected rolling cues in each language and reconstructs their unique text. When Chinese and English rolling groups have matching source cue boundaries, both use those shared boundaries and keep each corresponding cue's full text together instead of independently splitting by words or characters. Unpaired groups use a uniform word-rate estimate and split at later cue starts by rounding to the nearest token; if a preceding cue ends at that split, its text is prefixed to the first segment. This fallback is a coarse estimate, not YouTube-provided word timing. CJK text is placed above Latin text regardless of source track order, centered in the caption area, and reduced to fit when needed. ASS English text uses karaoke timing to highlight words in sequence, evenly distributing each caption interval's duration across its English words. The homepage reads the one shared settings record managed by the subtitle settings page rather than presenting duplicate style controls. The `classic` preset uses vivid gold Chinese (`#FFC928`) above white English; Chinese font size is 1.2 times English, with bold text and a soft shadow. English words highlight in bright cyan (`#00D7FF`) as they are spoken, clearly distinguishing the active English word from the gold Chinese line. The selectable `cinema` preset uses a sample-like serif style with English above Chinese in warm ivory. The background box is always visible from video time zero through the full video duration, including caption gaps, to cover persistent source banners. Generation stops with an explicit error if YouTube does not provide the video duration, since a shorter fallback cannot guarantee full-video coverage. `--box-style glass-diamond` gives a translucent, faceted glass-like look (an ASS-compatible visual treatment, not actual background blur); `--box-style presidential-blue` uses the user-selected color `#0F1647` (RGB 15, 22, 71), matching the blue listed for the U.S. presidential flag (1959–1994) in [Flag Color Codes](https://www.flagcolorcodes.com/president-of-the-united-states-of-america-usa-1959-1994). The default geometry remains `(66,883)`–`(1852,1022)` on a `1920x1080` canvas and scales proportionally with the frame. Use `--box-x`, `--box-y`, `--box-width`, and `--box-height` to customize position and size; `--box-color` and `--box-opacity` override the selected style. Pass `--chinese-font`, `--english-font`, `--english-font-size`, `--chinese-font-scale`, `--chinese-color`, and `--english-color` to customize typography. To retain the downloaded video and create a hard-subtitled MP4, add `--burn-in`; the source video is retained in the output folder alongside the rendered MP4. Pass `--source-video PATH` to burn the subtitles into a video that is already on disk instead of downloading it again. Pass `--local-file LANGUAGE=PATH` to build one language from a caption file you already have, for example a translation produced by `gitsynonyms-youtube`, when YouTube rate-limits that language's track. A local Intel Quick Sync example is `--burn-in --video-encoder h264_qsv --global-quality 1`; it requires an FFmpeg build with `h264_qsv` and compatible hardware. Use `yt-dlp --list-subs URL` to see the video's language codes; choose any two listed codes.
 
-The VTT parser tolerates a blank line between a cue's timing header and its caption text, and snaps inline word timestamps that YouTube rounds up to 10 ms past a cue's end onto that cue boundary; timestamps further outside their cue still stop generation with an explicit error. For ASS output only, if inline word timings show that a caption's final word ends more than three seconds before the cue end, the ASS cue is shortened to half a second after that word; matching Chinese and English cues share the same shortened end. The downloaded source VTT and bilingual SRT timings are not changed by this ASS-only correction.
+The VTT parser tolerates a blank line between a cue's timing header and its caption text, and snaps inline word timestamps that YouTube rounds up to 10 ms past a cue's end onto that cue boundary; timestamps further outside their cue still stop generation with an explicit error. For ASS output only, if inline word timings show that a caption's final word ends more than three seconds before the cue end, the ASS cue is shortened to half a second after that word; matching Chinese and English cues share the same shortened end. The downloaded source VTT and bilingual SRT timings are not changed by this ASS-only correction. When word-timed ASS cues overlap, each earlier cue now ends at the next cue's start instead of rendering both captions together; this prevents stale JSON3 text from being appended to the replacement caption.
 
 ASS preserves source cue start times and gaps without lead-in or gap filling. When the source VTT contains inline word timestamps, karaoke switches each complete English word to its timestamp. Without word timestamps, the script retains an even text-based estimate; subtitle text alone cannot recover exact pronunciation timing. See the [BBC timing guidance](https://www.bbc.co.uk/accessibility/forproducts/guides/subtitles/#Timing) and [Aegisub ASS override tag reference](https://aegisub.org/docs/latest/ass_tags/).
 
@@ -204,22 +204,26 @@ With `caption_dir`, module 2 reads every published format for both languages
 | `bilingual_precise_*.ass` | 10 ms | styled burn-in (libass limit) |
 | burned MP4 | 33–40 ms | 25/30 fps frame timing |
 
-#### Third-party caption comparison (caption comparison office)
+#### Third-party caption comparison
 
-When API keys are available, the same audio is sent to AssemblyAI, Deepgram,
-Gladia, Rev AI, ElevenLabs Scribe v2, and OpenAI Whisper API. Each provider's
-word-level transcript is normalized to cues, aligned with the fused reference,
-and scored:
+When API keys are available, the same audio can be sent to AssemblyAI,
+Deepgram, Gladia, Rev AI, ElevenLabs Scribe v2, and OpenAI Whisper API. Each
+provider's word-level transcript is normalized to cues, aligned with a supplied
+reference, and scored:
 
 - Word Error Rate (WER) after lower-casing/punctuation removal
-- Median absolute start-time offset (ms) on aligned words
-- Ergonomics score (CPS, line length, duration, gaps)
-- Estimated cost at current published rates
+- median and P95 absolute word-start offset
+- cue CPS, line length, duration, and gaps
+- estimated cost and provider execution status
 
-Results are written to `COMPARISON.json`/`COMPARISON.md` for side-by-side
-vendor ranking.
+Otter.ai and other services without a usable raw word-timestamp API are recorded
+as `unsupported`; missing API keys are `skipped`, not successful comparisons.
+Actual audio is sent to external providers only when the operator configures
+their credentials and runs the comparison. The five sub-offices, source
+register, study protocol, and known limits are documented in
+[`organization/subtitle-office-research.md`](organization/subtitle-office-research.md).
 
-#### Speech model research (model ranking office)
+#### Speech model research
 
 `scripts/speech_model_research.py` downloads the Hugging Face Open ASR
 Leaderboard (English short-form) CSV snapshot and ranks models by WER and
@@ -227,12 +231,11 @@ RTFx. Open-weight filter (`--open-weights`) removes proprietary services.
 The snapshot lives in `docs/subtitles/data/open_asr_english_short_latest.csv`
 and can be refreshed with `--refresh`.
 
-Current top 3 (2026-10-22 snapshot):
-1. OtterAI/speech-v3.1 – 3.88% WER (proprietary)
-2. reson8/resonant-1-flash – 4.02% WER (proprietary)
-3. zoom/scribe_v1 – 4.15% WER (proprietary)
-
-Best open-weight model: ibm-granite/granite-speech-5.0-2b – 5.06% WER, 544 RTFx.
+The ASR research register documents ten public ranking, catalog, or benchmark
+sources and distinguishes their metrics; the HF English leaderboard is the
+only one currently refreshed automatically by this repository. Do not merge
+their raw ranks into a single score or infer Chinese performance from an
+English-only leaderboard.
 
 #### Caption box or clean text
 

@@ -101,12 +101,23 @@ def copy_legacy_caption(video_id: str, folder: Path, language: str) -> list[tupl
 def copy_bilingual(video_id: str, folder: Path) -> list[tuple[str, str]]:
     copied = []
     for extension in ("srt", "vtt", "ass"):
-        source = folder / f"auto-translated+auto-generated_Bilingual_zh-Hans-en-orig.{extension}"
+        precise_ass = (
+            folder / "bilingual_precise_zh-Hans-en-orig.ass",
+            folder / "bilingual_precise_Chinese-English.ass",
+        )
+        source = (
+            next((path for path in precise_ass if path.is_file()), None)
+            if extension == "ass"
+            else None
+        )
+        if source is None:
+            source = folder / f"auto-translated+auto-generated_Bilingual_zh-Hans-en-orig.{extension}"
         if not source.exists():
             source = folder / f"bilingual_Chinese-English.{extension}"
         if not source.exists():
             continue
         target = CAPTION_DIR / f"{video_id}.bilingual.{extension}"
+        target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(source.read_bytes())
         copied.append((extension, f"captions/{target.name}"))
     return copied
@@ -163,13 +174,13 @@ def detail_page(video: dict, previous_video: dict | None, next_video: dict | Non
         '            Your browser cannot play this MP4 preview. Use the download links below.',
         '          </video>',
         '        </div>',
-        '        <p class="hint">1080p 硬字幕成片；金色中文在上、白色英文在下，英文逐词高亮，磨砂玻璃钻石背景框从片头持续到片尾。</p>',
+        '        <p class="hint">1080p 双语硬字幕成片；中英文字幕烧录在视频画面中。</p>',
         '        <dl class="meta-grid">',
         f'          <div><dt>视频 ID</dt><dd>{html.escape(video_id)}</dd></div>',
         f'          <div><dt>事件日期</dt><dd>{html.escape(event_date)}</dd></div>',
         f'          <div><dt>时长</dt><dd>{html.escape(duration)}</dd></div>',
         f'          <div><dt>上传者</dt><dd>{html.escape(uploader)}</dd></div>',
-        '          <div><dt>样式</dt><dd>classic · 玻璃钻石框</dd></div>',
+        '          <div><dt>样式</dt><dd>双语字幕</dd></div>',
         '          <div><dt>刻录编码</dt><dd>libx264 · CRF 18 · 音频原样复制</dd></div>',
         '          <div><dt>字幕来源</dt><dd>YouTube en-orig + zh-Hans（json3 逐词时间戳）</dd></div>',
         '        </dl>',
