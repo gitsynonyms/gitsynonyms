@@ -128,10 +128,6 @@ jobs:
         if: ${{ inputs.burn_in }}
         shell: pwsh
         run: choco install ffmpeg --yes --no-progress
-      - name: Select a working proxy for the manual download
-        env:
-          YTDLP_PROXY: ${{ secrets.YTDLP_PROXY }}
-        run: python scripts/select_public_ytdlp_proxy.py
       - name: Download and organize subtitle tracks
         env:
           YOUTUBE_SOURCE: ${{ inputs.source }}
@@ -153,6 +149,7 @@ jobs:
           BOX_Y: ${{ inputs.box_y }}
           BOX_WIDTH: ${{ inputs.box_width }}
           BOX_HEIGHT: ${{ inputs.box_height }}
+          YTDLP_PROXY: ${{ secrets.YTDLP_PROXY }}
         shell: bash
         run: |
           source="$YOUTUBE_SOURCE"
@@ -161,9 +158,14 @@ jobs:
             exit 1
           fi
           if [[ "$source" == *youtube.com/@*"/videos"* || "$source" == *youtube.com/channel/*"/videos"* ]]; then
-            proxy_args=()
-            if [[ -n "${YTDLP_PROXY:-}" ]]; then proxy_args+=(--proxy "$YTDLP_PROXY"); fi
-            video_id="$(yt-dlp "${proxy_args[@]}" --no-warnings --flat-playlist --playlist-end 1 --print '%(id)s' "$source" | head -n 1)"
+            set -o pipefail
+            if ! video_id="$(yt-dlp --no-warnings --flat-playlist --playlist-end 1 --print '%(id)s' "$source" | head -n 1)"; then
+              if [[ -z "${YTDLP_PROXY:-}" ]]; then
+                echo "Could not resolve the latest channel video directly; configure YTDLP_PROXY for an authorized fallback." >&2
+                exit 1
+              fi
+              video_id="$(yt-dlp --proxy "$YTDLP_PROXY" --no-warnings --flat-playlist --playlist-end 1 --print '%(id)s' "$source" | head -n 1)"
+            fi
             if [[ -z "$video_id" ]]; then
               echo "Could not resolve the latest channel video from: $source" >&2
               exit 1
