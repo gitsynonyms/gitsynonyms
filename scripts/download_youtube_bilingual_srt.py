@@ -1805,9 +1805,26 @@ def run_ytdlp(
         if not Path(cookies_file).is_file():
             raise RuntimeError("The configured yt-dlp cookies file does not exist.")
         cookies_arguments = ["--cookies", cookies_file]
+    proxy = next(
+        (
+            os.environ[name]
+            for name in (
+                "YTDLP_PROXY",
+                "HTTPS_PROXY",
+                "https_proxy",
+                "HTTP_PROXY",
+                "http_proxy",
+                "ALL_PROXY",
+                "all_proxy",
+            )
+            if os.environ.get(name)
+        ),
+        None,
+    )
+    proxy_arguments = ["--proxy", proxy] if proxy else []
     try:
         return subprocess.run(
-            [executable, *javascript_runtime, *cookies_arguments, *args],
+            [executable, *javascript_runtime, *cookies_arguments, *proxy_arguments, *args],
             check=True,
             capture_output=not show_progress,
             text=True,
@@ -1816,6 +1833,8 @@ def run_ytdlp(
         )
     except subprocess.CalledProcessError as error:
         details = (error.stderr or error.stdout or str(error)).strip()
+        if proxy:
+            details = details.replace(proxy, "[configured proxy]")
         message = f"yt-dlp failed: {details}" if details else f"yt-dlp exited with code {error.returncode}."
         raise RuntimeError(message) from error
 
