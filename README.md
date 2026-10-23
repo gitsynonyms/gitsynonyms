@@ -112,6 +112,7 @@ publishing a new video never disturbs the existing ones.
 |---|---|
 | `multi_source.py` | optional discovery and verification across sources |
 | `comprehensive_monitor.py` | optional extended monitor; not used by the scheduled workflow |
+| `resolve_channel_feed.ps1` | read the public channel feed and select the next unprocessed upload |
 | `install_workflow.py` | copy the active workflow template into `.github/workflows/` |
 
 The optional extended monitor polls `@WhiteHouse/videos` and `@WhiteHouse/streams`, ranks the

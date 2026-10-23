@@ -32,67 +32,31 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Resolve the latest unprocessed channel upload
+        id: resolve
+        env:
+          FORCE_CHECK: ${{ inputs.force_check }}
+        shell: pwsh
+        run: ./scripts/monitoring/resolve_channel_feed.ps1
+
       - uses: actions/setup-python@v5
+        if: steps.resolve.outputs.video_id != ''
         with:
           python-version: "3.12"
 
       - uses: denoland/setup-deno@v2
+        if: steps.resolve.outputs.video_id != ''
         with:
           deno-version: v2.x
 
       - name: Install YouTube and video tools
+        if: steps.resolve.outputs.video_id != ''
         shell: pwsh
         run: |
           python -m pip install "yt-dlp[default]"
           choco install ffmpeg --yes --no-progress
           yt-dlp --js-runtimes deno --version
           ffmpeg -version
-
-      - name: Resolve the latest unprocessed channel upload
-        id: resolve
-        env:
-          FORCE_CHECK: ${{ inputs.force_check }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
-            echo "::error::The White House monitor must run from main to publish the site."
-            exit 1
-          fi
-          state_file=".github/state/whitehouse-processed-videos.txt"
-          mkdir -p "$(dirname "$state_file")"
-          touch "$state_file"
-          video_id=""
-          video_title=""
-          for channel in \
-            "https://www.youtube.com/@WhiteHouse/videos" \
-            "https://www.youtube.com/@WhiteHouse/streams"; do
-            listing="$(yt-dlp --js-runtimes deno --no-warnings --flat-playlist --playlist-end 10 --print '%(id)s' "$channel")" || {
-              echo "::error::Could not inspect White House channel: $channel"
-              exit 1
-            }
-            while IFS= read -r candidate; do
-              [[ "$candidate" =~ ^[A-Za-z0-9_-]{11}$ ]] || continue
-              if [[ "$FORCE_CHECK" != "true" ]] && grep -Fxq "$candidate" "$state_file"; then
-                continue
-              fi
-              video_id="$candidate"
-              break
-            done <<< "$listing"
-            [[ -n "$video_id" ]] && break
-          done
-          if [[ -n "$video_id" ]]; then
-            video_title="$(yt-dlp --js-runtimes deno --no-warnings --skip-download --print '%(title)s' "https://www.youtube.com/watch?v=$video_id" | sed -n '1p' | tr '\r\n' ' ')"
-            [[ -n "$video_title" ]] || video_title="$video_id"
-            video_title="${video_title//'%'/'%25'}"
-            video_title="${video_title//$'\r'/'%0D'}"
-            video_title="${video_title//$'\n'/'%0A'}"
-            echo "Discovered $video_id: $video_title"
-          else
-            echo "No unprocessed uploads found in the latest channel entries."
-          fi
-          printf 'video_id=%s\n' "$video_id" >> "$GITHUB_OUTPUT"
-          printf 'video_title=%s\n' "$video_title" >> "$GITHUB_OUTPUT"
 
       - name: Download captions and burn them into the video
         if: steps.resolve.outputs.video_id != ''
