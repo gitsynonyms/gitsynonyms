@@ -72,6 +72,7 @@ jobs:
 
       - name: Enumerate the full synonym matrix and walk it
         id: scan
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.video_url == '' || inputs.sync != false }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           QUERY_BUDGET: ${{ inputs.query_budget || '1200' }}

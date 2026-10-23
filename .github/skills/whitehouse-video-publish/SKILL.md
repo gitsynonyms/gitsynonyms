@@ -24,8 +24,9 @@ copy pipeline code into this skill or replace the existing processing scripts.
      finished bundle to Filebin, temp.sh, and GoFile.
 3. Dispatch both workflows against `main` with the same URL. Avoid optional
    caption-provider comparison unless specifically requested. For a test run,
-   use `force_check=false`, `sync=false`, and low scan budgets so the run does
-   not publish proxy-scan changes unrelated to the video.
+   use `force_check=false` and `sync=false`; the manual mirror workflow then
+   reuses the published proxy index instead of replacing it with a small test
+   scan unrelated to the video.
 4. Keep the returned Actions run IDs. Monitor both runs and inspect the failing
    step logs if either fails. Do not report success while a run is queued,
    running, cancelled, or failed.
@@ -47,9 +48,7 @@ gh workflow run monitor-whitehouse.yml --ref main \
   -f video_url=VIDEO_URL -f force_check=false
 
 gh workflow run proxy-scan.yml --ref main \
-  -f video_url=VIDEO_URL -f sync=false \
-  -f query_budget=1 -f probe_budget=1 -f budget_seconds=60 \
-  -f upload_min_ok=2
+  -f video_url=VIDEO_URL -f sync=false -f upload_min_ok=2
 ```
 
 Each workflow produces a distinct run. A successful Pages run is not evidence
