@@ -123,7 +123,51 @@ TIMING.json: 7 格式融合, 12,707 timestamps / 10,315 逐词, ASS 量化误差
 `Actions → Process Single Video (end-to-end) → Run workflow` 直接验证（建议先用
 `no_burn_in=true` 跑一次，确认字体安装步骤成功再跑全流程）。
 
-## 7. 回滚
+## 8. 复盘：合入方式与模板漂移（2026-10-24 学习结果）
+
+**A. 合入方式（观察自 PR #28）**
+
+```text
+44c645258b990d90fd6da72c0f745d7bea1203b9
+parents: 7e8e36f0ad7fa58a89e9f3489f1316db15222898 38d656f0ca81aa676b15fd40a475186b54c6a982
+author: gitsynonyms   committer: GitHub
+Merge pull request #28 from gitsynonyms/cline/vbn0z4bm
+```
+
+`git diff 38d656f origin/main` 为空：**真 merge、未 squash、无合并期编辑**，我的两个提交与文件
+内容逐字节进入 main。结论：提交信息与交接单本身就是永久记录，不依赖对话上下文；后续提交
+信息保持“为什么 + 改了什么 + 怎么验证”的结构。
+
+**B. PR #29 尚未合入（截至本复盘）**
+
+`origin/main` 仍停在 `44c6452`，活动工作流仍是旧版（含 `style_preset`、无字体安装），
+`scripts/generate_video_pages.py` 也还没有 `poster_name()`。所以“封面分档 + 字体”两块
+都还在本分支上等合入；本文件的安装步骤对旧版活动文件成立。
+
+**C. 教训：模板不是真相源，活动文件才是**
+
+既有先例 `.github/workflows-deploy/infogap.yml` 已经和 `.github/workflows/infogap.yml`
+漂移（cron 注释、`pip install` 步骤写法、多余空行三处），说明“模板留档 + 事后 cp”会
+让模板悄悄过期。因此本交接单额外约束：
+
+1. **模板切点**：`44c6452`（本文件与 `.github/workflows-deploy/process-single-video.yml`
+   都从该提交的活动工作流切出）。
+2. **安装前先看差异**：`diff -u .github/workflows/process-single-video.yml .github/workflows-deploy/process-single-video.yml`
+   —— 若出现本节 3 处以外的差异，说明活动文件已前进，**只打 3 个 hunk**，不要 `cp` 覆盖。
+3. **漂移守卫**：`tests/test_workflow_templates.py::test_staged_template_only_differs_by_the_documented_changes`
+   断言“活动文件与模板的差异恰为下面 4 个块（3 处变更，其中字体行是 1 删 4 增）”。
+   实测注入一行无关改动即失败，合入后两文件一致时该断言自动通过。
+
+```text
+块 1: 删 style_preset input（5 行）
+块 2: 删 sudo apt-get update -y && ... ffmpeg  →  增 update -y + 2 行注释 + 装字体行
+块 3: 删 STYLE_PRESET env
+块 4: 删 --style-preset "$STYLE_PRESET"
+```
+
+复盘结论按最高指示第九条落到本文件与该目录 `README.md`，不停留在对话里。
+
+## 9. 回滚
 
 ```bash
 git revert --no-edit <merge-or-commit>
