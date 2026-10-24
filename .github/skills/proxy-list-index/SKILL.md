@@ -26,6 +26,33 @@ python3 proxyindex/validate.py
 python3 proxyindex/report.py
 ```
 
+For the full sharded sweep (the flow the repository actually schedules) use
+`proxyindex/full_scan.py`; one runner can only sample the head of the pool, so
+the workflow fans the work out over N runners and merges the artifacts:
+
+```bash
+# a collect runner: its own source slice, its own workspace
+python3 proxyindex/full_scan.py scan --stages sources,collect \
+  --shard-index 0 --shard-count 16
+
+# fan-in: one pool, one probe slice per runner
+python3 proxyindex/full_scan.py merge --what pool \
+  --parts-dir downloads/collect --split-count 16 --split-dir probe-input
+
+# a probe runner: only its slice, with its own concurrency
+python3 proxyindex/full_scan.py scan --stages probe \
+  --workspace probe/shard-0 --shard-index 0 --shard-count 16 \
+  --shard-input probe-input/shard-0-of-16.txt
+
+# fan-in, rank, publish
+python3 proxyindex/full_scan.py merge --what all --parts-dir downloads
+python3 proxyindex/full_scan.py scan --stages rank,sync --sync
+```
+
+The slice of a candidate is `blake2b(candidate) mod shard_count`: stable across
+runs, independent of pool order, so two runners never probe the same candidate
+and no candidate is skipped. See [`proxyindex/README.md`](../../../proxyindex/README.md).
+
 ## Discovery
 
 `build_index.py` queries the GitHub search API over several topics and name

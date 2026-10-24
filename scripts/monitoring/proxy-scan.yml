@@ -1,10 +1,17 @@
 name: Proxy full scan + video download & mirror
-run-name: Proxy full scan (list²) + video mirror
+run-name: Proxy full scan (list² sharded) + video mirror
 
 # 固化素材获取前的代理全量扫描：检索词矩阵 → list² 来源 → 全量采集 → 两段探测
 # → top10 测速排名 → 同步到云端仓库 main。
-# 扫描完成后，用刚发布的 top10 代理下载指定视频并生成双语字幕，
-# 再上传到 Filebin、temp.sh、GoFile 三个免登录网盘，记录上传/下载速度与限制。
+#
+# 全量覆盖靠“多 runner 分片”：collect 与 probe 都是 matrix job，每个 runner 只处理
+# 稳定哈希分给自己的那一片，N 个 runner 合起来一轮覆盖整张池，而不是每小时只扫到
+# 列表头部。每个 runner 内部再开多路并发（来源 128 路 / TCP 512 路 / HTTP 256 路），
+# 所以“多 runner × 多路并发”同时生效。分片只是同一工作流内部的并行执行，不改变
+# 巡检粒度：一条 MIU 仍是一个仓库 × 一个 workflow 文件 × 一种触发方式。
+#
+# 扫描完成后，用刚发布的 top10 代理下载指定视频并生成双语字幕，再上传到 Filebin、
+# temp.sh、GoFile 三个免登录网盘，记录上传/下载速度与限制。
 #
 # 这是受版本控制的“活动工作流源文件”，与 monitor-whitehouse.yml 同一约定：创建
 # .github/workflows 下的文件需要带 workflows 权限的令牌。用 install_workflow.py
@@ -19,21 +26,46 @@ on:
         required: false
         type: boolean
         default: true
+      shards:
+        description: Runner shards for collect and probe (more runners = wider sweep)
+        required: false
+        type: string
+        default: "16"
+      max_parallel:
+        description: Matrix jobs allowed to run at once (relieve the 5-minute monitor)
+        required: false
+        type: string
+        default: "8"
       query_budget:
         description: Matrix queries consumed this run (GitHub search is 30/min)
         required: false
         type: string
-        default: "1200"
+        default: "1000"
       probe_budget:
-        description: Max candidates probed this run (0 = time budget only)
+        description: Max candidates probed per runner (0 = time budget only)
         required: false
         type: string
         default: "0"
       budget_seconds:
-        description: Time budget for collection and probing
+        description: Time budget per runner job
         required: false
         type: string
         default: "2400"
+      tcp_concurrency:
+        description: Concurrent TCP probes per runner
+        required: false
+        type: string
+        default: "512"
+      probe_concurrency:
+        description: Concurrent HTTP probes per runner
+        required: false
+        type: string
+        default: "256"
+      collect_workers:
+        description: Concurrent source fetches per runner
+        required: false
+        type: string
+        default: "128"
       video_url:
         description: "YouTube video URL to download and mirror (optional; example: https://www.youtube.com/watch?v=5E09UkJq4Jo)"
         required: false
@@ -52,48 +84,36 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  scan:
+  plan:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    timeout-minutes: 20
     outputs:
-      top10_json: ${{ steps.capture_top10.outputs.top10_json }}
+      shards: ${{ steps.shards.outputs.shards }}
+      shard_count: ${{ steps.shards.outputs.shard_count }}
       video_url: ${{ steps.auto_detect.outputs.video_url }}
       auto_detected: ${{ steps.auto_detect.outputs.auto_detected }}
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Enumerate the full synonym matrix and walk it
-        id: scan
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.video_url == '' || inputs.sync != false }}
+      - name: Decide the shard matrix
+        id: shards
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          QUERY_BUDGET: ${{ inputs.query_budget || '1200' }}
-          PROBE_BUDGET: ${{ inputs.probe_budget || '0' }}
-          BUDGET_SECONDS: ${{ inputs.budget_seconds || '2400' }}
+          SHARDS: ${{ inputs.shards || '16' }}
         run: |
-          SYNC=""
-          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.sync }}" = "true" ]; then
-            SYNC="--sync"
-          fi
-          python proxyindex/full_scan.py scan \
-            --query-budget "$QUERY_BUDGET" \
-            --probe-budget "$PROBE_BUDGET" \
-            --budget-seconds "$BUDGET_SECONDS" \
-            --stages all $SYNC --quiet
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          import os
 
-      - name: Capture top10.json for downstream job
-        id: capture_top10
-        run: |
-          top10_json="$(python -c 'import json; p=json.load(open("proxyindex/top10.json", encoding="utf-8")); print(json.dumps([x.get("proxy") if isinstance(x, dict) else x for x in p.get("top", []) if x]))')"
-          echo "top10_json=$top10_json" >> "$GITHUB_OUTPUT"
+          count = max(1, min(32, int(os.environ.get("SHARDS") or 16)))
+          print(f"shard_count={count}")
+          print("shards=" + json.dumps(list(range(count))))
+          PY
 
       - name: Install yt-dlp for scheduled video detection
         if: ${{ github.event_name == 'schedule' }}
@@ -120,6 +140,272 @@ jobs:
             echo "auto_detected=false" >> $GITHUB_OUTPUT
           fi
 
+  # 检索矩阵推进：只有一处写游标，避免多个 runner 争抢同一个 discovery-state.json。
+  # 游标与去重后的仓库清单随发布一起提交，所以矩阵覆盖率逐小时累积。
+  discover:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Walk the search matrix one slice further
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QUERY_BUDGET: ${{ inputs.query_budget || '1000' }}
+        run: |
+          python proxyindex/full_scan.py scan \
+            --stages matrix \
+            --workspace proxyindex/discovery-run \
+            --query-budget "$QUERY_BUDGET" \
+            --search-pages 2 \
+            --quiet
+
+      - name: Upload the advanced cursor and repo list
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: discovery
+          path: |
+            proxyindex/discovery-state.json
+            proxyindex/discovered-repos.txt
+          if-no-files-found: warn
+
+  # list² 采集分片：每个 runner 取稳定哈希落在自己这一片的来源，合起来覆盖全部来源。
+  collect:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(inputs.max_parallel || '8') }}
+      matrix:
+        shard: ${{ fromJSON(needs.plan.outputs.shards) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Collect this runner's share of the list² sources
+        env:
+          SHARD: ${{ matrix.shard }}
+          SHARDS: ${{ needs.plan.outputs.shard_count }}
+          WORKERS: ${{ inputs.collect_workers || '128' }}
+          BUDGET_SECONDS: ${{ inputs.budget_seconds || '2400' }}
+        run: |
+          python proxyindex/full_scan.py scan \
+            --stages sources,collect \
+            --shard-index "$SHARD" --shard-count "$SHARDS" \
+            --workers "$WORKERS" \
+            --refresh-hours 6 \
+            --budget-seconds "$BUDGET_SECONDS" \
+            --quiet
+
+      - name: Upload this shard's pool
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: collect-shard-${{ matrix.shard }}
+          path: proxyindex/shard-*/
+          if-no-files-found: warn
+
+  # 汇合：把各分片的池合并成一张全量池，并按同一稳定哈希切成探测分片，
+  # 每个探测 runner 只下载自己那一片，不必各自持有整张池。
+  prepare:
+    needs: [plan, collect]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download every collect shard
+        uses: actions/download-artifact@v4
+        with:
+          pattern: collect-shard-*
+          path: downloads/collect
+
+      - name: Merge the pools and cut one probe slice per runner
+        env:
+          SHARDS: ${{ needs.plan.outputs.shard_count }}
+        run: |
+          python proxyindex/full_scan.py merge \
+            --what pool \
+            --parts-dir downloads/collect \
+            --split-count "$SHARDS" \
+            --split-dir probe-input \
+            --quiet
+          python - <<'PY'
+          import pathlib
+
+          slices = sorted(pathlib.Path("probe-input").glob("shard-*-of-*.txt"))
+          total = sum(len(path.read_text(encoding="utf-8").split()) for path in slices)
+          print(f"probe slices: {len(slices)}, candidates: {total}")
+          if not slices or total == 0:
+              raise SystemExit("the merged pool is empty; refusing to publish a blank sweep")
+          PY
+
+      - name: Upload the probe slices
+        uses: actions/upload-artifact@v4
+        with:
+          name: probe-input
+          path: probe-input/
+
+  # 两段探测分片：TCP 可达性 → 真实 HTTP 请求，每个 runner 多路并发探测自己那一片。
+  probe:
+    needs: [plan, prepare]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(inputs.max_parallel || '8') }}
+      matrix:
+        shard: ${{ fromJSON(needs.plan.outputs.shards) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download the probe slices
+        uses: actions/download-artifact@v4
+        with:
+          name: probe-input
+
+      - name: Probe this runner's slice
+        env:
+          SHARD: ${{ matrix.shard }}
+          SHARDS: ${{ needs.plan.outputs.shard_count }}
+          TCP_CONCURRENCY: ${{ inputs.tcp_concurrency || '512' }}
+          PROBE_CONCURRENCY: ${{ inputs.probe_concurrency || '256' }}
+          PROBE_BUDGET: ${{ inputs.probe_budget || '0' }}
+          BUDGET_SECONDS: ${{ inputs.budget_seconds || '2400' }}
+        run: |
+          ulimit -n 65536 || true
+          SLICE="probe-input/shard-$SHARD-of-$SHARDS.txt"
+          if [ ! -f "$SLICE" ]; then
+            # upload-artifact may root the artifact at the slice directory itself.
+            SLICE="shard-$SHARD-of-$SHARDS.txt"
+          fi
+          python proxyindex/full_scan.py scan \
+            --stages probe \
+            --workspace "probe/shard-$SHARD" \
+            --shard-index "$SHARD" --shard-count "$SHARDS" \
+            --shard-input "$SLICE" \
+            --tcp-concurrency "$TCP_CONCURRENCY" \
+            --probe-concurrency "$PROBE_CONCURRENCY" \
+            --probe-budget "$PROBE_BUDGET" \
+            --budget-seconds "$BUDGET_SECONDS" \
+            --quiet
+
+      - name: Upload this shard's probe ledgers
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: probe-shard-${{ matrix.shard }}
+          path: probe/
+          if-no-files-found: warn
+
+  # 汇合 + 排名 + 发布：只有一个 job 提交，避免多个 runner 同时 push main。
+  publish:
+    needs: [plan, discover, prepare, probe]
+    if: ${{ !cancelled() && needs.prepare.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      top10_json: ${{ steps.top10.outputs.top10_json }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download the collect shards
+        uses: actions/download-artifact@v4
+        with:
+          pattern: collect-shard-*
+          path: downloads/collect
+
+      - name: Download the probe shards
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: probe-shard-*
+          path: downloads/probe
+
+      - name: Download the discovery cursor
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: discovery
+          path: downloads/discovery
+
+      - name: Restore the discovery cursor and the repo list
+        run: |
+          for name in discovery-state.json discovered-repos.txt; do
+            if [ -f "downloads/discovery/$name" ]; then
+              cp "downloads/discovery/$name" "proxyindex/$name"
+            fi
+          done
+
+      - name: Merge the shards, rank the survivors and publish
+        env:
+          SYNC: ${{ github.event_name == 'schedule' || inputs.sync != false }}
+        run: |
+          python proxyindex/full_scan.py merge \
+            --what all \
+            --parts-dir downloads \
+            --quiet
+          if [ "$SYNC" = "true" ]; then
+            python proxyindex/full_scan.py scan \
+              --stages rank,sync --sync --verify 200 --quiet
+          else
+            python proxyindex/full_scan.py scan \
+              --stages rank --verify 200 --quiet
+          fi
+          python - <<'PY'
+          import json
+          import pathlib
+
+          state = json.loads(pathlib.Path("proxyindex/scan-state.json").read_text(encoding="utf-8"))
+          coverage = state.get("coverage", {})
+          print(
+              "coverage:",
+              f"candidates={coverage.get('candidates')}",
+              f"tcp={coverage.get('tcp_checked')}",
+              f"http_alive={coverage.get('http_alive')}",
+              f"candidate_coverage={coverage.get('candidate_coverage')}",
+          )
+          PY
+
+      - name: Capture top10.json for downstream job
+        id: top10
+        run: |
+          top10_json="$(python -c 'import json; p=json.load(open("proxyindex/top10.json", encoding="utf-8")); print(json.dumps([x.get("proxy") if isinstance(x, dict) else x for x in p.get("top", []) if x]))')"
+          echo "top10_json=$top10_json" >> "$GITHUB_OUTPUT"
+
       - name: Upload the scan report
         if: always()
         uses: actions/upload-artifact@v4
@@ -132,11 +418,13 @@ jobs:
             proxyindex/scan-state.json
           if-no-files-found: warn
 
+
+
   mirror:
-    needs: scan
+    needs: [plan, publish]
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.video_url != '') || needs.scan.outputs.auto_detected == 'true' }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.video_url != '') || needs.plan.outputs.auto_detected == 'true' }}
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -165,10 +453,10 @@ jobs:
       - name: Download and mirror videos
         id: mirror
         env:
-          YTDLP_PROXY_POOL_JSON: ${{ needs.scan.outputs.top10_json }}
+          YTDLP_PROXY_POOL_JSON: ${{ needs.publish.outputs.top10_json }}
           YTDLP_PROXY: ${{ secrets.YTDLP_PROXY }}
           MANUAL_URLS: ${{ inputs.video_url }}
-          AUTO_URL: ${{ needs.scan.outputs.video_url }}
+          AUTO_URL: ${{ needs.plan.outputs.video_url }}
           UPLOAD_MIN_OK: ${{ inputs.upload_min_ok || '2' }}
         run: |
           for url in "$MANUAL_URLS" "$AUTO_URL"; do

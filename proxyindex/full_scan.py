@@ -10,6 +10,7 @@ material-acquisition code calls on every run:
     sources    expand every repository x conventional file path (list² again)
     collect    fetch every source, merge and de-duplicate the candidate pool
     probe      two-pass validation: TCP reachability, then a real HTTP request
+    merge      fan the per-runner shard artefacts back into the canonical files
     rank       keep the ten fastest verified proxies, re-probing them fresh
     sync       commit the result set and push it to the cloud repository's main
 
@@ -17,11 +18,20 @@ Every stage is resumable and every run records what it actually covered, so a
 report never claims more than was observed: a proxy that was not probed is
 `unknown`, not `ok`.
 
+A single runner can only sample the head of the pool, so `collect` and `probe`
+can be sharded across runner jobs: each runner derives the slice of a key from
+`blake2b(key) mod shard_count`, keeps its artefacts in its own workspace and
+uploads them as one artifact per shard.  ``merge`` rebuilds the canonical pool,
+provenance and probe ledgers from those artifacts (and cuts one disjoint probe
+slice per runner).  Sharding is internal parallelism of the same workflow, not a
+coarser inspection unit.
+
 Typical use::
 
     python proxyindex/full_scan.py scan                 # full flow, no push
     python proxyindex/full_scan.py scan --sync          # ... then push to main
     python proxyindex/full_scan.py scan --stages matrix,discover
+    python proxyindex/full_scan.py merge --what all --parts-dir downloads
 """
 
 from __future__ import annotations
@@ -29,9 +39,11 @@ from __future__ import annotations
 import argparse
 import asyncio
 import concurrent.futures
+import hashlib
 import http.client
 import ipaddress
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -62,6 +74,29 @@ DEFAULT_PROBE_BUDGET = 0  # 0 = no per-run cap, the time budget is the limit
 MAX_TCP_PER_RUN = 200_000  # keeps the per-run candidate list inside the memory budget
 DEFAULT_TOP = 10
 GH_SEARCH_INTERVAL = 2.2  # 30 authenticated search calls per minute
+# One shard = one runner job. The count is fixed per run so every runner derives
+# the same disjoint slice from the same key (see ``stable_shard``).
+SHARD_DIR = "shard-{index:02d}-of-{count:02d}"
+SPLIT_FILE = "shard-{index}-of-{count}.txt"
+
+
+def stable_shard(key: str, count: int) -> int:
+    """Deterministic, stable slice number for ``key`` in ``[0, count)``.
+
+    The assignment must not depend on the order of the pool, otherwise a
+    candidate would move between runner jobs as soon as one list adds a line
+    and two runners could probe it (or neither could).
+    """
+    count = max(1, int(count))
+    digest = hashlib.blake2b(key.encode("utf-8"), digest_size=8).digest()
+    return int.from_bytes(digest, "big") % count
+
+
+def shard_slice(entries: list[str], index: int, count: int) -> list[str]:
+    """The entries that belong to shard ``index`` of ``count``."""
+    if count <= 1:
+        return list(entries)
+    return [entry for entry in entries if stable_shard(entry, count) == index]
 
 IPV4_PORT = re.compile(r"^(?:\d{1,3}\.){3}\d{1,3}:\d{1,5}$")
 IPV4_PORT_ANY = re.compile(r"(?<![\d.])((?:\d{1,3}\.){3}\d{1,3}):(\d{2,5})(?![\d])")
@@ -89,31 +124,71 @@ def run_id() -> str:
 
 
 class IndexPaths:
-    """Every artefact of the flow, in one place so stages stay independent."""
+    """Every artefact of the flow, in one place so stages stay independent.
 
-    def __init__(self, root: Path | str = INDEX) -> None:
+    ``root`` holds the tracked inputs (source list, discovery cursor) and the
+    published result set.  ``workspace`` holds the mutable artefacts of one
+    execution: pool, provenance, probe ledgers, report.  A single-runner scan
+    keeps both in the same directory; a sharded run points every runner at its
+    own workspace so the artefacts of different runners never overwrite each
+    other and can be uploaded as one artifact per shard.
+    """
+
+    def __init__(
+        self,
+        root: Path | str = INDEX,
+        *,
+        workspace: Path | str | None = None,
+        shard_index: int = 0,
+        shard_count: int = 1,
+    ) -> None:
         self.root = Path(root)
+        self.shard_count = max(1, int(shard_count or 1))
+        self.shard_index = int(shard_index or 0)
+        if not 0 <= self.shard_index < self.shard_count:
+            raise ValueError(
+                f"shard index {self.shard_index} is outside 0..{self.shard_count - 1}"
+            )
+        if workspace:
+            self.workspace = Path(workspace)
+        elif self.shard_count > 1:
+            self.workspace = self.root / SHARD_DIR.format(
+                index=self.shard_index, count=self.shard_count
+            )
+        else:
+            self.workspace = self.root
+        # Tracked inputs: identical for every runner, written only by the
+        # single discovery job.
         self.matrix = self.root / "query-matrix.json"
         self.queries = self.root / "queries.txt"
         self.discovery_state = self.root / "discovery-state.json"
         self.discovered = self.root / "discovered.jsonl"
+        self.discovered_repos = self.root / "discovered-repos.txt"
         self.recorded_sources = self.root / "sources.txt"
         self.recorded_meta = self.root / "sources.jsonl"
         self.sources = self.root / "sources.full.txt"
-        self.collect_state = self.root / "collect.jsonl"
-        self.pool = self.root / "pool.txt"
-        self.provenance = self.root / "pool.provenance.tsv"
-        self.tcp_probes = self.root / "tcp-probes.tsv"
-        self.http_probes = self.root / "http-probes.tsv"
-        self.alive_tcp = self.root / "alive_tcp.txt"
-        self.alive_http = self.root / "alive_http.txt"
-        self.top_json = self.root / "top10.json"
-        self.top_txt = self.root / "top10.txt"
-        self.report = self.root / "scan-report.md"
-        self.state = self.root / "scan-state.json"
+        # Per-run artefacts: one writer per workspace.
+        self.collect_state = self.workspace / "collect.jsonl"
+        self.pool = self.workspace / "pool.txt"
+        self.parts = self.workspace / "pool.parts"
+        self.provenance = self.workspace / "pool.provenance.tsv"
+        self.provenance_parts = self.workspace / "provenance.parts"
+        self.tcp_probes = self.workspace / "tcp-probes.tsv"
+        self.http_probes = self.workspace / "http-probes.tsv"
+        self.alive_tcp = self.workspace / "alive_tcp.txt"
+        self.alive_http = self.workspace / "alive_http.txt"
+        self.top_json = self.workspace / "top10.json"
+        self.top_txt = self.workspace / "top10.txt"
+        self.report = self.workspace / "scan-report.md"
+        self.state = self.workspace / "scan-state.json"
 
     def ensure(self) -> None:
         self.root.mkdir(parents=True, exist_ok=True)
+        self.workspace.mkdir(parents=True, exist_ok=True)
+
+    def use_candidates(self, path: Path | str) -> None:
+        """Probe an explicit candidate slice instead of the local pool."""
+        self.pool = Path(path)
 
 
 def read_lines(path: Path) -> list[str]:
@@ -353,6 +428,7 @@ def stage_matrix(
     total = len(matrix["queries"]) + len(matrix["topics"])
     state = QM.load_cursor(paths.discovery_state, total, matrix["digest"])
     batch: list[dict] = []
+    found: set[str] = set()
     if not offline and query_budget > 0:
         batch, state = QM.take_batch(matrix, state, query_budget)
         with paths.discovered.open("a", encoding="utf-8") as sink:
@@ -372,6 +448,7 @@ def stage_matrix(
                     continue
                 observed = iso()
                 for repo in repos:
+                    found.add(repo["repo"])
                     sink.write(
                         json.dumps(
                             {
@@ -390,18 +467,30 @@ def stage_matrix(
     state["topics"] = len(matrix["topics"])
     state["digest"] = matrix["digest"]
     state["observed_at"] = iso()
+    state["repos"] = len(found)
+    # The JSONL below is a per-run observation log; the tracked, de-duplicated
+    # repo list is what the next run expands into sources. Committing the cursor
+    # plus this list is what makes matrix coverage accumulate across runs
+    # instead of re-searching the same first batch of queries every hour.
+    if found:
+        merge_unique(paths.discovered_repos, sorted(found))
     write_json(paths.discovery_state, state)
     if not quiet:
         print(
             f"matrix: {matrix['counts']['queries']} queries + "
             f"{matrix['counts']['topics']} topics, digest {matrix['digest'][:12]}, "
-            f"searched {state['searched']}, cursor coverage {state['coverage']:.2%}"
+            f"searched {state['searched']} ({len(found)} new repo mentions), "
+            f"cursor coverage {state['coverage']:.2%}"
         )
     return state
 
 
 def known_repos(paths: IndexPaths) -> list[str]:
     repos: set[str] = set()
+    for line in read_lines(paths.discovered_repos):
+        repo = line.strip()
+        if repo and not repo.startswith("{"):
+            repos.add(repo)
     for line in read_lines(paths.recorded_meta) + read_lines(paths.discovered):
         try:
             record = json.loads(line)
@@ -489,14 +578,22 @@ def stage_collect(
     deadline: Deadline | None = None,
     fetch=fetch_text,
     quiet: bool = False,
+    shard_index: int | None = None,
+    shard_count: int | None = None,
 ) -> dict:
     """Fetch every source whose last observation is older than ``refresh_hours``.
+
+    With ``shard_count > 1`` only the sources hashed to this shard are fetched,
+    so N runner jobs together cover the whole list² in one cycle instead of N
+    cycles covering only the head of the list.
 
     New candidates are appended to ``pool.parts`` and merged with the system
     ``sort`` once at the end, so a multi-million line pool never has to be
     re-sorted (or held in memory) after every batch.
     """
     deadline = deadline or Deadline(0)
+    shard_index = paths.shard_index if shard_index is None else int(shard_index)
+    shard_count = paths.shard_count if shard_count is None else int(shard_count)
     sources = read_lines(paths.sources)
     history = last_collections(paths)
     cutoff = utc_now().timestamp() - refresh_hours * 3600
@@ -517,10 +614,16 @@ def stage_collect(
             if observed >= window:
                 continue
         pending.append(url)
+    if shard_count > 1:
+        pending = [
+            url for url in pending if stable_shard(url, shard_count) == shard_index
+        ]
     if deadline.expired():
         return {
             "sources": len(sources),
             "pending": len(pending),
+            "shard_index": shard_index,
+            "shard_count": shard_count,
             "fetched": 0,
             "failed": 0,
             "empty": 0,
@@ -531,8 +634,8 @@ def stage_collect(
         }
 
     counters = {"fetched": 0, "failed": 0, "empty": 0, "entries": 0}
-    parts = paths.root / "pool.parts"
-    provenance_parts = paths.root / "provenance.parts"
+    parts = paths.parts
+    provenance_parts = paths.provenance_parts
     buffer_entries: list[str] = []
     buffer_provenance: list[str] = []
     buffer_records: list[str] = []
@@ -622,6 +725,8 @@ def stage_collect(
     return {
         "sources": len(sources),
         "pending": len(pending),
+        "shard_index": shard_index,
+        "shard_count": shard_count,
         **counters,
         "unique_candidates": count_lines(paths.pool) - before,
         "partial": deadline.expired() or counters["fetched"] < len(pending),
@@ -864,6 +969,191 @@ def stage_http(
 
 
 # ---------------------------------------------------------------------------
+# Stage: merge (fan-in from the runner shards)
+# ---------------------------------------------------------------------------
+
+
+def _part_files(
+    parts_dir: Path, name: str, *, exclude: tuple[Path, ...] = ()
+) -> list[Path]:
+    """Every file called ``name`` below ``parts_dir``, excluding our own output."""
+    if not parts_dir.exists():
+        return []
+    excluded = {path.resolve() for path in exclude}
+    found: list[Path] = []
+    for path in sorted(parts_dir.rglob(name)):
+        if not path.is_file():
+            continue
+        try:
+            resolved = path.resolve()
+        except OSError:  # pragma: no cover - defensive
+            continue
+        if resolved in excluded:
+            continue
+        found.append(path)
+    return found
+
+
+def _merge_into(
+    target: Path,
+    sources: list[Path],
+    *,
+    dedupe: bool = True,
+    tab_key: int = 0,
+) -> dict:
+    """Write ``sources`` into ``target``.
+
+    ``dedupe`` rebuilds the target as the sorted union of the sources (used for
+    the pool and the provenance map, where one row per proxy is the contract).
+    Without it the sources are appended, which keeps the probe ledgers an
+    append-only observation log.
+    """
+    existing = [
+        source for source in sources if source.exists() and source.stat().st_size
+    ]
+    if not existing:
+        return {"parts": 0, "rows": count_lines(target)}
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if not dedupe:
+        rows = 0
+        with target.open("ab") as sink:
+            for source in existing:
+                with source.open("rb") as handle:
+                    shutil.copyfileobj(handle, sink)
+                rows += count_lines(source)
+        return {"parts": len(existing), "rows": rows}
+    with tempfile.NamedTemporaryFile(
+        "wb", delete=False, dir=str(target.parent), prefix=target.name + "."
+    ) as temp:
+        for source in existing:
+            with source.open("rb") as handle:
+                shutil.copyfileobj(handle, temp)
+        temp_path = Path(temp.name)
+    try:
+        command = ["sort", "-u", "-S", "256M", "-T", str(target.parent)]
+        if tab_key:
+            command.extend(["-t", "\t", "-k", f"{tab_key},{tab_key}"])
+        command.extend(["-o", str(target), str(temp_path)])
+        subprocess.run(command, check=True, env={**os.environ, "LC_ALL": "C"})
+    finally:
+        temp_path.unlink(missing_ok=True)
+    return {"parts": len(existing), "rows": count_lines(target)}
+
+
+def split_pool(pool: Path, out_dir: Path, count: int, *, quiet: bool = False) -> dict:
+    """Split ``pool`` into ``count`` stable, disjoint probe slices."""
+    count = max(1, int(count))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for stale in out_dir.glob("shard-*-of-*.txt"):
+        stale.unlink()
+    handles = [
+        (out_dir / SPLIT_FILE.format(index=index, count=count)).open(
+            "w", encoding="utf-8"
+        )
+        for index in range(count)
+    ]
+    totals = [0] * count
+    try:
+        with pool.open("r", encoding="utf-8", errors="replace") as handle:
+            for line in handle:
+                entry = line.strip()
+                if not entry:
+                    continue
+                index = stable_shard(entry, count)
+                handles[index].write(entry + "\n")
+                totals[index] += 1
+    finally:
+        for handle in handles:
+            handle.close()
+    if not quiet:
+        print(
+            f"  split {sum(totals)} candidates into {count} slices "
+            f"(min {min(totals)}, max {max(totals)})",
+            flush=True,
+        )
+    return {
+        "dir": str(out_dir),
+        "count": count,
+        "total": sum(totals),
+        "min": min(totals),
+        "max": max(totals),
+    }
+
+
+def stage_merge(
+    paths: IndexPaths,
+    *,
+    parts_dir: Path | str,
+    what: str = "all",
+    split_count: int = 0,
+    split_dir: Path | str | None = None,
+    quiet: bool = False,
+) -> dict:
+    """Rebuild the canonical artefacts from the per-runner shard directories.
+
+    ``what=pool`` merges the collected pools, provenance and collection records
+    (the collect runners' output).  ``what=probes`` merges the TCP/HTTP probe
+    ledgers (the probe runners' output).  ``all`` does both, which is what the
+    publishing job needs before ranking.  With ``split_count`` the merged pool
+    is additionally written out as disjoint probe slices, one file per probe
+    runner, so no runner has to hold or probe the whole pool.
+    """
+    if what not in {"pool", "probes", "all"}:
+        raise SystemExit(f"unknown merge target {what!r}; use pool, probes or all")
+    parts = Path(parts_dir)
+    exclude = (
+        paths.pool,
+        paths.parts,
+        paths.provenance,
+        paths.provenance_parts,
+        paths.collect_state,
+        paths.tcp_probes,
+        paths.http_probes,
+    )
+    summary: dict = {"parts_dir": str(parts), "what": what}
+    if what in {"pool", "all"}:
+        summary["pool"] = _merge_into(
+            paths.pool,
+            _part_files(parts, "pool.txt", exclude=exclude)
+            + _part_files(parts, "pool.parts", exclude=exclude),
+            dedupe=True,
+        )
+        summary["provenance"] = _merge_into(
+            paths.provenance,
+            _part_files(parts, "pool.provenance.tsv", exclude=exclude)
+            + _part_files(parts, "provenance.parts", exclude=exclude),
+            dedupe=True,
+            tab_key=1,
+        )
+        summary["collect"] = _merge_into(
+            paths.collect_state,
+            _part_files(parts, "collect.jsonl", exclude=exclude),
+            dedupe=False,
+        )
+        if split_count and split_dir:
+            summary["split"] = split_pool(
+                paths.pool, Path(split_dir), split_count, quiet=quiet
+            )
+    if what in {"probes", "all"}:
+        summary["tcp"] = _merge_into(
+            paths.tcp_probes,
+            _part_files(parts, "tcp-probes.tsv", exclude=exclude),
+            dedupe=False,
+        )
+        summary["http"] = _merge_into(
+            paths.http_probes,
+            _part_files(parts, "http-probes.tsv", exclude=exclude),
+            dedupe=False,
+        )
+        alive = _tcp_open(paths)
+        write_lines(paths.alive_tcp, alive)
+        summary["alive_tcp"] = len(alive)
+    if not quiet:
+        print(f"merge {what}: {json.dumps(summary, ensure_ascii=False)}", flush=True)
+    return summary
+
+
+# ---------------------------------------------------------------------------
 # Stage: rank
 # ---------------------------------------------------------------------------
 
@@ -998,7 +1288,21 @@ def stage_sync(
     runner=subprocess.run,
 ) -> dict:
     """Commit the published artefacts and push them to ``remote/branch``."""
-    relative = files or [_repo_path(paths.top_json), _repo_path(paths.top_txt), _repo_path(paths.report), _repo_path(paths.state)]
+    if files:
+        relative = files
+    else:
+        relative = [
+            _repo_path(paths.top_json),
+            _repo_path(paths.top_txt),
+            _repo_path(paths.report),
+            _repo_path(paths.state),
+        ]
+        # The cursor and the de-duplicated repo list are what make matrix and
+        # source coverage accumulate across hourly runs; both are small and
+        # tracked, unlike the multi-million-line pool.
+        for extra in (paths.discovery_state, paths.discovered_repos):
+            if extra.exists():
+                relative.append(_repo_path(extra))
     message = message or (
         "Update proxy top10 from the full list² scan\n\n"
         f"run {read_json(paths.state, {}).get('run_id', 'unknown')}"
@@ -1066,11 +1370,38 @@ def parse_stages(value: str) -> list[str]:
     return [stage for stage in STAGE_ORDER if stage in requested]
 
 
+def _covered_count(pool: Path, ledger: Path) -> int:
+    """Distinct candidates from ``pool`` that have a verdict in ``ledger``.
+
+    ``count_lines(ledger)`` counts observations, not candidates: a proxy probed
+    in several sweeps would inflate the coverage figure until it exceeded the
+    pool and the report claimed more coverage than existed.
+    """
+    if not pool.exists() or not ledger.exists():
+        return 0
+    completed = subprocess.run(
+        [
+            "bash",
+            "-c",
+            f"LC_ALL=C comm -12 "
+            f"<(LC_ALL=C sort -u {shlex(pool)}) "
+            f"<(LC_ALL=C cut -f1 {shlex(ledger)} | LC_ALL=C sort -u) | wc -l",
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    try:
+        return int(completed.stdout.strip() or 0)
+    except ValueError:  # pragma: no cover - defensive
+        return 0
+
+
 def coverage_snapshot(paths: IndexPaths) -> dict:
     discovery = read_json(paths.discovery_state, {})
     top = read_json(paths.top_json, {})
     pool = count_lines(paths.pool)
-    tcp = count_lines(paths.tcp_probes)
+    tcp = _covered_count(paths.pool, paths.tcp_probes)
     http_attempts = count_lines(paths.http_probes)
     results = load_http_results(paths)
     return {
@@ -1140,8 +1471,16 @@ def render_report(payload: dict) -> str:
 
 def scan(args) -> dict:
     """Run the selected stages in order and publish ``top10.json``."""
-    paths = IndexPaths(args.index_dir)
+    paths = IndexPaths(
+        args.index_dir,
+        workspace=getattr(args, "workspace", None),
+        shard_index=getattr(args, "shard_index", 0),
+        shard_count=getattr(args, "shard_count", 1),
+    )
     paths.ensure()
+    shard_input = getattr(args, "shard_input", None)
+    if shard_input:
+        paths.use_candidates(shard_input)
     stages = parse_stages(args.stages)
     deadline = Deadline(args.budget_seconds)
     started = utc_now()
@@ -1163,6 +1502,10 @@ def scan(args) -> dict:
             "probe_budget": args.probe_budget,
             "refresh_hours": args.refresh_hours,
             "github": not args.offline,
+            "shard_index": paths.shard_index,
+            "shard_count": paths.shard_count,
+            "workspace": str(paths.workspace),
+            "shard_input": str(shard_input) if shard_input else "",
         },
         "stages": {},
         "coverage": {},
@@ -1192,6 +1535,8 @@ def scan(args) -> dict:
             if args.budget_seconds > 0
             else deadline,
             quiet=args.quiet,
+            shard_index=paths.shard_index,
+            shard_count=paths.shard_count,
         )
         stage_results["collect"] = collected
         payload["stages"]["collect"] = {"summary": collected}
@@ -1234,6 +1579,9 @@ def scan(args) -> dict:
 
     payload["finished_at"] = iso()
     payload["coverage"] = coverage_snapshot(paths)
+    # Keep the last published list: a sweep that verifies nothing must not turn
+    # a working top10.json into an empty one.
+    previous_top = read_json(paths.top_json, {})
     # Coverage is only complete when the matrix cursor wrapped and every pooled
     # candidate has a verdict; anything less is reported as partial.
     if (
@@ -1259,7 +1607,17 @@ def scan(args) -> dict:
     write_json(paths.state, payload)
 
     if "sync" in stages and args.sync:
-        payload["stages"]["sync"] = {"summary": stage_sync(paths, branch=args.branch)}
+        if not payload["top"] and (previous_top.get("top") or []):
+            write_json(paths.top_json, previous_top)
+            payload["stages"]["sync"] = {
+                "summary": {
+                    "status": "skipped",
+                    "reason": "no verified proxy this run; keeping the previous publication",
+                }
+            }
+            write_json(paths.state, payload)
+        else:
+            payload["stages"]["sync"] = {"summary": stage_sync(paths, branch=args.branch)}
     elif "sync" in stages:
         payload["stages"]["sync"] = {"summary": {"status": "skipped", "reason": "--sync not given"}}
         write_json(paths.state, payload)
@@ -1314,6 +1672,45 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--offline", action="store_true", help="skip GitHub discovery")
     run.add_argument("--quiet", action="store_true")
     run.add_argument("--json", action="store_true", dest="as_json")
+    run.add_argument(
+        "--shard-index",
+        type=int,
+        default=0,
+        help="this runner's slice number (0-based)",
+    )
+    run.add_argument(
+        "--shard-count",
+        type=int,
+        default=1,
+        help="number of runner jobs sharing the work (>1 shards collect and isolates artefacts)",
+    )
+    run.add_argument(
+        "--workspace",
+        default=None,
+        help="directory for this run's pool/ledgers/report (default: index dir, or shard-XX-of-YY)",
+    )
+    run.add_argument(
+        "--shard-input",
+        default=None,
+        help="explicit candidate slice to probe instead of collecting a local pool",
+    )
+
+    merge = sub.add_parser(
+        "merge", help="rebuild the canonical artefacts from per-shard directories"
+    )
+    merge.set_defaults(command="merge")
+    merge.add_argument("--index-dir", default=str(INDEX))
+    merge.add_argument("--parts-dir", required=True, help="downloaded shard directories")
+    merge.add_argument(
+        "--what",
+        choices=("pool", "probes", "all"),
+        default="all",
+        help="pool = collect output, probes = probe ledgers, all = both",
+    )
+    merge.add_argument("--split-count", type=int, default=0)
+    merge.add_argument("--split-dir", default=None)
+    merge.add_argument("--quiet", action="store_true")
+    merge.add_argument("--json", action="store_true", dest="as_json")
 
     top = sub.add_parser("top", help="print the current published top list")
     top.set_defaults(command="top")
@@ -1340,6 +1737,20 @@ def main(argv: list[str] | None = None) -> int:
         if getattr(args, "as_json", False):
             print(json.dumps(payload, ensure_ascii=False, indent=2))
         return 0 if not payload.get("error") else 1
+    if args.command == "merge":
+        paths = IndexPaths(args.index_dir)
+        paths.ensure()
+        summary = stage_merge(
+            paths,
+            parts_dir=args.parts_dir,
+            what=args.what,
+            split_count=args.split_count,
+            split_dir=args.split_dir,
+            quiet=args.quiet,
+        )
+        if args.as_json:
+            print(json.dumps(summary, ensure_ascii=False, indent=2))
+        return 0
     paths = IndexPaths(args.index_dir)
     if args.command == "top":
         payload = read_json(paths.top_json, {})
