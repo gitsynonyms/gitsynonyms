@@ -388,12 +388,28 @@ matrix  →  discover  →  sources  →  collect  →  probe  →  rank  →  s
 | 阶段 | 全量口径 |
 | --- | --- |
 | matrix | `proxyindex/query_matrix.py` 枚举中英文同义词矩阵：代理词 22 个 × 网络/协议词 55 个 × 修饰词 43 个，双向排列，加近义词、拼音主题、中英混排二元组与三元组；约 52,000 条检索式 + 32 个 topic |
-| discover | 用 `gh` 搜索 API 按游标逐条走完矩阵（30 次/分钟），游标与覆盖率写入 `discovery-state.json` |
-| sources | list² 展开：已登记文件 URL + 每个仓库 × 33 条惯用文件名，约 68,000 个来源 |
+| discover | 用 `gh` 搜索 API 按游标逐条走完矩阵（30 次/分钟），游标与覆盖率写入 `discovery-state.json`；游标与去重后的仓库清单随发布一起提交，矩阵覆盖率逐小时累积 |
+| sources | list² 展开：已登记文件 URL + 每个仓库 × 33 条惯用文件名，约 70,000 个来源 |
 | collect | 全量抓取并合并去重；`collect.jsonl` 记录每个来源的状态，失败按 `missing` / `error` 分别记，不伪装成空 |
 | probe | 两段探测：先给每个候选一个 TCP 结论，再对开放的端口发真实 HTTPS 请求；未探测记为 `unknown` |
+| merge | 分片汇合：从各 runner 目录重建全量池、来源映射与探测台账，并按同一稳定哈希切出每个探测 runner 的候选片 |
 | rank | 对最快的候选立即复验一次，只发布本轮复验通过的 10 个 |
-| sync | 把 `top10.json`、`top10.txt`、`scan-report.md`、`scan-state.json` 提交并推送到云端仓库 `main` |
+| sync | 把 `top10.json`、`top10.txt`、`scan-report.md`、`scan-state.json`、`discovery-state.json`、`discovered-repos.txt` 提交并推送到云端仓库 `main` |
+
+### 多 runner 分片：一轮覆盖全量
+
+单 runner 每小时只能扫到池子的头部（去重后的池是数十万到百万级候选，一轮时间预算只能
+探测几个百分点），所以 `collect` 与 `probe` 都按分片矩阵执行：`plan` 生成分片清单，
+每个 runner 只处理 `blake2b(key) mod shards` 落到自己那一片的来源／候选，`prepare`
+与 `publish` 负责汇合。分片是同一工作流内部的并行执行，不改变巡检粒度（一条 MIU
+仍是一个仓库 × 一个 workflow 文件 × 一种触发方式）。
+
+- **多 runner**：默认 16 片，`max-parallel` 默认 8，留出并发给 5 分钟监控工作流。
+- **多路并发**：每个 runner 再开 128 路来源抓取、512 路 TCP、256 路 HTTP。
+- **稳定分片**：分片号只由键的哈希决定，与池的顺序无关，候选不会在两个 runner
+  之间漂移（既不会被重复探测，也不会漏探）。
+- **覆盖率诚实**：`tcp_checked` 只数去重后的候选；未探测仍是 `unknown`。
+- **不空手发布**：本轮没有任何复验通过的代理时跳过 `sync`，保留上一份 `top10.json`。
 
 `scripts/monitoring/acquisition.py` 在采集前自动调用该流程（`--proxy-scan auto`，
 默认复用 1 小时内的结果），`--proxy-scan full` 强制重跑，`--proxy-scan-sync` 打开
@@ -404,6 +420,14 @@ python proxyindex/full_scan.py scan            # 全量流程（不推送）
 python proxyindex/full_scan.py scan --sync     # 全量流程并同步 main
 python proxyindex/full_scan.py top --json      # 当前发布的 top10
 python scripts/monitoring/acquisition.py collect --proxy-scan full
+
+# 分片（工作流内部就是这样跑的）
+python proxyindex/full_scan.py scan --stages sources,collect --shard-index 0 --shard-count 16
+python proxyindex/full_scan.py merge --what pool --parts-dir downloads/collect --split-count 16 --split-dir probe-input
+python proxyindex/full_scan.py scan --stages probe --workspace probe/shard-0 \
+  --shard-index 0 --shard-count 16 --shard-input probe-input/shard-0-of-16.txt
+python proxyindex/full_scan.py merge --what all --parts-dir downloads
+python proxyindex/full_scan.py scan --stages rank,sync --sync
 ```
 
 定时执行的工作流源文件是 [`scripts/monitoring/proxy-scan.yml`](scripts/monitoring/proxy-scan.yml)
@@ -412,6 +436,7 @@ python scripts/monitoring/acquisition.py collect --proxy-scan full
 
 ```bash
 python scripts/monitoring/install_workflow.py all            # monitor + proxy-scan
+python scripts/monitoring/install_workflow.py proxy-scan --force   # 分片版已改源文件，先看 diff 再加 --force
 python scripts/monitoring/install_workflow.py process-single-video   # 端到端模板，先看 diff 再加 --force
 ```
 

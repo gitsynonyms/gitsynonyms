@@ -17,18 +17,30 @@ candidate (TCP, then a real HTTPS request), re-verify the fastest candidates and
 publish the ten fastest to `proxyindex/top10.json`. See
 [`proxyindex/README.md`](../../proxyindex/README.md).
 
+The full sweep is sharded across runner jobs: `collect` and `probe` are matrix
+jobs, each runner takes the source/candidate slice that `blake2b(key) mod
+shards` assigns to it, and `prepare`/`publish` fan the shard artifacts back in.
+`max-parallel` (default 8 of 16 shards) keeps the five-minute monitor supplied
+with runners, and each runner adds its own concurrency (128 source fetches, 512
+TCP probes, 256 HTTP probes). The discovery cursor and the de-duplicated repo
+list are committed so matrix coverage accumulates instead of re-searching the
+same first batch every hour.
+
 Hourly scheduling and the push to `main` live in the tracked workflow source
 `scripts/monitoring/proxy-scan.yml`. Files under `.github/workflows` need a
 token with the `workflows` permission, so a maintainer installs it with:
 
 ```bash
-python scripts/monitoring/install_workflow.py all
+python scripts/monitoring/install_workflow.py proxy-scan --force
 ```
 
-Until it is installed the scan still runs automatically: the five-minute monitor
-calls `scripts/select_public_ytdlp_proxies.py`, which reuses any scan younger
-than an hour and otherwise runs a bounded full scan in the same job. Publishing
-the result set before that is manual:
+`--force` is only needed while the sharded source is newer than the active file
+(see `.github/workflows-deploy/proxy-scan.HANDOFF.md`); once installed, plain
+`install_workflow.py all` keeps both in sync. Until it is installed the scan
+still runs automatically: the five-minute monitor calls
+`scripts/select_public_ytdlp_proxies.py`, which reuses any scan younger than an
+hour and otherwise runs a bounded full scan in the same job. Publishing the
+result set before that is manual:
 
 ```bash
 python proxyindex/full_scan.py scan --sync

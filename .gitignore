@@ -26,10 +26,11 @@ proxyindex/alive_tcp.txt
 proxyindex/alive_http.txt
 proxyindex/*.log
 # Full list² scan working state: reproducible from the committed matrix code and
-# the append-only source list. Published top10/report/state stay tracked.
+# the append-only source list. Published top10/report/state stay tracked, and so
+# do the discovery cursor plus the de-duplicated repo list: those two are what
+# make matrix/source coverage accumulate instead of restarting every run.
 proxyindex/query-matrix.json
 proxyindex/queries.txt
-proxyindex/discovery-state.json
 proxyindex/discovered.jsonl
 proxyindex/sources.full.txt
 proxyindex/collect.jsonl
@@ -41,6 +42,14 @@ proxyindex/tcp-probes.tsv
 proxyindex/http-probes.tsv
 proxyindex/*.merged
 proxyindex/*.tmp
+# Sharded multi-runner runs keep one workspace per runner; the merged artefacts
+# in the index directory are the only ones worth keeping.
+proxyindex/shard-*/
+proxyindex/discovery-run/
+# Workflow scratch: downloaded shard artifacts and the probe input slices.
+/downloads/
+/probe-input/
+/probe/
 
 # Monitor state and verification scratch.
 output/.monitor-state.json

@@ -62,6 +62,7 @@ $python = Join-Path $env:USERPROFILE "anaconda3\python.exe"
 | 模板 | 目标活动工作流 | 说明 |
 |---|---|---|
 | `process-single-video.yml` | `.github/workflows/process-single-video.yml` | 单视频端到端（monitor → download → burn → publish）；改动与合入步骤见 [`process-single-video.HANDOFF.md`](process-single-video.HANDOFF.md)。改动仅 3 处：安装 `fonts-noto-cjk`/`fonts-dejavu-core`、删除已废弃的 `style_preset` 输入及其 env/CLI 透传。 |
+| `scripts/monitoring/proxy-scan.yml` | `.github/workflows/proxy-scan.yml` | 代理全量扫描改为分片多 runner；源文件已更新、活动文件待安装，步骤见 [`proxy-scan.HANDOFF.md`](proxy-scan.HANDOFF.md)。安装需 `--force`，因为活动文件仍是旧的单 runner 版本。 |
 
 ## 模板漂移与安装前检查
 

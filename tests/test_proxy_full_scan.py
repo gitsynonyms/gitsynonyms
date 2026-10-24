@@ -3,6 +3,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 PROXYINDEX = Path(__file__).parents[1] / "proxyindex"
 SPEC = importlib.util.spec_from_file_location("proxy_full_scan", PROXYINDEX / "full_scan.py")
 full_scan = importlib.util.module_from_spec(SPEC)
@@ -412,3 +414,369 @@ def test_coverage_snapshot_reports_partial_coverage_honestly(tmp_path):
     assert snapshot["candidate_coverage"] == round(2 / 3, 6)
     assert snapshot["http_alive"] == 1
     assert snapshot["top10"] == 1
+
+
+# ---------------------------------------------------------------------------
+# Sharded, multi-runner probing
+# ---------------------------------------------------------------------------
+
+
+def test_stable_shard_is_deterministic_disjoint_and_complete():
+    entries = [f"203.0.113.{index}:{8000 + index}" for index in range(1, 90)]
+    for count in (2, 4, 16):
+        slices = [full_scan.shard_slice(entries, index, count) for index in range(count)]
+        flat = [entry for part in slices for entry in part]
+        assert sorted(flat) == sorted(entries)
+        assert len(flat) == len(set(flat))
+        # The same key always lands in the same slice, however the pool is ordered.
+        shuffled = list(reversed(entries))
+        assert [sorted(part) for part in slices] == [
+            sorted(full_scan.shard_slice(shuffled, index, count))
+            for index in range(count)
+        ]
+
+
+def test_single_shard_is_a_no_op():
+    assert full_scan.shard_slice(["203.0.113.1:80"], 0, 1) == ["203.0.113.1:80"]
+    assert full_scan.stable_shard("anything", 0) == 0
+
+
+def test_index_paths_keep_tracked_inputs_in_the_root_and_artefacts_per_workspace(tmp_path):
+    paths = full_scan.IndexPaths(tmp_path / "index", shard_index=3, shard_count=8)
+    assert paths.workspace == tmp_path / "index" / "shard-03-of-08"
+    assert paths.discovery_state == tmp_path / "index" / "discovery-state.json"
+    assert paths.discovered_repos == tmp_path / "index" / "discovered-repos.txt"
+    assert paths.pool == paths.workspace / "pool.txt"
+    assert paths.tcp_probes == paths.workspace / "tcp-probes.tsv"
+    assert paths.report == paths.workspace / "scan-report.md"
+
+    single = full_scan.IndexPaths(tmp_path / "index")
+    assert single.workspace == single.root
+    assert single.pool == single.root / "pool.txt"
+
+    explicit = full_scan.IndexPaths(tmp_path / "index", workspace=tmp_path / "probe")
+    assert explicit.pool == tmp_path / "probe" / "pool.txt"
+
+
+def test_out_of_range_shard_index_is_rejected(tmp_path):
+    with pytest.raises(ValueError):
+        full_scan.IndexPaths(tmp_path / "index", shard_index=2, shard_count=2)
+
+
+def test_use_candidates_probes_an_explicit_slice(tmp_path):
+    paths = full_scan.IndexPaths(tmp_path / "index", shard_index=1, shard_count=2)
+    paths.ensure()
+    slice_file = tmp_path / "probe-input" / "shard-1-of-2.txt"
+    slice_file.parent.mkdir(parents=True)
+    slice_file.write_text("203.0.113.7:80\n", encoding="utf-8")
+
+    paths.use_candidates(slice_file)
+
+    assert paths.pool == slice_file
+    assert full_scan.read_lines(paths.pool) == ["203.0.113.7:80"]
+
+
+def test_stage_collect_shards_the_sources_without_overlap(tmp_path):
+    urls = [f"https://list.test/{index}.txt" for index in range(24)]
+    count = 4
+    root = tmp_path / "index"
+    (root).mkdir(parents=True)
+    (root / "sources.full.txt").write_text("\n".join(urls) + "\n", encoding="utf-8")
+
+    seen: list[str] = []
+    for index in range(count):
+        shard = full_scan.IndexPaths(root, shard_index=index, shard_count=count)
+        shard.ensure()
+        calls: list[str] = []
+
+        def fetch(url, timeout=20, calls=calls):
+            calls.append(url)
+            number = int(url.rsplit("/", 1)[1].split(".")[0])
+            return f"198.51.100.{number + 1}:{8000 + number}\n"
+
+        stats = full_scan.stage_collect(shard, fetch=fetch, quiet=True)
+        assert stats["shard_index"] == index
+        assert stats["shard_count"] == count
+        assert calls == full_scan.shard_slice(urls, index, count)
+        assert full_scan.read_lines(shard.pool)
+        assert shard.pool != full_scan.IndexPaths(root).pool
+        seen.extend(calls)
+
+    assert sorted(seen) == sorted(urls)
+    # Every shard wrote its own pool, and no shard saw another shard's sources.
+    for index in range(count):
+        shard = full_scan.IndexPaths(root, shard_index=index, shard_count=count)
+        assert shard.pool.is_file()
+
+
+def test_stage_merge_rebuilds_the_pool_and_splits_disjoint_probe_slices(tmp_path):
+    parts = tmp_path / "downloads"
+    for index in range(3):
+        directory = parts / f"collect-shard-{index}"
+        directory.mkdir(parents=True)
+        (directory / "pool.txt").write_text(
+            f"203.0.113.{index}:80\n203.0.113.100:80\n", encoding="utf-8"
+        )
+        (directory / "pool.provenance.tsv").write_text(
+            f"203.0.113.{index}:80\thttps://s{index}.test/a.txt\n", encoding="utf-8"
+        )
+        (directory / "collect.jsonl").write_text(
+            json.dumps({"source": f"s{index}", "status": "ok"}) + "\n",
+            encoding="utf-8",
+        )
+    paths = full_scan.IndexPaths(tmp_path / "index")
+    paths.ensure()
+
+    summary = full_scan.stage_merge(
+        paths,
+        parts_dir=parts,
+        what="pool",
+        split_count=3,
+        split_dir=tmp_path / "probe-input",
+        quiet=True,
+    )
+
+    pool = full_scan.read_lines(paths.pool)
+    assert pool == [
+        "203.0.113.0:80",
+        "203.0.113.100:80",
+        "203.0.113.1:80",
+        "203.0.113.2:80",
+    ]
+    assert summary["pool"]["rows"] == 4
+    assert summary["provenance"]["rows"] == 3
+    assert len(full_scan.read_lines(paths.collect_state)) == 3
+
+    slices = [
+        full_scan.read_lines(tmp_path / "probe-input" / f"shard-{index}-of-3.txt")
+        for index in range(3)
+    ]
+    assert sorted(entry for part in slices for entry in part) == pool
+    assert sum(len(part) for part in slices) == len(pool)
+    assert len({entry for part in slices for entry in part}) == len(pool)
+
+
+def test_stage_merge_appends_the_probe_ledgers_and_rebuilds_alive_tcp(tmp_path):
+    parts = tmp_path / "downloads"
+    for index in range(2):
+        directory = parts / f"probe-shard-{index}"
+        directory.mkdir(parents=True)
+        (directory / "tcp-probes.tsv").write_text(
+            f"203.0.113.{index}:80\topen\t5.0\n", encoding="utf-8"
+        )
+        (directory / "http-probes.tsv").write_text(
+            f"203.0.113.{index}:80\tok\t{10 + index}.0\t204\n", encoding="utf-8"
+        )
+    paths = full_scan.IndexPaths(tmp_path / "index")
+    paths.ensure()
+
+    summary = full_scan.stage_merge(paths, parts_dir=parts, what="probes", quiet=True)
+
+    assert summary["alive_tcp"] == 2
+    assert full_scan.read_lines(paths.alive_tcp) == ["203.0.113.0:80", "203.0.113.1:80"]
+    assert len(full_scan.read_lines(paths.http_probes)) == 2
+    assert full_scan.load_http_results(paths)["203.0.113.1:80"]["latency_ms"] == 11.0
+
+
+def test_merge_never_ingests_its_own_canonical_artefacts(tmp_path):
+    paths = full_scan.IndexPaths(tmp_path / "index")
+    paths.ensure()
+    paths.pool.write_text("203.0.113.9:80\n", encoding="utf-8")
+
+    summary = full_scan.stage_merge(paths, parts_dir=tmp_path / "index", what="pool", quiet=True)
+
+    assert summary["pool"]["parts"] == 0
+    assert full_scan.read_lines(paths.pool) == ["203.0.113.9:80"]
+
+
+def test_stage_tcp_keeps_probing_until_the_pool_is_covered(tmp_path, monkeypatch):
+    paths = make_paths(tmp_path)
+    pool = [f"198.51.100.{index}:{8000 + index}" for index in range(1, 26)]
+    paths.pool.write_text("\n".join(pool) + "\n", encoding="utf-8")
+
+    async def fake_collect(entries, concurrency, timeout):
+        return [(entry, None) for entry in entries]
+
+    monkeypatch.setattr(full_scan, "_collect_tcp", fake_collect)
+    # A batch smaller than the pool must not starve the tail.
+    monkeypatch.setattr(full_scan, "MAX_TCP_PER_RUN", 10)
+
+    stats = full_scan.stage_tcp(paths, quiet=True)
+
+    assert stats["checked"] == len(pool)
+    assert stats["pending"] == len(pool)
+    assert stats["remaining"] == 0
+    assert stats["partial"] is False
+    assert full_scan._covered_count(paths.pool, paths.tcp_probes) == len(pool)
+
+
+def test_stage_tcp_honours_an_explicit_probe_budget(tmp_path, monkeypatch):
+    paths = make_paths(tmp_path)
+    pool = [f"198.51.100.{index}:{8000 + index}" for index in range(1, 26)]
+    paths.pool.write_text("\n".join(pool) + "\n", encoding="utf-8")
+
+    async def fake_collect(entries, concurrency, timeout):
+        return [(entry, None) for entry in entries]
+
+    monkeypatch.setattr(full_scan, "_collect_tcp", fake_collect)
+
+    stats = full_scan.stage_tcp(paths, batch_limit=5, quiet=True)
+
+    assert stats["checked"] == 5
+    assert stats["remaining"] == 1
+    assert stats["partial"] is True
+
+
+def test_coverage_counts_distinct_candidates_not_repeated_observations(tmp_path):
+    paths = make_paths(tmp_path)
+    paths.pool.write_text("203.0.113.1:80\n203.0.113.2:80\n203.0.113.3:80\n", encoding="utf-8")
+    paths.tcp_probes.write_text(
+        "203.0.113.1:80\topen\t1.0\n"
+        "203.0.113.2:80\topen\t2.0\n"
+        "203.0.113.1:80\topen\t3.0\n",
+        encoding="utf-8",
+    )
+
+    snapshot = full_scan.coverage_snapshot(paths)
+
+    assert snapshot["tcp_checked"] == 2
+    assert snapshot["candidate_coverage"] == round(2 / 3, 6)
+
+
+def test_stage_matrix_persists_discovered_repos_for_the_next_run(tmp_path):
+    paths = make_paths(tmp_path)
+
+    def runner(args):
+        return json.dumps(
+            {
+                "items": [
+                    {
+                        "full_name": "a/b",
+                        "stargazers_count": 3,
+                        "pushed_at": "2026-01-01T00:00:00Z",
+                        "default_branch": "main",
+                    }
+                ]
+            }
+        )
+
+    first = full_scan.stage_matrix(
+        paths, query_budget=1, runner=runner, sleep=lambda _seconds: None, quiet=True
+    )
+    assert first["searched"] == 1
+    assert full_scan.read_lines(paths.discovered_repos) == ["a/b"]
+
+    def runner_two(args):
+        return json.dumps({"items": [{"full_name": "c/d"}]})
+
+    full_scan.stage_matrix(
+        paths, query_budget=1, runner=runner_two, sleep=lambda _seconds: None, quiet=True
+    )
+    assert full_scan.read_lines(paths.discovered_repos) == ["a/b", "c/d"]
+    assert "a/b" in full_scan.known_repos(paths)
+
+
+def scan_args(index, stages, *extra):
+    return full_scan.build_parser().parse_args(
+        [
+            "scan",
+            "--index-dir",
+            str(index),
+            "--stages",
+            stages,
+            "--budget-seconds",
+            "5",
+            "--quiet",
+            *extra,
+        ]
+    )
+
+
+def test_scan_keeps_the_previous_top10_when_nothing_verifies(tmp_path, monkeypatch):
+    index = tmp_path / "index"
+    index.mkdir()
+    previous = {"top": [{"proxy": "http://203.0.113.9:80"}]}
+    (index / "top10.json").write_text(json.dumps(previous), encoding="utf-8")
+    pushes: list[str] = []
+    monkeypatch.setattr(
+        full_scan,
+        "stage_sync",
+        lambda paths, branch="main": (pushes.append(branch), {"status": "pushed"})[1],
+    )
+
+    payload = full_scan.scan(scan_args(index, "rank,sync", "--sync"))
+
+    assert pushes == []
+    assert payload["stages"]["sync"]["summary"]["status"] == "skipped"
+    assert json.loads((index / "top10.json").read_text(encoding="utf-8")) == previous
+
+
+def test_scan_publishes_when_the_rank_found_verified_proxies(tmp_path, monkeypatch):
+    index = tmp_path / "index"
+    index.mkdir()
+    (index / "top10.json").write_text(
+        json.dumps({"top": [{"proxy": "http://203.0.113.9:80"}]}), encoding="utf-8"
+    )
+    pushes: list[str] = []
+    monkeypatch.setattr(
+        full_scan,
+        "stage_rank",
+        lambda paths, **kwargs: {
+            "top": [
+                {
+                    "rank": 1,
+                    "proxy": "http://203.0.113.10:80",
+                    "latency_ms": 10.0,
+                    "http_status": 204,
+                    "source": "https://one.test/list.txt",
+                }
+            ],
+            "pool": 1,
+            "probed_ok": 1,
+            "candidates": 1,
+            "verified": 1,
+        },
+    )
+    monkeypatch.setattr(
+        full_scan,
+        "stage_sync",
+        lambda paths, branch="main": (
+            pushes.append(branch),
+            {"status": "pushed", "commit": "abc123"},
+        )[1],
+    )
+
+    payload = full_scan.scan(scan_args(index, "rank,sync", "--sync"))
+
+    assert pushes == ["main"]
+    assert payload["stages"]["sync"]["summary"]["status"] == "pushed"
+    assert payload["top"][0]["proxy"] == "http://203.0.113.10:80"
+
+
+def test_stage_sync_commits_the_discovery_cursor_and_repo_list(tmp_path):
+    paths = make_paths(tmp_path)
+    paths.state.write_text("{}\n", encoding="utf-8")
+    paths.discovery_state.write_text("{}\n", encoding="utf-8")
+    paths.discovered_repos.write_text("a/b\n", encoding="utf-8")
+    calls: list[list[str]] = []
+
+    class Completed:
+        def __init__(self, returncode=0, stdout=""):
+            self.returncode = returncode
+            self.stdout = stdout
+            self.stderr = ""
+
+    def runner(args, **kwargs):
+        calls.append(list(args))
+        if args[1] == "diff":
+            return Completed(1)
+        if args[1] == "rev-parse":
+            return Completed(0, "abc123\n")
+        return Completed(0)
+
+    result = full_scan.stage_sync(paths, branch="main", runner=runner)
+
+    assert result["status"] == "pushed"
+    added = [call for call in calls if call[1] == "add"][0]
+    assert str(paths.discovery_state) in added
+    assert str(paths.discovered_repos) in added

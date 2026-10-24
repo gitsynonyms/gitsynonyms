@@ -37,18 +37,24 @@ HTML 与 JSON 报告。默认计划周期为 6 小时，另支持手动运行。
 | 项目 | 映射 |
 | --- | --- |
 | 检索词矩阵 | `proxyindex/query_matrix.py`（中英文同义词/近义词全排列） |
-| 全量流程 | `proxyindex/full_scan.py` |
+| 全量流程 | `proxyindex/full_scan.py`（含分片与 `merge` 汇合） |
 | 调度 | `scripts/monitoring/proxy-scan.yml`（每小时 + 手动，源文件；经 `install_workflow.py` 安装为活动工作流） |
-| 发布物 | `proxyindex/top10.json`、`top10.txt`、`scan-report.md`、`scan-state.json` |
+| 执行形态 | `collect` / `probe` 为分片矩阵：默认 16 个 runner、`max-parallel` 8，每个 runner 内部再开多路并发 |
+| 发布物 | `proxyindex/top10.json`、`top10.txt`、`scan-report.md`、`scan-state.json`、`discovery-state.json`、`discovered-repos.txt` |
 | 消费方 | `scripts/monitoring/acquisition.py`、`scripts/select_public_ytdlp_proxies.py` |
 
 规则：
 
 1. 全量口径是"矩阵 + list² 来源"，不得以"三个列表各取 10 个"替代。
 2. 单轮受时间预算约束时，必须写出游标与覆盖率；未探测候选记为 `unknown`，不得计入可用。
-3. 采集失败按 `missing`（永久）与 `error`（18 小时后重试）分别登记，不得静默丢弃来源。
-4. 发布前必须对候选做一次立即复验；只有复验通过的 10 个可以进入 `top10.json`。
-5. 发布物同步到云端仓库 `main`；推送失败按 P2 处置，不得改写已发布结果。活动工作流
+3. 覆盖率靠多 runner 分片达成，不得靠降低粒度：`collect` 与 `probe` 必须按稳定哈希
+   （`blake2b(key) mod 分片数`）切分，分片号与池顺序无关，不得重复探测或漏探；
+   `max-parallel` 必须给 5 分钟监控工作流留出并发。分片属于同一 MIU 内部的并行执行，
+   不产生新的巡检单元。
+4. 采集失败按 `missing`（永久）与 `error`（18 小时后重试）分别登记，不得静默丢弃来源。
+5. 发布前必须对候选做一次立即复验；只有复验通过的 10 个可以进入 `top10.json`。
+   本轮无任何复验通过者时跳过同步，保留上一份已发布结果，不得用空列表覆盖。
+6. 发布物同步到云端仓库 `main`；推送失败按 P2 处置，不得改写已发布结果。活动工作流
    安装前，扫描跟随 `monitor-whitehouse.yml` 的巡检单元执行，独立工作流安装后再登记
    `gh:gitsynonyms/proxy-full-scan`。
-6. 只采集 `ip:port` 形式的 HTTP 代理，不采集 SOCKS 与订阅明文，不在任何公共代理上传输凭据、Cookie 或密钥。
+7. 只采集 `ip:port` 形式的 HTTP 代理，不采集 SOCKS 与订阅明文，不在任何公共代理上传输凭据、Cookie 或密钥。

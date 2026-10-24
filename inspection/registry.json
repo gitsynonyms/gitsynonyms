@@ -1,6 +1,6 @@
 {
   "schema": "gitsynonyms.inspection.registry/1",
-  "updated_at": "2026-10-24T05:04:51Z",
+  "updated_at": "2026-10-24T09:29:50Z",
   "directive": "DIRECTIVE.md",
   "principle": "minimum-granularity",
   "cadence_policy": {
@@ -122,7 +122,7 @@
         "gh run list --workflow 394107189 --event schedule --limit 20 --json conclusion,createdAt,event",
         "gh api repos/gitsynonyms/gitsynonyms/actions/workflows/394107189"
       ],
-      "note": "每小时刷新公开代理索引并按需镜像新视频；巡检关注扫描产物与镜像报告。"
+      "note": "每小时分片全量扫描：collect/probe 各 16 个 runner（max-parallel 8）合起来覆盖整张池，publish 单点汇合发布 top10 并同步矩阵游标；巡检关注扫描覆盖率、分片失败数与镜像报告。"
     },
     {
       "id": "gh:gitsynonyms/proxy-scan-dispatch",
