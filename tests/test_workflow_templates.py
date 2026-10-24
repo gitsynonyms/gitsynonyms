@@ -61,8 +61,11 @@ def test_staged_template_only_differs_by_the_documented_changes():
     The archived template is a copy of the active workflow plus the documented
     changes. If the active workflow moves on without the template being re-cut,
     this test fails instead of letting a blind ``cp`` revert someone else's work.
+    Once a maintainer installs the template the two files are identical, which is
+    the other accepted state.
     """
-    assert changed_blocks() == EXPECTED_BLOCKS
+    blocks = changed_blocks()
+    assert blocks == [] or blocks == EXPECTED_BLOCKS
 
 
 def test_staged_template_installs_cjk_and_latin_fonts():

@@ -6,6 +6,18 @@
 > 目标路径：`.github/workflows/process-single-video.yml`
 > 交付日期：2026-10-24
 
+## 0. 待办清单（给有权限的账号）
+
+| # | 动作 | 需要什么权限 | 命令 / 位置 |
+|---|---|---|---|
+| 1 | 合并 PR #29 | 普通 merge（**不需要** `workflows`） | <https://github.com/gitsynonyms/gitsynonyms/pull/29>；合入后 Pages 自动发布 `videos/lnOiG5dI4hg.html` |
+| 2 | 安装工作流模板 | `workflows` | 见第 2 节：先 `diff -u` 看差异，再 `cp`、commit、`git push origin main` |
+| 3 | 触发一次验证 | Actions 运行权限 | `Actions → Process Single Video (end-to-end) → Run workflow`，先 `no_burn_in=true`（约 5 分钟，只验证字体安装步骤），需要成片时再跑全流程 |
+| 4 | 回报 | — | 回传 ① 合入 commit SHA ② 工作流 run 链接 ③ 第 3 步日志里 `fonts-noto-cjk`/`fonts-dejavu-core` 安装成功的那几行 |
+| 5 | （可选，一次性） | App 所有者 | 给 App 勾 **Repository permissions → Workflows: Read and write**，并在组织安装处 Approve；之后这类补丁我可以直接推 |
+
+第 2 步的完整等价内容见第 2 节（先 `diff -u`，只出现本文件第 3 节的 4 个块才可以整份覆盖）。
+
 ## 1. 为什么由你合入
 
 本分支的令牌是 GitHub App 安装令牌，没有 `workflows` 权限，任何落在
