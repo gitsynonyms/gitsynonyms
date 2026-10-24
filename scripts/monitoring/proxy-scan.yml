@@ -172,6 +172,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: discovery
+          retention-days: 3
           path: |
             proxyindex/discovery-state.json
             proxyindex/discovered-repos.txt
@@ -216,6 +217,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: collect-shard-${{ matrix.shard }}
+          retention-days: 3
           path: proxyindex/shard-*/
           if-no-files-found: warn
 
@@ -265,6 +267,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: probe-input
+          retention-days: 3
           path: probe-input/
 
   # 两段探测分片：TCP 可达性 → 真实 HTTP 请求，每个 runner 多路并发探测自己那一片。
@@ -322,6 +325,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: probe-shard-${{ matrix.shard }}
+          retention-days: 3
           path: probe/
           if-no-files-found: warn
 

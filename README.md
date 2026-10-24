@@ -398,11 +398,11 @@ matrix  →  discover  →  sources  →  collect  →  probe  →  rank  →  s
 
 ### 多 runner 分片：一轮覆盖全量
 
-单 runner 每小时只能扫到池子的头部（约 70 万候选里探测几个百分点），所以
-`collect` 与 `probe` 都按分片矩阵执行：`plan` 生成分片清单，每个 runner 只处理
-`blake2b(key) mod shards` 落到自己那一片的来源／候选，`prepare` 与 `publish`
-负责汇合。分片是同一工作流内部的并行执行，不改变巡检粒度（一条 MIU 仍是一个
-仓库 × 一个 workflow 文件 × 一种触发方式）。
+单 runner 每小时只能扫到池子的头部（去重后的池是数十万到百万级候选，一轮时间预算只能
+探测几个百分点），所以 `collect` 与 `probe` 都按分片矩阵执行：`plan` 生成分片清单，
+每个 runner 只处理 `blake2b(key) mod shards` 落到自己那一片的来源／候选，`prepare`
+与 `publish` 负责汇合。分片是同一工作流内部的并行执行，不改变巡检粒度（一条 MIU
+仍是一个仓库 × 一个 workflow 文件 × 一种触发方式）。
 
 - **多 runner**：默认 16 片，`max-parallel` 默认 8，留出并发给 5 分钟监控工作流。
 - **多路并发**：每个 runner 再开 128 路来源抓取、512 路 TCP、256 路 HTTP。

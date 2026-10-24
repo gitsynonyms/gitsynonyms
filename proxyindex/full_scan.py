@@ -71,7 +71,7 @@ DEFAULT_TIMEOUT = 8.0
 DEFAULT_BUDGET_SECONDS = 1500.0
 DEFAULT_QUERY_BUDGET = 600
 DEFAULT_PROBE_BUDGET = 0  # 0 = no per-run cap, the time budget is the limit
-MAX_TCP_PER_RUN = 200_000  # keeps the per-run candidate list inside the memory budget
+MAX_TCP_PER_RUN = 200_000  # per pass, keeps the in-memory candidate list bounded
 DEFAULT_TOP = 10
 GH_SEARCH_INTERVAL = 2.2  # 30 authenticated search calls per minute
 # One shard = one runner job. The count is fixed per run so every runner derives

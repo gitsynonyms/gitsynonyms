@@ -38,9 +38,10 @@ probed in several sweeps cannot inflate the coverage figure.
 
 ## Sharded multi-runner sweep (full coverage per cycle)
 
-One runner sampling the head of the pool is not full coverage: with ~700,000
-candidates an hourly single job can only probe a few percent. The flow is
-therefore shardable, and `.github/workflows/proxy-scan.yml` runs it as a matrix:
+One runner sampling the head of the pool is not full coverage: the deduplicated
+pool is hundreds of thousands to millions of candidates, so an hourly single job
+with one time budget can only probe a few percent. The flow is therefore
+shardable, and `.github/workflows/proxy-scan.yml` runs it as a matrix:
 
 ```text
 plan (shard list, auto-detect)
