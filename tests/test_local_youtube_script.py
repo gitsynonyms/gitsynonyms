@@ -127,6 +127,20 @@ def test_ass_validation_enforces_centisecond_timing_and_video_duration():
     assert youtube_srt.ass_timestamp(1.237) == "0:00:01.24"
 
 
+def test_ass_event_rounding_preserves_positive_ranges():
+    cues = [{"start": 1.001, "end": 1.004, "text": "Caption"}]
+
+    ass = youtube_srt.build_ass(
+        cues,
+        cues,
+        box_style="none",
+        video_duration=2,
+    )
+
+    assert "Dialogue: 1,0:00:01.00,0:00:01.01,English" in ass
+    assert youtube_srt.validate_ass(ass, video_duration=2) == 1
+
+
 def test_ass_uses_chinese_above_english_with_chinese_1_2x_size():
     chinese = youtube_srt.parse_srt(
         "1\n00:00:01,000 --> 00:00:02,000\n你好\n\n"

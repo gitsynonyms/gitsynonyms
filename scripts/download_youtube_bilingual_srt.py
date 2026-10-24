@@ -931,11 +931,47 @@ def ass_karaoke_text(
 
 
 def ass_timestamp(seconds: float) -> str:
-    total_centiseconds = round(seconds * 100)
+    if not math.isfinite(seconds) or seconds < 0:
+        raise ValueError(f"Invalid ASS subtitle time: {seconds!r}")
+    return _ass_timestamp_from_centiseconds(round(seconds * 100))
+
+
+def _ass_timestamp_from_centiseconds(total_centiseconds: int) -> str:
+    if total_centiseconds < 0:
+        raise ValueError(f"Invalid ASS subtitle time: {total_centiseconds!r}")
     hours, remainder = divmod(total_centiseconds, 360_000)
     minutes, remainder = divmod(remainder, 6_000)
     whole_seconds, centiseconds = divmod(remainder, 100)
     return f"{hours}:{minutes:02d}:{whole_seconds:02d}.{centiseconds:02d}"
+
+
+def ass_event_timestamps(
+    start: float,
+    end: float,
+    video_duration: float | None = None,
+) -> tuple[str, str]:
+    if (
+        not math.isfinite(start)
+        or not math.isfinite(end)
+        or start < 0
+        or end <= start
+    ):
+        raise ValueError("ASS event start and end must form a finite, positive time range.")
+    start_centiseconds = round(start * 100)
+    end_centiseconds = round(end * 100)
+    if end_centiseconds <= start_centiseconds:
+        adjusted_end = start_centiseconds + 1
+        if (
+            video_duration is not None
+            and adjusted_end / 100 > video_duration + 0.01
+        ):
+            start_centiseconds = max(0, end_centiseconds - 1)
+        else:
+            end_centiseconds = adjusted_end
+    return (
+        _ass_timestamp_from_centiseconds(start_centiseconds),
+        _ass_timestamp_from_centiseconds(end_centiseconds),
+    )
 
 
 def ass_color(value: str, *, opacity: int = 100) -> str:
@@ -1711,6 +1747,17 @@ def build_ass(
             events.append(event)
 
     events.sort(key=lambda event: (event["start"], event["layer"]))
+    serialized_events = []
+    for event in events:
+        start_text, end_text = ass_event_timestamps(
+            event["start"],
+            event["end"],
+            video_duration,
+        )
+        serialized_events.append(
+            f"Dialogue: {event['layer']},{start_text},{end_text},"
+            f"{event['style']},,0,0,0,,{event['body']}"
+        )
     return "\n".join(
         [
             "[Script Info]",
@@ -1726,12 +1773,7 @@ def build_ass(
             "",
             "[Events]",
             "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
-            *[
-                f"Dialogue: {event['layer']},{ass_timestamp(event['start'])},"
-                f"{ass_timestamp(event['end'])},"
-                f"{event['style']},,0,0,0,,{event['body']}"
-                for event in events
-            ],
+            *serialized_events,
             "",
         ]
     )

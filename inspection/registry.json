@@ -1,6 +1,6 @@
 {
   "schema": "gitsynonyms.inspection.registry/1",
-  "updated_at": "2026-10-24T02:05:00Z",
+  "updated_at": "2026-10-24T05:04:51Z",
   "directive": "DIRECTIVE.md",
   "principle": "minimum-granularity",
   "cadence_policy": {
@@ -226,6 +226,27 @@
         "python scripts/monitoring/acquisition.py collect --sources whitehouse-youtube --since 24h"
       ],
       "note": "每 5 分钟判定白宫视频频道是否有新上传；采集为空或未产出新视频即判定业务失败，不因工作流 conclusion 为 success 而放过。"
+    },
+    {
+      "id": "gh:gitsynonyms/process-single-video-dispatch",
+      "mechanism": "github-workflow",
+      "title": "Process Single Video (end-to-end)",
+      "target": {
+        "repo": "gitsynonyms/gitsynonyms",
+        "workflow": "Process Single Video (end-to-end)",
+        "workflow_id": "394830491",
+        "path": ".github/workflows/process-single-video.yml"
+      },
+      "trigger": "workflow_dispatch",
+      "cadence": "1d",
+      "severity": "P2",
+      "owner": "巡检任务执行方案处",
+      "status": "active",
+      "evidence": [
+        "gh run list --workflow 394830491 --event workflow_dispatch --limit 20 --json conclusion,createdAt,event",
+        "gh api repos/gitsynonyms/gitsynonyms/actions/workflows/394830491"
+      ],
+      "note": "按需处理单个指定视频并生成字幕、刻录、Release 与 Pages 归档；巡检关注端到端处理及发布结果。"
     }
   ],
   "gaps": [
