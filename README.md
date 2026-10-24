@@ -411,8 +411,13 @@ python scripts/monitoring/acquisition.py collect --proxy-scan full
 下的文件需由具备该权限的维护者用一条命令安装：
 
 ```bash
-python scripts/monitoring/install_workflow.py all
+python scripts/monitoring/install_workflow.py all            # monitor + proxy-scan
+python scripts/monitoring/install_workflow.py process-single-video   # 端到端模板，先看 diff 再加 --force
 ```
+
+The installer refuses to overwrite an active workflow that differs from its
+tracked source unless `--force` is passed, so a template cannot silently revert
+someone else's change to the live file.
 
 安装前扫描仍然自动执行：现有的 `monitor-whitehouse.yml` 每 5 分钟调用
 `scripts/select_public_ytdlp_proxies.py`，没有 1 小时内的扫描结果时会在同一任务内跑一遍

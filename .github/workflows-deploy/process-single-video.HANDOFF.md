@@ -11,12 +11,12 @@
 | # | 动作 | 需要什么权限 | 命令 / 位置 |
 |---|---|---|---|
 | 1 | 合并 PR #29 | 普通 merge（**不需要** `workflows`） | <https://github.com/gitsynonyms/gitsynonyms/pull/29>；合入后 Pages 自动发布 `videos/lnOiG5dI4hg.html` |
-| 2 | 安装工作流模板 | `workflows` | 见第 2 节：先 `diff -u` 看差异，再 `cp`、commit、`git push origin main` |
+| 2 | 安装工作流模板 | `workflows` | `python scripts/monitoring/install_workflow.py process-single-video` 先看差异（预期恰为第 3 节 4 个块），再 `--force` 安装、commit、`git push origin main` |
 | 3 | 触发一次验证 | Actions 运行权限 | `Actions → Process Single Video (end-to-end) → Run workflow`，先 `no_burn_in=true`（约 5 分钟，只验证字体安装步骤），需要成片时再跑全流程 |
 | 4 | 回报 | — | 回传 ① 合入 commit SHA ② 工作流 run 链接 ③ 第 3 步日志里 `fonts-noto-cjk`/`fonts-dejavu-core` 安装成功的那几行 |
 | 5 | （可选，一次性） | App 所有者 | 给 App 勾 **Repository permissions → Workflows: Read and write**，并在组织安装处 Approve；之后这类补丁我可以直接推 |
 
-第 2 步的完整等价内容见第 2 节（先 `diff -u`，只出现本文件第 3 节的 4 个块才可以整份覆盖）。
+第 2 步的完整命令见第 2 节；安装器不接受静默覆盖，先看差异再 `--force`。
 
 ## 1. 为什么由你合入
 
@@ -34,16 +34,28 @@ workflow `.github/workflows/process-single-video.yml` without `workflows` permis
 
 ## 2. 合入方式（二选一）
 
-**A. 直接覆盖（推荐，一分钟）**
+**A. 用仓库自带的安装器（推荐，一分钟）**
+
+`scripts/monitoring/install_workflow.py` 就是这套“受权限限制的模板 → 活动工作流”的既有工具
+（`monitor`／`proxy-scan` 一直这么装），`process-single-video` 已登记进去。它会先拒绝对已漂移的
+活动文件做静默覆盖：
 
 ```bash
 cd /workspaces/gitsynonyms
 git checkout main && git pull
-cp .github/workflows-deploy/process-single-video.yml .github/workflows/process-single-video.yml
+
+# 第一步：不带 --force，它会打印活动文件与模板的差异
+python scripts/monitoring/install_workflow.py process-single-video
+#   -> 退出码 1，差异应恰好是第 3 节的 4 个块；不是就停下来找我重切模板
+
+# 第二步：确认后强制安装并发布
+python scripts/monitoring/install_workflow.py process-single-video --force
 git add .github/workflows/process-single-video.yml
 git commit -m "Install CJK fonts and drop the dead style_preset input"
 git push origin main
 ```
+
+`all` 只覆盖已稳定的 `monitor`／`proxy-scan`，不会顺手把这个模板推进去。
 
 **B. 只取正文，人工比对**
 

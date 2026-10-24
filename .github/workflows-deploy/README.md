@@ -70,9 +70,10 @@ $python = Join-Path $env:USERPROFILE "anaconda3\python.exe"
 会让模板悄悄过期、并回退别人对活动文件的改动。因此：
 
 ```bash
-# 安装前先看差异，出现交接单之外的差异说明活动文件已前进
-diff -u .github/workflows/process-single-video.yml \
-        .github/workflows-deploy/process-single-video.yml
+# 安装前先看差异：不带 --force 时安装器会拒绝覆盖并打印 diff
+python scripts/monitoring/install_workflow.py process-single-video
+# 差异确认无误后再安装
+python scripts/monitoring/install_workflow.py process-single-video --force
 ```
 
 - `process-single-video.yml` 的模板切点是 `44c6452`（交接单第 8 节）。

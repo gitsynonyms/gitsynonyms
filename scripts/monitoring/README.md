@@ -88,9 +88,12 @@ FFmpeg, ffprobe, and Tesseract with English and Simplified Chinese language
 data. The Chinese model is downloaded from a pinned upstream revision and
 verified against its SHA-256 checksum before use.
 
-`install_workflow.py` copies the tracked workflow template into
-`.github/workflows/`; keep `monitor-whitehouse.yml` and
-`.github/workflows/monitor-whitehouse.yml` in sync.
+`install_workflow.py` copies a tracked workflow source into `.github/workflows/`
+and never silently overwrites a workflow that has moved on: without `--force` it
+refuses and prints the diff. `monitor` and `proxy-scan` read from this directory;
+`process-single-video` reads the archived template in
+`.github/workflows-deploy/`. Keep each source and its active workflow in sync, and
+remember `all` only installs the two settled sources.
 
 ## Module 1: material acquisition
 
