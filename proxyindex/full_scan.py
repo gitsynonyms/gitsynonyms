@@ -805,36 +805,50 @@ def stage_tcp(
     batch_limit: int = 200000,
     quiet: bool = False,
 ) -> dict:
-    """Give every pooled candidate a TCP verdict (open / closed / inconclusive)."""
+    """Give every pooled candidate a TCP verdict (open / closed / inconclusive).
+
+    The sweep repeats ``batch_limit``-sized passes until the pool is covered or
+    the deadline expires, so a pool larger than one batch cannot starve its own
+    tail: every run starts from an empty ledger, and a single capped pass would
+    probe the same first candidates forever.
+    """
     deadline = deadline or Deadline(0)
-    pending = _comm_left_only(
-        paths.pool, paths.tcp_probes, limit=batch_limit or MAX_TCP_PER_RUN
-    )
-    checked = opened = 0
-    for start in range(0, len(pending), max(1, chunk)):
-        if deadline.expired():
+    run_cap = max(0, int(batch_limit or 0))  # 0 = the deadline is the only cap
+    checked = opened = pending_total = 0
+    while True:
+        room = min(MAX_TCP_PER_RUN, run_cap - checked) if run_cap else MAX_TCP_PER_RUN
+        if room <= 0 or deadline.expired():
             break
-        block = pending[start : start + chunk]
-        with paths.tcp_probes.open("a", encoding="utf-8") as sink:
-            for entry, latency in asyncio.run(
-                _collect_tcp(block, concurrency, timeout)
-            ):
-                checked += 1
-                if latency is None:
-                    sink.write(f"{entry}\tclosed\t\n")
-                else:
-                    opened += 1
-                    sink.write(f"{entry}\topen\t{latency:.1f}\n")
-        if not quiet:
-            print(
-                f"  tcp {checked}/{len(pending)} checked, {opened} open",
-                flush=True,
-            )
+        pending = _comm_left_only(paths.pool, paths.tcp_probes, limit=room)
+        if not pending:
+            break
+        pending_total += len(pending)
+        for start in range(0, len(pending), max(1, chunk)):
+            if deadline.expired():
+                break
+            block = pending[start : start + chunk]
+            with paths.tcp_probes.open("a", encoding="utf-8") as sink:
+                for entry, latency in asyncio.run(
+                    _collect_tcp(block, concurrency, timeout)
+                ):
+                    checked += 1
+                    if latency is None:
+                        sink.write(f"{entry}\tclosed\t\n")
+                    else:
+                        opened += 1
+                        sink.write(f"{entry}\topen\t{latency:.1f}\n")
+            if not quiet:
+                print(
+                    f"  tcp {checked}/{pending_total} checked, {opened} open",
+                    flush=True,
+                )
+    remaining = bool(_comm_left_only(paths.pool, paths.tcp_probes, limit=1))
     return {
-        "pending": len(pending),
+        "pending": pending_total,
         "checked": checked,
         "open": opened,
-        "partial": deadline.expired() or checked < len(pending),
+        "remaining": int(remaining),
+        "partial": remaining or deadline.expired(),
     }
 
 

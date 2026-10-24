@@ -589,6 +589,44 @@ def test_merge_never_ingests_its_own_canonical_artefacts(tmp_path):
     assert full_scan.read_lines(paths.pool) == ["203.0.113.9:80"]
 
 
+def test_stage_tcp_keeps_probing_until_the_pool_is_covered(tmp_path, monkeypatch):
+    paths = make_paths(tmp_path)
+    pool = [f"198.51.100.{index}:{8000 + index}" for index in range(1, 26)]
+    paths.pool.write_text("\n".join(pool) + "\n", encoding="utf-8")
+
+    async def fake_collect(entries, concurrency, timeout):
+        return [(entry, None) for entry in entries]
+
+    monkeypatch.setattr(full_scan, "_collect_tcp", fake_collect)
+    # A batch smaller than the pool must not starve the tail.
+    monkeypatch.setattr(full_scan, "MAX_TCP_PER_RUN", 10)
+
+    stats = full_scan.stage_tcp(paths, quiet=True)
+
+    assert stats["checked"] == len(pool)
+    assert stats["pending"] == len(pool)
+    assert stats["remaining"] == 0
+    assert stats["partial"] is False
+    assert full_scan._covered_count(paths.pool, paths.tcp_probes) == len(pool)
+
+
+def test_stage_tcp_honours_an_explicit_probe_budget(tmp_path, monkeypatch):
+    paths = make_paths(tmp_path)
+    pool = [f"198.51.100.{index}:{8000 + index}" for index in range(1, 26)]
+    paths.pool.write_text("\n".join(pool) + "\n", encoding="utf-8")
+
+    async def fake_collect(entries, concurrency, timeout):
+        return [(entry, None) for entry in entries]
+
+    monkeypatch.setattr(full_scan, "_collect_tcp", fake_collect)
+
+    stats = full_scan.stage_tcp(paths, batch_limit=5, quiet=True)
+
+    assert stats["checked"] == 5
+    assert stats["remaining"] == 1
+    assert stats["partial"] is True
+
+
 def test_coverage_counts_distinct_candidates_not_repeated_observations(tmp_path):
     paths = make_paths(tmp_path)
     paths.pool.write_text("203.0.113.1:80\n203.0.113.2:80\n203.0.113.3:80\n", encoding="utf-8")
