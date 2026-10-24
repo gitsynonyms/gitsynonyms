@@ -1,0 +1,131 @@
+name: Process Single Video (end-to-end)
+
+on:
+  workflow_dispatch:
+    inputs:
+      video_url:
+        description: YouTube watch URL or 11-character video ID to process
+        required: true
+        type: string
+        default: "https://www.youtube.com/watch?v=lnOiG5dI4hg"
+      output_dir:
+        description: Subtitle/archive output root
+        required: false
+        type: string
+        default: "output"
+      state_file:
+        description: JSONL processing ledger path
+        required: false
+        type: string
+        default: ".github/state/whitehouse-processed-videos.txt"
+      languages:
+        description: Two comma-separated YouTube language codes
+        required: false
+        type: string
+        default: "zh-Hans,en-orig"
+      no_burn_in:
+        description: Skip burning subtitles into the MP4 (download only)
+        required: false
+        type: boolean
+        default: false
+      no_pages:
+        description: Skip generating GitHub Pages archive pages
+        required: false
+        type: boolean
+        default: false
+      no_release:
+        description: Skip creating/updating the GitHub Release upload
+        required: false
+        type: boolean
+        default: false
+      force:
+        description: Re-process even if already recorded in the ledger
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: single-video-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install yt-dlp and FFmpeg
+        run: |
+          python -m pip install "yt-dlp[default]"
+          sudo apt-get update -y
+          # libass resolves the ASS families through fontconfig: without the CJK and
+          # Latin packages the bilingual Chinese line burns in as missing glyphs.
+          sudo apt-get install -y ffmpeg fonts-noto-cjk fonts-dejavu-core
+          yt-dlp --version
+          ffmpeg -version
+
+      - name: Select fastest working proxy for YouTube
+        env:
+          YTDLP_PROXY: ${{ secrets.YTDLP_PROXY }}
+          PROBE_VIDEO_URL: ${{ inputs.video_url }}
+          PROXY_SCAN_MODE: "auto"
+          PROXY_SCAN_BUDGET: "600"
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/select_public_ytdlp_proxies.py
+
+      - name: Run end-to-end pipeline (monitor → download → burn → publish)
+        id: pipeline
+        env:
+          VIDEO_URL: ${{ inputs.video_url }}
+          OUTPUT_DIR: ${{ inputs.output_dir }}
+          STATE_FILE: ${{ inputs.state_file }}
+          LANGUAGES: ${{ inputs.languages }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ARGS=(
+            --url "$VIDEO_URL"
+            --output-dir "$OUTPUT_DIR"
+            --state-file "$STATE_FILE"
+            --languages "$LANGUAGES"
+          )
+          if [[ "${{ inputs.no_burn_in }}" == "true" ]]; then
+            ARGS+=(--no-burn-in)
+          fi
+          if [[ "${{ inputs.no_pages }}" == "true" ]]; then
+            ARGS+=(--no-pages)
+          fi
+          if [[ "${{ inputs.no_release }}" == "true" ]]; then
+            ARGS+=(--no-release)
+          fi
+          if [[ "${{ inputs.force }}" == "true" ]]; then
+            ARGS+=(--force)
+          fi
+          python scripts/process_video_pipeline.py "${ARGS[@]}"
+
+      - name: Commit generated pages and outputs
+        if: steps.pipeline.outcome == 'success' && inputs.no_pages != 'true'
+        env:
+          VIDEO_ID: ${{ steps.pipeline.outputs.video_id || '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add output/ site/
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish processed video ${VIDEO_ID:-$(date +%Y%m%d)}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi

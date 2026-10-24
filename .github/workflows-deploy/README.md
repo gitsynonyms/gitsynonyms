@@ -57,5 +57,12 @@ $python = Join-Path $env:USERPROFILE "anaconda3\python.exe"
 上游 `last30days-skill` 的可用来源和认证要求以其文档为准，本工作流不伪称
 启用了未配置的 API key 或本地评分模型。
 
-The archived template does not run independently; `.github/workflows/infogap.yml`
-is the active workflow.
+## 其他已归档模板
+
+| 模板 | 目标活动工作流 | 说明 |
+|---|---|---|
+| `process-single-video.yml` | `.github/workflows/process-single-video.yml` | 单视频端到端（monitor → download → burn → publish）；改动与合入步骤见 [`process-single-video.HANDOFF.md`](process-single-video.HANDOFF.md)。改动仅 3 处：安装 `fonts-noto-cjk`/`fonts-dejavu-core`、删除已废弃的 `style_preset` 输入及其 env/CLI 透传。 |
+
+本目录只放**模板与交接单**，不参与 Actions 调度；活动工作流一律在
+`.github/workflows/`，由具备 `workflows` 权限的账号合入。
+
