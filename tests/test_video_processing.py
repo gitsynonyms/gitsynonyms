@@ -634,6 +634,22 @@ def make_caption_selection(tmp_path):
 def test_caption_dir_auto_adds_the_presidential_blue_box_for_a_banner(tmp_path, monkeypatch):
     selection = make_caption_selection(tmp_path)
     selection.video.write_bytes(b"video")
+    en_json3 = selection.caption_dir / "TEST.en.en-orig.json3"
+    english = json.loads(en_json3.read_text(encoding="utf-8"))
+    english["events"].append(
+        {
+            "tStartMs": 3500,
+            "dDurationMs": 1500,
+            "segs": [{"utf8": "Tail"}],
+        }
+    )
+    en_json3.write_text(json.dumps(english), encoding="utf-8")
+    en_srt = selection.caption_dir / "TEST.en.en-orig.srt"
+    en_srt.write_text(
+        en_srt.read_text(encoding="utf-8")
+        + "\n2\n00:00:03,500 --> 00:00:05,000\nTail\n",
+        encoding="utf-8",
+    )
     install_fake_ffmpeg(monkeypatch, tmp_path)
     monkeypatch.setattr(
         video_processing,
@@ -647,6 +663,10 @@ def test_caption_dir_auto_adds_the_presidential_blue_box_for_a_banner(tmp_path, 
     assert report["captions"]["box"]["mode"] == "presidential-blue"
     assert report["captions"]["box"]["source"] == "auto"
     assert report["captions"]["tracks"]["en-orig"]["primary_format"] == "json3"
+    assert report["captions"]["tracks"]["en-orig"]["source_cue_count"] == 2
+    assert report["captions"]["tracks"]["en-orig"]["cue_count"] == 2
+    assert report["captions"]["tracks"]["en-orig"]["clipped_cue_count"] == 1
+    assert report["captions"]["tracks"]["en-orig"]["discarded_cue_count"] == 0
     ass = selection.ass_output.read_text(encoding="utf-8")
     assert "CaptionBox" in ass
     assert "Style: CaptionBox,Arial,1,&H2647160F," in ass
@@ -654,11 +674,29 @@ def test_caption_dir_auto_adds_the_presidential_blue_box_for_a_banner(tmp_path, 
     assert timing["timebase"] == "nanosecond"
     assert timing["tracks"]["en-orig"]["cues"][0]["start_ns"] == 1_000_000_000
     assert timing["tracks"]["en-orig"]["cues"][0]["word_timings"][1]["start_ns"] == 1_500_000_000
+    assert timing["tracks"]["en-orig"]["source_last_cue_end_ns"] == 5_000_000_000
+    assert all(
+        cue["end_ns"] <= timing["tracks"]["en-orig"]["video_duration_ns"]
+        and all(
+            word["end_ns"] <= timing["tracks"]["en-orig"]["video_duration_ns"]
+            for word in cue["word_timings"]
+        )
+        for cue in timing["tracks"]["en-orig"]["cues"]
+    )
     assert report["inputs"]["captions"]
+    text_events = [
+        cue
+        for cue in video_processing.subtitle_timing.parse_ass_cues(selection.ass_output)
+        if not cue["drawing"]
+    ]
+    assert max(cue["end"] for cue in text_events) <= 4.0
     precision = selection.ass_output.with_name(
         selection.ass_output.stem + ".en-orig.precision.vtt"
     )
-    assert "00:00:01.000 --> 00:00:03.000" in precision.read_text(encoding="utf-8")
+    precision_content = precision.read_text(encoding="utf-8")
+    assert "00:00:01.000 --> 00:00:03.000" in precision_content
+    assert "00:00:03.500 --> 00:00:04.000" in precision_content
+    assert "00:00:05.000" not in precision_content
     assert report["captions"]["precision_vtt"]["en-orig"]["resolution"] == "1 ms"
 
 

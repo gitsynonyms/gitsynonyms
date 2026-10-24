@@ -1,6 +1,6 @@
 {
   "schema": "gitsynonyms.inspection.registry/1",
-  "updated_at": "2026-10-23T04:47:00Z",
+  "updated_at": "2026-10-24T01:45:00Z",
   "directive": "DIRECTIVE.md",
   "principle": "minimum-granularity",
   "cadence_policy": {
@@ -41,6 +41,27 @@
       "note": "每 5 分钟调度；连续失败会阻断新视频发布，按 P1 处置。"
     },
     {
+      "id": "gh:gitsynonyms/monitor-whitehouse-dispatch",
+      "mechanism": "github-workflow",
+      "title": "Monitor White House Videos (manual)",
+      "target": {
+        "repo": "gitsynonyms/gitsynonyms",
+        "workflow": "Monitor White House Videos",
+        "workflow_id": "393550408",
+        "path": ".github/workflows/monitor-whitehouse.yml"
+      },
+      "trigger": "workflow_dispatch",
+      "cadence": "1d",
+      "severity": "P2",
+      "owner": "巡检任务执行方案处",
+      "status": "active",
+      "evidence": [
+        "gh run list --workflow 393550408 --event workflow_dispatch --limit 20 --json conclusion,createdAt,event",
+        "gh api repos/gitsynonyms/gitsynonyms/actions/workflows/393550408"
+      ],
+      "note": "手动处理指定 White House 视频；巡检关注输入校验、视频处理与发布结果。"
+    },
+    {
       "id": "gh:gitsynonyms/deploy-subtitle-page",
       "mechanism": "github-workflow",
       "title": "Deploy subtitle page",
@@ -60,6 +81,69 @@
         "gh api repos/gitsynonyms/gitsynonyms/actions/workflows/388160593"
       ],
       "note": "main 分支推送触发；巡检关注失败部署与 Pages 发布结果。"
+    },
+    {
+      "id": "gh:gitsynonyms/deploy-subtitle-page-dispatch",
+      "mechanism": "github-workflow",
+      "title": "Deploy subtitle page (manual)",
+      "target": {
+        "repo": "gitsynonyms/gitsynonyms",
+        "workflow": "Deploy subtitle page",
+        "workflow_id": "388160593",
+        "path": ".github/workflows/deploy-pages.yml"
+      },
+      "trigger": "workflow_dispatch",
+      "cadence": "1d",
+      "severity": "P3",
+      "owner": "巡检任务执行方案处",
+      "status": "active",
+      "evidence": [
+        "gh run list --workflow 388160593 --event workflow_dispatch --limit 20 --json conclusion,createdAt,event",
+        "gh api repos/gitsynonyms/gitsynonyms/actions/workflows/388160593"
+      ],
+      "note": "按需手动部署字幕页面；巡检关注最近一次部署结论。"
+    },
+    {
+      "id": "gh:gitsynonyms/proxy-scan-schedule",
+      "mechanism": "github-workflow",
+      "title": "Proxy full scan + video download & mirror (schedule)",
+      "target": {
+        "repo": "gitsynonyms/gitsynonyms",
+        "workflow": "Proxy full scan + video download & mirror",
+        "workflow_id": "394107189",
+        "path": ".github/workflows/proxy-scan.yml"
+      },
+      "trigger": "schedule",
+      "cadence": "1h",
+      "severity": "P2",
+      "owner": "巡检任务执行方案处",
+      "status": "active",
+      "evidence": [
+        "gh run list --workflow 394107189 --event schedule --limit 20 --json conclusion,createdAt,event",
+        "gh api repos/gitsynonyms/gitsynonyms/actions/workflows/394107189"
+      ],
+      "note": "每小时刷新公开代理索引并按需镜像新视频；巡检关注扫描产物与镜像报告。"
+    },
+    {
+      "id": "gh:gitsynonyms/proxy-scan-dispatch",
+      "mechanism": "github-workflow",
+      "title": "Proxy full scan + video download & mirror (manual)",
+      "target": {
+        "repo": "gitsynonyms/gitsynonyms",
+        "workflow": "Proxy full scan + video download & mirror",
+        "workflow_id": "394107189",
+        "path": ".github/workflows/proxy-scan.yml"
+      },
+      "trigger": "workflow_dispatch",
+      "cadence": "1d",
+      "severity": "P3",
+      "owner": "巡检任务执行方案处",
+      "status": "active",
+      "evidence": [
+        "gh run list --workflow 394107189 --event workflow_dispatch --limit 20 --json conclusion,createdAt,event",
+        "gh api repos/gitsynonyms/gitsynonyms/actions/workflows/394107189"
+      ],
+      "note": "按需处理指定视频并镜像产物；巡检关注下载、最小 host 成功数与报告。"
     },
     {
       "id": "gh:gitsynonyms/download-youtube-subtitles",

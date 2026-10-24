@@ -135,6 +135,75 @@ def test_build_tracks_merges_the_available_formats_for_both_languages(tmp_path):
     assert tracks["en-orig"]["cues"][0]["word_timings"][1]["start_ns"] == 1_500_000_000
 
 
+def test_clip_track_to_duration_trims_cues_and_word_timings_without_mutating_source():
+    source = {
+        "language": "en-orig",
+        "cue_count": 2,
+        "cues": [
+            {
+                "start_ns": 3_500_000_000,
+                "end_ns": 5_000_000_000,
+                "text": "Hello world",
+                "word_timings": [
+                    {
+                        "start_ns": 3_500_000_000,
+                        "end_ns": 4_000_000_000,
+                        "text": "Hello",
+                    },
+                    {
+                        "start_ns": 4_000_000_000,
+                        "end_ns": 5_000_000_000,
+                        "text": "world",
+                    },
+                ],
+            },
+            {
+                "start_ns": 5_000_000_000,
+                "end_ns": 6_000_000_000,
+                "text": "After the video",
+                "word_timings": [],
+            },
+        ],
+    }
+
+    clipped = subtitle_timing.clip_track_to_duration(source, 4.0)
+
+    assert source["cues"][0]["end_ns"] == 5_000_000_000
+    assert source["cues"][0]["word_timings"][1]["end_ns"] == 5_000_000_000
+    assert clipped["cues"] == [
+        {
+            "start_ns": 3_500_000_000,
+            "end_ns": 4_000_000_000,
+            "text": "Hello world",
+            "word_timings": [
+                {
+                    "start_ns": 3_500_000_000,
+                    "end_ns": 4_000_000_000,
+                    "text": "Hello",
+                }
+            ],
+        }
+    ]
+    assert clipped["cue_count"] == 1
+    assert clipped["source_cue_count"] == 2
+    assert clipped["clipped_cue_count"] == 2
+    assert clipped["discarded_cue_count"] == 1
+    assert clipped["source_last_cue_end_ns"] == 6_000_000_000
+    assert clipped["video_duration_ns"] == 4_000_000_000
+
+
+def test_clip_track_to_duration_rejects_invalid_duration():
+    track = {"language": "en-orig", "cues": []}
+
+    for duration in (0, -1, float("inf"), float("nan")):
+        try:
+            subtitle_timing.clip_track_to_duration(track, duration)
+        except ValueError as error:
+            assert "finite, positive" in str(error)
+        else:
+            raise AssertionError(f"invalid video duration {duration!r} must fail")
+
+
 def test_missing_language_is_reported_with_its_code(tmp_path):
     folder = make_caption_dir(tmp_path)
 

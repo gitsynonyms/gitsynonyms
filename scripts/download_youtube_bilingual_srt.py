@@ -1824,9 +1824,7 @@ def validate_srt_vtt_pair(srt_content: str, vtt_content: str) -> int:
     return len(srt_cues)
 
 
-def validate_source_tracks(
-    tracks: Sequence[tuple[Path, Sequence[dict]]], *, video_duration: float
-) -> None:
+def validate_source_tracks(tracks: Sequence[tuple[Path, Sequence[dict]]]) -> None:
     for path, parsed_cues in tracks:
         if not path.is_file():
             raise ValueError(f"Downloaded subtitle source is missing: {path}")
@@ -1841,8 +1839,36 @@ def validate_source_tracks(
                 or cue["text"] != parsed["text"]
             ):
                 raise ValueError(f"Subtitle source cue {index} changed after download: {path}")
-            if cue["start"] >= video_duration + 0.5 or cue["end"] > video_duration + 0.5:
-                raise ValueError(f"Subtitle source cue {index} exceeds the video duration: {path}")
+
+
+def clip_cues_to_video_duration(
+    cues: Sequence[dict], video_duration: float
+) -> list[dict]:
+    if not math.isfinite(video_duration) or video_duration <= 0:
+        raise ValueError("Video duration must be a finite, positive number.")
+    if not math.isfinite(video_duration) or video_duration <= 0:
+        raise ValueError("Video duration must be a finite, positive number.")
+    clipped = []
+    for cue in cues:
+        start = max(0.0, float(cue["start"]))
+        end = min(float(cue["end"]), video_duration)
+        if start >= video_duration or end <= start:
+            continue
+        clipped_cue = {**cue, "start": start, "end": end}
+        word_timings = []
+        for timing in cue.get("word_timings", []):
+            word_start = max(start, float(timing["start"]))
+            word_end = min(end, float(timing["end"]))
+            if word_end > word_start:
+                word_timings.append(
+                    {**timing, "start": word_start, "end": word_end}
+                )
+        if word_timings:
+            clipped_cue["word_timings"] = word_timings
+        else:
+            clipped_cue.pop("word_timings", None)
+        clipped.append(clipped_cue)
+    return clipped
 
 
 def write_source_manifest(
@@ -1880,6 +1906,10 @@ def write_source_manifest(
             "source_vtt_srt": "milliseconds",
             "ass": "centiseconds (10 milliseconds), as required by the ASS timestamp format",
         },
+        "duration_policy": (
+            "Downloaded subtitle sources remain unchanged; generated cues are clipped "
+            "to the video duration."
+        ),
     }
     serialized = json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
     path.write_text(serialized, encoding="utf-8", newline="")
@@ -2584,9 +2614,10 @@ def main(argv: list[str] | None = None) -> int:
         )
 
         validate_source_tracks(
-            ((first_source, first), (second_source, second)),
-            video_duration=video_duration,
+            ((first_source, first), (second_source, second))
         )
+        first_output = clip_cues_to_video_duration(first, video_duration)
+        second_output = clip_cues_to_video_duration(second, video_duration)
         print("Step 4/5: Merging the unchanged downloaded tracks...", flush=True)
         combined_kind = f"{first_kind}+{second_kind}"
         output_stem = f"{combined_kind}_Bilingual_{first_code}-{second_code}"
@@ -2599,7 +2630,7 @@ def main(argv: list[str] | None = None) -> int:
                 (second_code, second_kind, second_source, second),
             ),
         )
-        merged_srt = align_and_merge(first, second)
+        merged_srt = align_and_merge(first_output, second_output)
         output = folder / f"{output_stem}.srt"
         write_srt(output, merged_srt)
         vtt_output = folder / f"{output_stem}.vtt"
@@ -2608,8 +2639,8 @@ def main(argv: list[str] | None = None) -> int:
         write_ass(
             ass_output,
             build_ass(
-                first,
-                second,
+                first_output,
+                second_output,
                 first_font=args.chinese_font or preset["first_font"],
                 second_font=args.english_font or preset["second_font"],
                 second_font_size=args.english_font_size or preset["second_font_size"],

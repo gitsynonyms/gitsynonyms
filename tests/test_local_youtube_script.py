@@ -1,3 +1,4 @@
+import hashlib
 import importlib.util
 import json
 import re
@@ -78,6 +79,44 @@ def test_generated_srt_and_vtt_keep_millisecond_timings_in_sync():
         assert "do not match to the millisecond" in str(error)
     else:
         raise AssertionError("Expected a one-millisecond timing mismatch to fail")
+
+
+def test_clip_cues_to_video_duration_preserves_source_and_trims_output():
+    source = [
+        {
+            "start": 3.5,
+            "end": 5.0,
+            "text": "Hello world",
+            "word_timings": [
+                {"start": 3.5, "end": 4.0, "text": "Hello"},
+                {"start": 4.0, "end": 5.0, "text": "world"},
+            ],
+        },
+        {"start": 5.0, "end": 6.0, "text": "After the video"},
+    ]
+
+    clipped = youtube_srt.clip_cues_to_video_duration(source, 4.0)
+
+    assert source[0]["end"] == 5.0
+    assert source[0]["word_timings"][1]["end"] == 5.0
+    assert clipped == [
+        {
+            "start": 3.5,
+            "end": 4.0,
+            "text": "Hello world",
+            "word_timings": [{"start": 3.5, "end": 4.0, "text": "Hello"}],
+        }
+    ]
+
+
+def test_clip_cues_to_video_duration_rejects_invalid_duration():
+    for duration in (0, -1, float("inf"), float("nan")):
+        try:
+            youtube_srt.clip_cues_to_video_duration([], duration)
+        except ValueError as error:
+            assert "finite, positive" in str(error)
+        else:
+            raise AssertionError(f"invalid video duration {duration!r} must fail")
 
 
 def test_ass_validation_enforces_centisecond_timing_and_video_duration():
@@ -1720,7 +1759,8 @@ def test_main_preserves_raw_tracks_and_merges_original_caption_content(monkeypat
             .replace("%(ext)s", "vtt")
         )
         text = "<i>Hello &amp; welcome</i>" if language == "en-orig" else "<b>你好</b>"
-        source_content = f"WEBVTT\n\n00:00:01.000 --> 00:00:02.000\n{text}\n"
+        cue_end = "00:00:02.500" if language == "en-orig" else "00:00:02.000"
+        source_content = f"WEBVTT\n\n00:00:01.000 --> {cue_end}\n{text}\n"
         subtitle_path.write_text(source_content, encoding="utf-8")
         original_bytes[language] = subtitle_path.read_bytes()
         return subprocess.CompletedProcess([], 0, "", "")
@@ -1768,12 +1808,16 @@ def test_main_preserves_raw_tracks_and_merges_original_caption_content(monkeypat
     raw_files = {path.name.split(".")[-2]: path for path in source_paths}
     assert raw_files["en-orig"].read_bytes() == original_bytes["en-orig"]
     assert raw_files["zh-Hans"].read_bytes() == original_bytes["zh-Hans"]
+    assert b"00:00:02.500" in raw_files["en-orig"].read_bytes()
     bilingual = bilingual_paths[0].read_text(encoding="utf-8-sig")
     assert "<b>你好</b>\n<i>Hello & welcome</i>" in bilingual
+    assert "00:00:01,000 --> 00:00:02,000" in bilingual
+    assert "00:00:02,500" not in bilingual
     assert "&amp;" not in bilingual
     assert "<i>" in bilingual
     bilingual_vtt = bilingual_vtt_paths[0].read_text(encoding="utf-8")
     assert bilingual_vtt.startswith("WEBVTT\n\n1\n00:00:01.000 --> 00:00:02.000")
+    assert "00:00:02.500" not in bilingual_vtt
     assert "<b>你好</b>\n<i>Hello & welcome</i>" in bilingual_vtt
     assert downloaded_languages == [
         ("en-orig", "0"),
@@ -1787,6 +1831,14 @@ def test_main_preserves_raw_tracks_and_merges_original_caption_content(monkeypat
     assert len(manifest["downloaded_subtitle_sources"]) == 2
     assert all(len(track["sha256"]) == 64 for track in manifest["downloaded_subtitle_sources"])
     assert all("url" not in track for track in manifest["downloaded_subtitle_sources"])
+    assert {
+        track["language"]: track["sha256"]
+        for track in manifest["downloaded_subtitle_sources"]
+    } == {
+        language: hashlib.sha256(source_bytes).hexdigest()
+        for language, source_bytes in original_bytes.items()
+    }
+    assert "generated cues are clipped to the video duration" in manifest["duration_policy"]
 
 
 def test_main_rejects_missing_video_duration_for_persistent_box(monkeypatch, capsys):

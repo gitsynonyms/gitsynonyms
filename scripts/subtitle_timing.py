@@ -15,6 +15,8 @@ weighted median, so one damaged or rounded track cannot shift the result.
 The internal timeline is **integer nanoseconds**. YouTube's source resolution
 is 1 ms, so the fused values are exact multiples of that resolution rather than
 invented precision; the nanosecond type keeps sums and medians lossless.
+The generated ASS and precision VTT are clipped at the video duration, while
+the original downloaded caption files remain byte-for-byte unchanged.
 
 ASS rendering has a hard limit of **centiseconds**: libass accepts exactly two
 fractional digits, and a timestamp such as ``0:00:01.234`` makes the whole
@@ -28,6 +30,7 @@ from __future__ import annotations
 
 import html
 import json
+import math
 import re
 import sys
 from datetime import datetime, timezone
@@ -352,6 +355,56 @@ def fuse_track(
         "cue_count": len(cues),
         "cues": cues,
         "conflicts": conflicts,
+    }
+
+
+def clip_track_to_duration(track: dict, duration_seconds: float) -> dict:
+    """Copy a fused track with all cue and word timings bounded to the video."""
+    if not math.isfinite(duration_seconds) or duration_seconds <= 0:
+        raise ValueError("Video duration must be a finite, positive number.")
+    duration_ns = to_ns(duration_seconds)
+    source_cues = track["cues"]
+    clipped_cues = []
+    clipped_count = 0
+    discarded_count = 0
+    source_last_end_ns = max((cue["end_ns"] for cue in source_cues), default=0)
+    for cue in source_cues:
+        start_ns = max(0, int(cue["start_ns"]))
+        end_ns = min(duration_ns, int(cue["end_ns"]))
+        changed = start_ns != cue["start_ns"] or end_ns != cue["end_ns"]
+        if changed:
+            clipped_count += 1
+        if start_ns >= duration_ns or end_ns <= start_ns:
+            discarded_count += 1
+            continue
+        clipped_cue = {**cue, "start_ns": start_ns, "end_ns": end_ns}
+        clipped_words = []
+        for word in cue.get("word_timings") or []:
+            word_start_ns = max(start_ns, int(word["start_ns"]))
+            word_end_ns = min(end_ns, int(word["end_ns"]))
+            if word_end_ns > word_start_ns:
+                clipped_words.append(
+                    {
+                        **word,
+                        "start_ns": word_start_ns,
+                        "end_ns": word_end_ns,
+                    }
+                )
+        clipped_cue["word_timings"] = clipped_words
+        clipped_cues.append(clipped_cue)
+    if not clipped_cues:
+        raise ValueError(
+            f"No {track.get('language', 'subtitle')} cues fall within the video duration."
+        )
+    return {
+        **track,
+        "cue_count": len(clipped_cues),
+        "source_cue_count": len(source_cues),
+        "clipped_cue_count": clipped_count,
+        "discarded_cue_count": discarded_count,
+        "source_last_cue_end_ns": source_last_end_ns,
+        "video_duration_ns": duration_ns,
+        "cues": clipped_cues,
     }
 
 

@@ -1558,13 +1558,21 @@ def prepare_captions(
     ffmpeg: str,
     report: dict,
 ) -> tuple[Selection, list[Path]]:
-    """Fuse the seven formats into a precise ASS and its nanosecond sidecar."""
+    """Fuse caption formats, clip derived tracks, and write ASS and sidecars."""
     if selection.caption_dir is None or selection.ass_output is None or selection.timing_report is None:
         raise ValueError("Caption-directory mode requires an ASS output and a timing report path.")
     languages = selection.languages
     if len(set(languages)) != 2:
         raise ValueError("The two caption languages must be different.")
-    tracks = subtitle_timing.build_tracks(selection.caption_dir, selection.video_id, languages)
+    source_tracks = subtitle_timing.build_tracks(
+        selection.caption_dir, selection.video_id, languages
+    )
+    tracks = {
+        language: subtitle_timing.clip_track_to_duration(
+            track, video_info["duration_seconds"]
+        )
+        for language, track in source_tracks.items()
+    }
     box = choose_caption_box(selection.video, video_info, options, ffmpeg)
     content, stats = subtitle_timing.build_precise_ass(
         tracks[languages[0]],
@@ -1604,6 +1612,9 @@ def prepare_captions(
                 "formats_used": track["formats_used"],
                 "primary_format": track["primary_format"],
                 "cue_count": track["cue_count"],
+                "source_cue_count": track["source_cue_count"],
+                "clipped_cue_count": track["clipped_cue_count"],
+                "discarded_cue_count": track["discarded_cue_count"],
                 "conflicts": len(track["conflicts"]),
                 "source_files": track["source_files"],
             }
