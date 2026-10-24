@@ -45,6 +45,13 @@
   量化方案与实现边界见
   [`subtitle-office-research.md`](subtitle-office-research.md)。
 
+## 全流程工作分支
+
+跨段端到端问题（monitor → download → burn → publish）统一在 `全流程` 分支复现、
+修复与验证；该分支的使用制度、失败阶段判定、交接件验收与分支操作约定见
+[`full-pipeline.md`](full-pipeline.md)。它是工作分支制度，不新增部门，也不改变
+巡检、资源或发布授权。
+
 ## 规章与实现状态
 
 本目录中的组织职责规定与代码实现状态是两类事实，不代表其中列出的每项制度都已
