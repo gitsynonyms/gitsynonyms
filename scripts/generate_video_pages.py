@@ -18,10 +18,33 @@ OUT = ROOT / "output"
 SITE = ROOT / "site"
 VIDEO_PAGES = SITE / "videos"
 CAPTION_DIR = SITE / "captions"
+MEDIA_DIR = SITE / "media"
 VIDEO_PAGES.mkdir(parents=True, exist_ok=True)
 CAPTION_DIR.mkdir(parents=True, exist_ok=True)
 
 FORMATS = ("vtt", "srt", "ttml", "srv3", "srv2", "srv1", "json3")
+POSTER_SUFFIXES = (".jpg", ".jpeg", ".png", ".webp")
+
+
+def poster_name(video_id: str) -> str | None:
+    """Return the poster file name inside site/media for one video, if any.
+
+    Every video keeps its own poster so a detail page never advertises another
+    video's frame while the player is still loading.
+    """
+    for suffix in POSTER_SUFFIXES:
+        candidate = MEDIA_DIR / f"{video_id}-poster{suffix}"
+        if candidate.is_file():
+            return candidate.name
+    return None
+
+
+def poster_attribute(video_id: str, prefix: str) -> str:
+    """Return the HTML poster attribute for a <video> tag, or an empty string."""
+    name = poster_name(video_id)
+    if not name:
+        return ""
+    return f' poster="{prefix}{html.escape(name)}"'
 
 
 def parse_info(folder: Path) -> dict | None:
@@ -169,7 +192,7 @@ def detail_page(video: dict, previous_video: dict | None, next_video: dict | Non
         '      <section class="panel video-panel" aria-labelledby="video-title">',
         f'        <h2 id="video-title">{title}</h2>',
         '        <div class="video-frame">',
-        '          <video controls preload="metadata" playsinline poster="../media/roundtable-2026-10-21-poster.jpg">',
+        f'          <video controls preload="metadata" playsinline{poster_attribute(video_id, "../media/")}>',
         f'            <source src="{release}" type="video/mp4">',
         '            Your browser cannot play this MP4 preview. Use the download links below.',
         '          </video>',
@@ -341,7 +364,7 @@ def latest_page(videos: list[dict]) -> str:
         '      <section class="panel video-panel" aria-labelledby="video-title">',
         f'        <h2 id="video-title">{title}</h2>',
         '        <div class="video-frame">',
-        '          <video controls preload="metadata" playsinline poster="media/roundtable-2026-10-21-poster.jpg">',
+        f'          <video controls preload="metadata" playsinline{poster_attribute(video_id, "media/")}>',
         f'            <source src="{release}" type="video/mp4">',
         '            Your browser cannot play this MP4 preview. Use the download links below.',
         '          </video>',

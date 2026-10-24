@@ -331,6 +331,49 @@ def write_info_file(
     return info_path
 
 
+def write_site_poster(*, burned_mp4: Path, video_id: str, duration: object) -> Path | None:
+    """Extract one poster frame into site/media so the player shows this video.
+
+    The poster is cosmetic: a failure is logged as a warning instead of failing
+    the run, and the generated page simply omits the attribute.
+    """
+    executable = shutil.which("ffmpeg")
+    if not executable:
+        log("Warning: ffmpeg is not on PATH; the Pages poster is skipped.")
+        return None
+    seconds = 60.0
+    if isinstance(duration, (int, float)) and float(duration) > 0:
+        seconds = min(60.0, max(5.0, float(duration) / 10))
+    target = ROOT / "site" / "media" / f"{video_id}-poster.jpg"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    proc = run(
+        [
+            executable,
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-ss",
+            f"{seconds:.3f}",
+            "-i",
+            str(burned_mp4),
+            "-frames:v",
+            "1",
+            "-vf",
+            "scale=1280:-2",
+            "-q:v",
+            "3",
+            "-y",
+            str(target),
+        ]
+    )
+    if proc.returncode != 0 or not target.is_file() or target.stat().st_size == 0:
+        detail = (proc.stderr or proc.stdout or "").strip()[-200:]
+        log(f"Warning: could not render the Pages poster for {video_id}: {detail}")
+        return None
+    log(f"Pages poster: {target} ({target.stat().st_size} bytes).")
+    return target
+
+
 def run_page_gen() -> None:
     proc = run(["python", str(PAGE_GEN)], cwd=ROOT)
     if proc.returncode != 0:
@@ -682,6 +725,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             published_epoch_ns = int(moment.timestamp() * 1_000_000_000)
         except ValueError:
             published_epoch_ns = None
+
+    if burned_mp4 is not None and not args.no_pages:
+        write_site_poster(burned_mp4=burned_mp4, video_id=video_id, duration=duration)
 
     if not args.no_pages:
         try:

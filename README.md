@@ -92,7 +92,7 @@ To process one specific video end to end as a single new archive, run **Process 
 python scripts/process_video_pipeline.py --url https://www.youtube.com/watch?v=lnOiG5dI4hg
 ```
 
-The pipeline verifies the video ID against yt-dlp metadata, skips IDs already recorded in the ledger (use `--force` to redo one), downloads both caption tracks plus the source video, and then hands the caption folder to `scripts/video_processing.py`. Module 2 therefore owns the burn: it fuses the seven caption formats into the precise ASS, decides the caption box, renders one libass pass, atomically replaces the final MP4 and writes `BURN.json` / `TIMING.json`. The pipeline stops if any of those handoff artifacts is missing, then generates the Pages archive page, publishes the release asset and appends the ledger record. Media downloads prefer https/DASH renditions (`--video-format`) because HLS manifests are often unreachable through a proxy and yt-dlp would otherwise switch to an m3u8-only rendition. Burning needs CJK and Latin font families on the runner (`fonts-noto-cjk` plus `fonts-dejavu-core` on Debian/Ubuntu); without them libass reports missing glyphs for the Chinese line. `--style-preset` is still accepted for compatibility but is deprecated and ignored, because the ASS that gets burned now comes from module 2.
+The pipeline verifies the video ID against yt-dlp metadata, skips IDs already recorded in the ledger (use `--force` to redo one), downloads both caption tracks plus the source video, and then hands the caption folder to `scripts/video_processing.py`. Module 2 therefore owns the burn: it fuses the seven caption formats into the precise ASS, decides the caption box, renders one libass pass, atomically replaces the final MP4 and writes `BURN.json` / `TIMING.json`. The pipeline stops if any of those handoff artifacts is missing, then generates the Pages archive page, publishes the release asset and appends the ledger record. Media downloads prefer https/DASH renditions (`--video-format`) because HLS manifests are often unreachable through a proxy and yt-dlp would otherwise switch to an m3u8-only rendition. Burning needs CJK and Latin font families on the runner, so the workflow installs `fonts-noto-cjk` plus `fonts-dejavu-core`; without them libass reports missing glyphs for the Chinese line. `--style-preset` is still accepted for compatibility but is deprecated and ignored, because the ASS that gets burned now comes from module 2.
 
 The scheduled White House monitor runs without YouTube cookies. Its proxy pool now comes from the **full list² scan** (see [全量代理扫描](#全量代理扫描全量--测速--同步-main)): the scan enumerates the whole Chinese/English synonym matrix, expands every repository × conventional file path, probes every candidate and publishes the ten fastest verified proxies to `proxyindex/top10.json`. The monitor re-probes those published candidates against the exact video it is about to download, keeps the three fastest, and only falls back to the three legacy public lists when the scan has published nothing. A public candidate that fails during the actual request is skipped in favor of the next one; list fetching and probing are not repeated per yt-dlp request. Public proxy operators can observe the destination and timing of connections; never send cookies or credentials through these public proxies.
 
@@ -135,7 +135,29 @@ The settings page also provides instant cross-page synchronization, a subtitle p
 
 `https://gitsynonyms.github.io/gitsynonyms/latest.html` 展示最近一次刻录的成片：540p 预览直接在页面播放，1080p 硬字幕 MP4 作为 GitHub Release 资源（标签 `roundtable-2026-10-21`）提供下载，双语 ASS/SRT/VTT 跟随站点发布。Release 资源不适合作为页面内嵌播放源（GitHub 以附件形式返回），因此预览文件保持在 100 MB 以内并提交到 `site/media/`，符合 GitHub 单文件限制与 Pages 站点 1 GB 上限。
 
-### Module 2: processing an already-selected video
+### 成片封面（图片目录）与抽帧复核
+
+`site/media/` 是站点唯一的多媒体目录，命名按视频 ID 一户一档：
+
+- `<video_id>-poster.jpg`：该视频详情页与 `latest.html` 播放器封面（16:9、1280 宽、约 150 KB）。
+  页面生成器只在文件存在时才写 `poster=` 属性，所以不会再出现“所有视频共用一个封面”的情况。
+- `roundtable-2026-10-21-540p.mp4`：早期 540p 预览（≤100 MB，随站点发布）；1080p 成片仍托管在 GitHub Release。
+
+单视频端到端流程在刻录成功后会延迟 10%（5–60 s 之间）取一帧写入封面；也可以手动重做：
+
+```bash
+ffmpeg -ss 615 -i output/<folder>/Burned_Bilingual_<id>.mp4 \
+  -frames:v 1 -vf scale=1280:-2 -q:v 3 -y site/media/<id>-poster.jpg
+```
+
+`docs/images/` 存成片抽帧证据，不参与站点构建，只用于人工复核“字幕确实烧进画面”。当前归档
+`lnOiG5dI4hg` 的两帧（615 s、1100 s），中文金色在上、英文白色在下，画在干净片源上不画背景框：
+
+![lnOiG5dI4hg 615 s 抽帧：中英双语字幕烧入画面](docs/images/lnOiG5dI4hg-615s.jpg)
+
+![lnOiG5dI4hg 1100 s 抽帧：中英双语字幕烧入画面](docs/images/lnOiG5dI4hg-1100s.jpg)
+
+
 
 Module 2's formal five-unit organization and responsibility boundaries are
 archived in [`organization/module-2-video-processing.md`](organization/module-2-video-processing.md).
