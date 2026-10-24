@@ -1,6 +1,6 @@
 {
   "schema": "gitsynonyms.inspection.registry/1",
-  "updated_at": "2026-10-24T01:45:00Z",
+  "updated_at": "2026-10-24T02:05:00Z",
   "directive": "DIRECTIVE.md",
   "principle": "minimum-granularity",
   "cadence_policy": {
@@ -205,6 +205,27 @@
         "gh api repos/gitsynonyms/gitsynonyms/actions/workflows/infogap.yml"
       ],
       "note": "按需手动运行；巡检关注研究结果、质量门禁及 Pages 发布结论。"
+    },
+    {
+      "id": "gh:gitsynonyms/whitehouse-upload-detection",
+      "mechanism": "github-workflow",
+      "title": "White House New Video Upload Detection",
+      "target": {
+        "repo": "gitsynonyms/gitsynonyms",
+        "workflow": "Monitor White House Videos",
+        "workflow_id": "393550408",
+        "path": ".github/workflows/monitor-whitehouse.yml"
+      },
+      "trigger": "schedule",
+      "cadence": "5m",
+      "severity": "P1",
+      "owner": "巡检任务执行方案处",
+      "status": "active",
+      "evidence": [
+        "gh run list --workflow 393550408 --limit 20 --json conclusion,createdAt,event",
+        "python scripts/monitoring/acquisition.py collect --sources whitehouse-youtube --since 24h"
+      ],
+      "note": "每 5 分钟判定白宫视频频道是否有新上传；采集为空或未产出新视频即判定业务失败，不因工作流 conclusion 为 success 而放过。"
     }
   ],
   "gaps": [
