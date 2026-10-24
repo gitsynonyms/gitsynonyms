@@ -6,10 +6,10 @@ Glues the repository's existing departments into one linear pipeline:
     1. monitor   - fetch metadata via yt-dlp, verify the video ID, skip if already
                    recorded in the JSONL processing ledger.
     2. download  - run scripts/download_youtube_bilingual_srt.py to fetch the two
-                   subtitle tracks (zh-Hans + en-orig), the source video, and build
-                   the precise bilingual ASS.
-    3. burn      - the downloader burns the ASS into the MP4 (FFmpeg libx264) and
-                   writes BURN.json / TIMING.json.
+                   subtitle tracks (zh-Hans + en-orig) plus the source video.
+    3. burn      - hand the caption folder to scripts/video_processing.py, which
+                   builds the precise ASS, decides the caption box, burns it in
+                   with one libass pass and writes BURN.json / TIMING.json.
     4. publish   - generate Pages archive pages, upload the burned MP4 to a GitHub
                    Release, and append the record to the JSONL ledger.
 
@@ -30,6 +30,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -40,10 +41,17 @@ from typing import Sequence
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
 DOWNLOADER = SCRIPTS / "download_youtube_bilingual_srt.py"
+VIDEO_PROCESSING = SCRIPTS / "video_processing.py"
 PAGE_GEN = SCRIPTS / "generate_video_pages.py"
 
 VIDEO_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
 DEFAULT_LANGUAGES = "zh-Hans,en-orig"
+# Prefer progressive/DASH-over-https renditions: HLS manifests are frequently
+# unreachable when the download has to go through a proxy, and an https-only
+# selector keeps yt-dlp from silently switching to an m3u8-only rendition.
+DEFAULT_VIDEO_FORMAT = (
+    "bv*[protocol=https]+ba[protocol=https]/b[protocol=https]/bv*+ba/b"
+)
 
 
 def utc_now_iso() -> str:
@@ -61,21 +69,40 @@ def log(message: str) -> None:
     print(f"[{utc_now_iso()}] {message}", flush=True)
 
 
-def run(command: Sequence[str], *, cwd: Path | None = None) -> subprocess.CompletedProcess:
+def run(
+    command: Sequence[str],
+    *,
+    cwd: Path | None = None,
+    env: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess:
     log("$ " + " ".join(str(part) for part in command))
     return subprocess.run(
         [str(part) for part in command],
         cwd=str(cwd) if cwd else None,
+        env=env,
         text=True,
         capture_output=True,
     )
 
 
 def require_tool(name: str) -> None:
-    result = run(["command", "-v", name])
-    if result.returncode != 0 or not result.stdout.strip():
+    # ``command`` is a shell builtin, so it cannot be exec'd directly; resolve
+    # the executable the same way a shell would.
+    if shutil.which(name) is None:
         print(f"Error: required tool '{name}' is not on PATH.", file=sys.stderr)
         sys.exit(1)
+
+
+def export_step_output(key: str, value: str) -> None:
+    """Publish a step output for the GitHub Actions workflow when running there."""
+    path = os.environ.get("GITHUB_OUTPUT")
+    if not path:
+        return
+    try:
+        with open(path, "a", encoding="utf-8") as handle:
+            handle.write(f"{key}={value}\n")
+    except OSError as error:
+        log(f"Warning: could not write step output {key}: {error}")
 
 
 def video_id_from_url(url: str) -> str:
@@ -156,10 +183,8 @@ def run_downloader(
     video_id: str,
     output_dir: Path,
     languages: str,
-    style_preset: str,
-    burn_in: bool,
 ) -> Path:
-    """Run the bilingual subtitle downloader (+ optional burn-in).
+    """Run the bilingual subtitle downloader and keep the source video.
 
     Returns the archive folder created by the downloader.
     """
@@ -172,12 +197,10 @@ def run_downloader(
         str(output_dir),
         "--languages",
         languages,
-        "--style-preset",
-        style_preset,
         "--download-source-video",
+        "--video-format",
+        DEFAULT_VIDEO_FORMAT,
     ]
-    if burn_in:
-        cmd.append("--burn-in")
     proc = run(cmd, cwd=ROOT)
     if proc.returncode != 0:
         print(proc.stdout, end="")
@@ -200,6 +223,112 @@ def run_downloader(
     if not matches:
         raise RuntimeError(f"The downloader did not create an archive folder for {video_id}.")
     return matches[0]
+
+
+def burn_subtitles(
+    *,
+    folder: Path,
+    video_id: str,
+    languages: str,
+) -> Path:
+    """Burn the precise bilingual ASS into the source video via module 2.
+
+    ``video_processing.py`` owns the caption box decision, the single libass
+    pass, the atomic replacement and the BURN.json / TIMING.json handoff, so the
+    end-to-end flow must not render its own simplified burn.
+    """
+    sources = sorted(folder.glob(f"{video_id}.source.*"))
+    sources = [path for path in sources if path.is_file()]
+    if not sources:
+        raise RuntimeError(
+            f"The downloader did not keep a source video ({video_id}.source.*) in {folder}."
+        )
+    source_video = sources[0]
+    output_path = folder / f"Burned_Bilingual_{video_id}.mp4"
+    ass_path = folder / "bilingual_precise_zh-Hans-en-orig.ass"
+    timing_path = folder / "TIMING.json"
+    cmd = [
+        "python",
+        str(VIDEO_PROCESSING),
+        "--video",
+        str(source_video),
+        "--caption-dir",
+        str(folder),
+        "--video-id",
+        video_id,
+        "--languages",
+        languages,
+        "--caption-box",
+        "auto",
+        "--box-opacity",
+        "0.85",
+        "--output-dir",
+        str(folder),
+        "--output",
+        str(output_path),
+        "--ass-output",
+        str(ass_path),
+        "--timing-report",
+        str(timing_path),
+        "--ergonomics",
+        "warn",
+    ]
+    proc = run(cmd, cwd=ROOT)
+    if proc.returncode != 0:
+        print(proc.stdout, end="")
+        print(proc.stderr, end="", file=sys.stderr)
+        raise RuntimeError(
+            f"video_processing.py failed to burn {video_id} (exit {proc.returncode})."
+        )
+    print(proc.stdout, end="")
+    missing = [
+        str(path.name)
+        for path in (output_path, ass_path, timing_path, folder / "BURN.json")
+        if not path.is_file()
+    ]
+    if missing:
+        raise RuntimeError(
+            f"The burn for {video_id} did not deliver the handoff artifacts: "
+            + ", ".join(missing)
+        )
+    return output_path
+
+
+def write_info_file(
+    *,
+    folder: Path,
+    video_id: str,
+    video_title: str,
+    channel: str,
+    event_date: str,
+    duration: object,
+) -> Path:
+    """Write the archive INFO.txt that the Pages generator indexes.
+
+    ``generate_video_pages.py`` only publishes folders that carry this file, so
+    the end-to-end flow has to write it before the Pages step.
+    """
+    seconds = None
+    if isinstance(duration, (int, float)):
+        seconds = int(round(float(duration)))
+    if seconds is not None and seconds >= 0:
+        hours, remainder = divmod(seconds, 3600)
+        minutes, secs = divmod(remainder, 60)
+        duration_line = f"{hours:02d}:{minutes:02d}:{secs:02d} ({seconds} s)"
+    else:
+        duration_line = "unknown"
+    info_path = folder / "INFO.txt"
+    info_path.write_text(
+        f"Video: {video_title or video_id}\n"
+        f"Video ID: {video_id}\n"
+        f"Event date: {event_date}\n"
+        f"Source: https://www.youtube.com/watch?v={video_id}\n"
+        f"Uploader: {channel}\n"
+        f"Duration: {duration_line}\n",
+        encoding="utf-8",
+    )
+    log(f"Wrote archive metadata: {info_path}.")
+    return info_path
 
 
 def run_page_gen() -> None:
@@ -307,7 +436,7 @@ def append_ledger(
             "url": f"https://github.com/{repo}/releases/tag/{video_id}",
         },
     ]
-    if burned_mp4 and burned_mp4.exists():
+    if burned_mp4 and burned_mp4.is_file():
         artifacts.append(
             {
                 "type": "burned_mp4",
@@ -391,8 +520,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--style-preset",
         choices=("classic", "cinema"),
-        default="classic",
-        help="ASS style preset (default: classic).",
+        default=None,
+        help=(
+            "Deprecated and ignored: module 2 (scripts/video_processing.py) builds the "
+            "precise ASS, so the downloader-side style preset no longer reaches the burn."
+        ),
     )
     parser.add_argument(
         "--no-burn-in",
@@ -441,6 +573,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     state_file = Path(args.state_file)
+    export_step_output("video_id", video_id)
+    if args.style_preset:
+        log(
+            "Warning: --style-preset is deprecated and ignored; module 2 builds the "
+            "precise ASS used for the burn."
+        )
 
     # ------------------------------------------------------------------
     # Step 1/4: Monitor - fetch metadata and check ledger.
@@ -492,37 +630,49 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     # ------------------------------------------------------------------
-    # Step 2/4 + 3/4: Download + burn.
+    # Step 2/4: Download subtitles + source video.
     # ------------------------------------------------------------------
     try:
         folder = run_downloader(
             video_id=video_id,
             output_dir=output_dir,
             languages=args.languages,
-            style_preset=args.style_preset,
-            burn_in=not args.no_burn_in,
         )
     except RuntimeError as error:
         print(f"Error: {error}", file=sys.stderr)
         return 1
 
+    # ------------------------------------------------------------------
+    # Step 3/4: Burn the precise bilingual ASS via module 2.
+    # ------------------------------------------------------------------
     burned_mp4 = None
     if not args.no_burn_in:
-        candidates = sorted(folder.glob(f"Burned_Bilingual_{video_id}.mp4"))
-        if not candidates:
-            candidates = sorted(output_dir.rglob(f"Burned_Bilingual_{video_id}.mp4"))
-        if not candidates:
-            print(
-                f"Error: burn-in did not produce Burned_Bilingual_{video_id}.mp4 in {folder}.",
-                file=sys.stderr,
+        try:
+            burned_mp4 = burn_subtitles(
+                folder=folder,
+                video_id=video_id,
+                languages=args.languages,
             )
+        except RuntimeError as error:
+            print(f"Error: {error}", file=sys.stderr)
             return 1
-        burned_mp4 = candidates[0]
         log(f"Burned MP4: {burned_mp4} ({burned_mp4.stat().st_size} bytes).")
 
     # ------------------------------------------------------------------
     # Step 4/4: Publish.
     # ------------------------------------------------------------------
+    try:
+        write_info_file(
+            folder=folder,
+            video_id=video_id,
+            video_title=video_title,
+            channel=channel,
+            event_date=published_date or folder.name.split("_", 1)[0],
+            duration=duration,
+        )
+    except OSError as error:
+        print(f"Error: failed to write INFO.txt: {error}", file=sys.stderr)
+        return 1
     published_epoch_ns = None
     if published_at:
         try:

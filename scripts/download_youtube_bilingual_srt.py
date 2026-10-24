@@ -2194,7 +2194,12 @@ def load_track(
     return download_track(url, video_id, language, track_kind, directory, wait, formats)
 
 
-def download_video(url: str, video_id: str, directory: Path) -> Path:
+def download_video(
+    url: str,
+    video_id: str,
+    directory: Path,
+    video_format: str = "bv*+ba/b",
+) -> Path:
     print("  Downloading source video on the GitHub runner for subtitle burn-in...", flush=True)
     run_ytdlp(
         [
@@ -2204,7 +2209,7 @@ def download_video(url: str, video_id: str, directory: Path) -> Path:
             "--merge-output-format",
             "mp4",
             "-f",
-            "bv*+ba/b",
+            video_format,
             "-o",
             str(directory / f"{video_id}.source.%(ext)s"),
             url,
@@ -2503,6 +2508,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Download and keep the source video without burning subtitles into it.",
     )
     parser.add_argument(
+        "--video-format",
+        default="bv*+ba/b",
+        help=(
+            "yt-dlp -f selector for the source video (default: bv*+ba/b). Use an "
+            "https-only selector when HLS playback is unreachable, e.g. through a proxy."
+        ),
+    )
+    parser.add_argument(
         "--burn-in",
         action="store_true",
         help="Download and keep the source video, then create an MP4 with the ASS subtitles burned in.",
@@ -2609,7 +2622,7 @@ def main(argv: list[str] | None = None) -> int:
         folder = Path(args.output_dir) / f"{event_date}_{safe_name(title)}_{video_id}"
         folder.mkdir(parents=True, exist_ok=True)
         downloaded_source = (
-            download_video(args.url, video_id, folder)
+            download_video(args.url, video_id, folder, args.video_format)
             if args.download_source_video
             else None
         )
