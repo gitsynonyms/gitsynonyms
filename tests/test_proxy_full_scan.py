@@ -676,6 +676,83 @@ def test_stage_matrix_persists_discovered_repos_for_the_next_run(tmp_path):
     assert "a/b" in full_scan.known_repos(paths)
 
 
+def scan_args(index, stages, *extra):
+    return full_scan.build_parser().parse_args(
+        [
+            "scan",
+            "--index-dir",
+            str(index),
+            "--stages",
+            stages,
+            "--budget-seconds",
+            "5",
+            "--quiet",
+            *extra,
+        ]
+    )
+
+
+def test_scan_keeps_the_previous_top10_when_nothing_verifies(tmp_path, monkeypatch):
+    index = tmp_path / "index"
+    index.mkdir()
+    previous = {"top": [{"proxy": "http://203.0.113.9:80"}]}
+    (index / "top10.json").write_text(json.dumps(previous), encoding="utf-8")
+    pushes: list[str] = []
+    monkeypatch.setattr(
+        full_scan,
+        "stage_sync",
+        lambda paths, branch="main": (pushes.append(branch), {"status": "pushed"})[1],
+    )
+
+    payload = full_scan.scan(scan_args(index, "rank,sync", "--sync"))
+
+    assert pushes == []
+    assert payload["stages"]["sync"]["summary"]["status"] == "skipped"
+    assert json.loads((index / "top10.json").read_text(encoding="utf-8")) == previous
+
+
+def test_scan_publishes_when_the_rank_found_verified_proxies(tmp_path, monkeypatch):
+    index = tmp_path / "index"
+    index.mkdir()
+    (index / "top10.json").write_text(
+        json.dumps({"top": [{"proxy": "http://203.0.113.9:80"}]}), encoding="utf-8"
+    )
+    pushes: list[str] = []
+    monkeypatch.setattr(
+        full_scan,
+        "stage_rank",
+        lambda paths, **kwargs: {
+            "top": [
+                {
+                    "rank": 1,
+                    "proxy": "http://203.0.113.10:80",
+                    "latency_ms": 10.0,
+                    "http_status": 204,
+                    "source": "https://one.test/list.txt",
+                }
+            ],
+            "pool": 1,
+            "probed_ok": 1,
+            "candidates": 1,
+            "verified": 1,
+        },
+    )
+    monkeypatch.setattr(
+        full_scan,
+        "stage_sync",
+        lambda paths, branch="main": (
+            pushes.append(branch),
+            {"status": "pushed", "commit": "abc123"},
+        )[1],
+    )
+
+    payload = full_scan.scan(scan_args(index, "rank,sync", "--sync"))
+
+    assert pushes == ["main"]
+    assert payload["stages"]["sync"]["summary"]["status"] == "pushed"
+    assert payload["top"][0]["proxy"] == "http://203.0.113.10:80"
+
+
 def test_stage_sync_commits_the_discovery_cursor_and_repo_list(tmp_path):
     paths = make_paths(tmp_path)
     paths.state.write_text("{}\n", encoding="utf-8")

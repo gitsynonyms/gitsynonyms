@@ -1621,7 +1621,12 @@ def scan(args) -> dict:
     write_json(paths.state, payload)
 
     if "sync" in stages and args.sync:
-        if not payload["top"] and (previous_top.get("top") or []):
+        emptied_by_rank = (
+            "rank" in stages
+            and not payload["top"]
+            and bool(previous_top.get("top"))
+        )
+        if emptied_by_rank:
             write_json(paths.top_json, previous_top)
             payload["stages"]["sync"] = {
                 "summary": {
