@@ -1,0 +1,394 @@
+{
+  "module": "module2-video-processing",
+  "version": "1.0",
+  "status": "burned",
+  "created_at": "2026-10-24T06:16:15Z",
+  "selection": {
+    "video_id": "lnOiG5dI4hg",
+    "title": "",
+    "event_date": "",
+    "manifest": null
+  },
+  "inputs": {
+    "video": {
+      "path": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.source.mp4",
+      "size_bytes": 332137887,
+      "sha256": "1744c1fb7492bf6cc0fc610339a3377a3963bf241e2335ddf320aa1e0a64d2c9",
+      "modified_at": "2026-10-24T06:00:53Z"
+    },
+    "subtitle": {
+      "path": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/bilingual_precise_zh-Hans-en-orig.ass",
+      "size_bytes": 156824,
+      "sha256": "02ba993401a1f8ae8ef2afba7107bf931a65cb04c11355e1c688e656ff4be48e",
+      "modified_at": "2026-10-24T06:16:19Z"
+    },
+    "captions": [
+      {
+        "path": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.en-orig.json3",
+        "size_bytes": 442763,
+        "sha256": "ba8826949426704d0dc5c6bb2f97a45827a6bb2b7e1d57631e49e419a5c80a0d",
+        "modified_at": "2026-10-24T06:01:28Z"
+      },
+      {
+        "path": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.en-orig.srt",
+        "size_bytes": 42857,
+        "sha256": "98204c7d1567b48fc51e32942c8a4b042e3c6d07d9daafe25cc8036660b79dd9",
+        "modified_at": "2026-10-24T06:01:18Z"
+      },
+      {
+        "path": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.en-orig.srv1",
+        "size_bytes": 48940,
+        "sha256": "b4504fbbc279272616b05164b2fe3e30b709a4c6ab65b3796b41317d80a52dea",
+        "modified_at": "2026-10-24T06:01:26Z"
+      },
+      {
+        "path": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.en-orig.srv2",
+        "size_bytes": 262979,
+        "sha256": "50ddd490757b2e78babb786793d67e58458f08b2c683c569b8819c3baadac726",
+        "modified_at": "2026-10-24T06:01:24Z"
+      },
+      {
+        "path": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.en-orig.srv3",
+        "size_bytes": 155866,
+        "sha256": "8bb6f912f56392b8a5ee128624993dcc1f025666363de29be1b6a9775fc5e229",
+        "modified_at": "2026-10-24T06:01:22Z"
+      },
+      {
+        "path": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.en-orig.ttml",
+        "size_bytes": 59330,
+        "sha256": "9f52c34dad398b3aa5e7844ef948ff6f8eb78806c1d1e1d90659bc1e03696247",
+        "modified_at": "2026-10-24T06:01:20Z"
+      },
+      {
+        "path": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.en-orig.vtt",
+        "size_bytes": 208174,
+        "sha256": "ef203906def06ba967eaeb6234c587a3b6997a0ebbe538bbdf5c0b72c1a63b32",
+        "modified_at": "2026-10-24T06:01:16Z"
+      },
+      {
+        "path": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.zh-Hans.json3",
+        "size_bytes": 497333,
+        "sha256": "1cfc84049acaa49196d245e039925a4c4aa74a2a2dbbcf4201c52b0b0620e382",
+        "modified_at": "2026-10-24T06:16:15Z"
+      },
+      {
+        "path": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.zh-Hans.srt",
+        "size_bytes": 42895,
+        "sha256": "8b2bff553620f544cee39a723ff4ac5699f5e6ce982007ff5a2a7d9e228e5b2c",
+        "modified_at": "2026-10-24T06:05:43Z"
+      },
+      {
+        "path": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.zh-Hans.srv1",
+        "size_bytes": 45213,
+        "sha256": "28fe387147d34c7b0fd88261a5d68081e62f9b68ab20ad608b18d1bd011f0c9c",
+        "modified_at": "2026-10-24T06:14:08Z"
+      },
+      {
+        "path": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.zh-Hans.srv2",
+        "size_bytes": 298568,
+        "sha256": "38c883cf72c9c8e3462813e6ad347bbd606ffddcc0ca65c373c099dfaf9e0400",
+        "modified_at": "2026-10-24T06:12:03Z"
+      },
+      {
+        "path": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.zh-Hans.srv3",
+        "size_bytes": 171292,
+        "sha256": "835cad8b3c4c85f74cccdc8a95444ca6270622686aa292fcca647f947daf96c2",
+        "modified_at": "2026-10-24T06:09:57Z"
+      },
+      {
+        "path": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.zh-Hans.ttml",
+        "size_bytes": 57600,
+        "sha256": "b14a4621d81d10c13ce7a64b6be34301058f0344be96520a52d1e9579c60213d",
+        "modified_at": "2026-10-24T06:07:50Z"
+      },
+      {
+        "path": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.zh-Hans.vtt",
+        "size_bytes": 221567,
+        "sha256": "c5a00359e20145cba0ce711ca4b4add250c4eb7f7105ac7279170ff79cb947c1",
+        "modified_at": "2026-10-24T06:03:37Z"
+      }
+    ]
+  },
+  "video": {
+    "duration_seconds": 1336.454,
+    "size_bytes": 332137887,
+    "container": "mov,mp4,m4a,3gp,3g2,mj2",
+    "video": {
+      "codec": "av1",
+      "width": 1920,
+      "height": 1080,
+      "frame_rate": "30000/1001",
+      "pixel_format": "yuv420p"
+    },
+    "audio": {
+      "codec": "opus",
+      "channels": 2,
+      "sample_rate": 48000
+    }
+  },
+  "subtitles": {
+    "path": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/bilingual_precise_zh-Hans-en-orig.ass",
+    "format": "ass",
+    "size_bytes": 156824,
+    "sha256": "02ba993401a1f8ae8ef2afba7107bf931a65cb04c11355e1c688e656ff4be48e",
+    "cues": 609,
+    "drawing_cues": 0,
+    "first_cue_seconds": 3.36,
+    "last_cue_seconds": 1330.78,
+    "caption_coverage_seconds": 1258.99,
+    "caption_coverage_percent": 94.2,
+    "overrun_seconds": 0.0,
+    "fonts": [
+      "Microsoft YaHei",
+      "Arial"
+    ]
+  },
+  "fonts": {
+    "checked": false,
+    "reason": "fc-match is not installed",
+    "fonts": []
+  },
+  "captions": {
+    "mode": "fused",
+    "languages": [
+      "zh-Hans",
+      "en-orig"
+    ],
+    "box": {
+      "mode": "none",
+      "detected": false,
+      "source": "auto",
+      "metrics": {
+        "detected": false,
+        "score": 0.0,
+        "samples": 119,
+        "caption": {
+          "static_edge_ratio": 0.0,
+          "edge_density": 0.0,
+          "static_ratio": 0.0
+        },
+        "control": {
+          "static_edge_ratio": 0.0,
+          "edge_density": 0.0,
+          "static_ratio": 0.0
+        },
+        "thresholds": {
+          "static_std": 18,
+          "edge_gradient": 44,
+          "min_static_edge_ratio": 0.012,
+          "control_factor": 1.5
+        },
+        "sampled_region": {
+          "width": 448,
+          "height": 70,
+          "caption_rows": [
+            35,
+            70
+          ],
+          "control_rows": [
+            0,
+            35
+          ]
+        },
+        "caption_area": {
+          "left": 66,
+          "top": 882,
+          "width": 1786,
+          "height": 140
+        }
+      }
+    },
+    "ass": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/bilingual_precise_zh-Hans-en-orig.ass",
+    "timing_report": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/TIMING.json",
+    "precision_vtt": {
+      "zh-Hans": {
+        "path": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/bilingual_precise_zh-Hans-en-orig.zh-Hans.precision.vtt",
+        "language": "zh-Hans",
+        "format": "WebVTT",
+        "resolution": "1 ms",
+        "cues": 589,
+        "size_bytes": 40018,
+        "sha256": "f6e5cfb8703581c51e20cda5d964a753733029a6541536f08e0dc8131cf7a373",
+        "modified_at": "2026-10-24T06:16:19Z"
+      },
+      "en-orig": {
+        "path": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/bilingual_precise_zh-Hans-en-orig.en-orig.precision.vtt",
+        "language": "en-orig",
+        "format": "WebVTT",
+        "resolution": "1 ms",
+        "cues": 607,
+        "size_bytes": 40544,
+        "sha256": "3030e1764f415578b880f852c4e919f25ba2a6325b60e1195e414f11518e4aba",
+        "modified_at": "2026-10-24T06:16:19Z"
+      }
+    },
+    "statistics": {
+      "timebase": "nanosecond",
+      "ass_resolution": "centisecond",
+      "ass_max_quantization_error_ms": 5.0,
+      "measured_max_quantization_error_ms": 5.0,
+      "measured_mean_quantization_error_ms": 1.09901,
+      "timestamps": 12707,
+      "word_timings": 10315,
+      "source_resolution": [
+        "1 ms",
+        "10 ms"
+      ]
+    },
+    "tracks": {
+      "zh-Hans": {
+        "formats_used": [
+          "json3",
+          "srv3",
+          "srv2",
+          "srv1",
+          "vtt",
+          "ttml",
+          "srt"
+        ],
+        "primary_format": "json3",
+        "cue_count": 589,
+        "source_cue_count": 589,
+        "clipped_cue_count": 0,
+        "discarded_cue_count": 0,
+        "conflicts": 8,
+        "source_files": {
+          "json3": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.zh-Hans.json3",
+          "srv3": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.zh-Hans.srv3",
+          "srv2": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.zh-Hans.srv2",
+          "srv1": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.zh-Hans.srv1",
+          "vtt": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.zh-Hans.vtt",
+          "ttml": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.zh-Hans.ttml",
+          "srt": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.zh-Hans.srt"
+        }
+      },
+      "en-orig": {
+        "formats_used": [
+          "json3",
+          "srv3",
+          "srv2",
+          "srv1",
+          "vtt",
+          "ttml",
+          "srt"
+        ],
+        "primary_format": "json3",
+        "cue_count": 607,
+        "source_cue_count": 607,
+        "clipped_cue_count": 0,
+        "discarded_cue_count": 0,
+        "conflicts": 50,
+        "source_files": {
+          "json3": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.en-orig.json3",
+          "srv3": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.en-orig.srv3",
+          "srv2": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.en-orig.srv2",
+          "srv1": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.en-orig.srv1",
+          "vtt": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.en-orig.vtt",
+          "ttml": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.en-orig.ttml",
+          "srt": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.en.en-orig.srt"
+        }
+      }
+    }
+  },
+  "timing": {
+    "timebase": "nanosecond",
+    "ass_resolution": "centisecond",
+    "ass_max_quantization_error_ms": 5.0,
+    "measured_max_quantization_error_ms": 5.0,
+    "measured_mean_quantization_error_ms": 1.09901,
+    "timestamps": 12707,
+    "word_timings": 10315,
+    "source_resolution": [
+      "1 ms",
+      "10 ms"
+    ]
+  },
+  "ergonomics": {
+    "report": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/ERGONOMICS.json",
+    "mode": "warn",
+    "fps": 29.97,
+    "children": false,
+    "summary": {
+      "cues": 609,
+      "max_cps": 126.92,
+      "p95_cps": 25.62,
+      "mean_cps": 12.29,
+      "violations": 443,
+      "errors": 118,
+      "warnings": 325,
+      "by_code": {
+        "reading_speed": 273,
+        "duration_short": 33,
+        "line_length": 129,
+        "gap_short": 8
+      }
+    },
+    "rules": {
+      "language": "en",
+      "max_cps": 20.0,
+      "max_chars_line": 42,
+      "max_lines": 2,
+      "min_duration": 0.833,
+      "max_duration": 7.0,
+      "min_gap": 0.067,
+      "children": false,
+      "fps": 29.97002997002997
+    }
+  },
+  "render": {
+    "missing_glyphs": 0
+  },
+  "burn": {
+    "tool": "ffmpeg version N-127957-g935f29eaae-20261023 Copyright (c) 2000-2026 the FFmpeg developers",
+    "encoder": "libx264",
+    "quality": 20,
+    "preset": "veryfast",
+    "audio": "aac",
+    "command": [
+      "/tmp/bin/ffmpeg",
+      "-hide_banner",
+      "-y",
+      "-i",
+      "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/lnOiG5dI4hg.source.mp4",
+      "-vf",
+      "subtitles=filename='/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/bilingual_precise_zh-Hans-en-orig.ass'",
+      "-c:v",
+      "libx264",
+      "-preset",
+      "veryfast",
+      "-crf",
+      "20",
+      "-pix_fmt",
+      "yuv420p",
+      "-c:a",
+      "aac",
+      "-b:a",
+      "192k",
+      "-movflags",
+      "+faststart",
+      "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/.Burned_Bilingual_lnOiG5dI4hg.part.mp4"
+    ],
+    "output": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/Burned_Bilingual_lnOiG5dI4hg.mp4"
+  },
+  "outputs": {
+    "video": {
+      "path": "/workspace/output/2026-10-23_President-Trump-Gaggles-with-Press-Upon-Departure-from-the-White-House-Oct-23-2026_lnOiG5dI4hg/Burned_Bilingual_lnOiG5dI4hg.mp4",
+      "size_bytes": 887651394,
+      "sha256": "a9d2d766a9726c6c7655b6ac2a9935b1b91f73d4364ce678b4948d6eed4c71a1",
+      "modified_at": "2026-10-24T06:24:09Z",
+      "duration_seconds": 1336.454,
+      "width": 1920,
+      "height": 1080,
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "rendered": true
+    }
+  },
+  "warnings": [
+    "Subtitle ergonomics: 118 errors and 325 warnings; see ERGONOMICS.json.",
+    "Using font provider fontconfig",
+    "fontselect: (Microsoft YaHei, 700, 0) -> /home/node/.fonts/NotoSansCJKsc-Bold.otf, 0, NotoSansCJKsc-Bold",
+    "fontselect: (Arial, 400, 0) -> /home/node/.fonts/DejaVuSans.ttf, 0, DejaVuSans"
+  ],
+  "finished_at": "2026-10-24T06:24:10Z"
+}
