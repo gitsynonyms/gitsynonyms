@@ -57,5 +57,28 @@ $python = Join-Path $env:USERPROFILE "anaconda3\python.exe"
 上游 `last30days-skill` 的可用来源和认证要求以其文档为准，本工作流不伪称
 启用了未配置的 API key 或本地评分模型。
 
-The archived template does not run independently; `.github/workflows/infogap.yml`
-is the active workflow.
+## 其他已归档模板
+
+| 模板 | 目标活动工作流 | 说明 |
+|---|---|---|
+| `process-single-video.yml` | `.github/workflows/process-single-video.yml` | 单视频端到端（monitor → download → burn → publish）；改动与合入步骤见 [`process-single-video.HANDOFF.md`](process-single-video.HANDOFF.md)。改动仅 3 处：安装 `fonts-noto-cjk`/`fonts-dejavu-core`、删除已废弃的 `style_preset` 输入及其 env/CLI 透传。 |
+
+## 模板漂移与安装前检查
+
+模板不是真相源：`.github/workflows/` 里的活动文件才是。既有先例 `infogap.yml` 已经与
+活动文件漂移（cron 注释、`pip install` 步骤写法、多余空行），说明“留档 + 事后盲 `cp`”
+会让模板悄悄过期、并回退别人对活动文件的改动。因此：
+
+```bash
+# 安装前先看差异：不带 --force 时安装器会拒绝覆盖并打印 diff
+python scripts/monitoring/install_workflow.py process-single-video
+# 差异确认无误后再安装
+python scripts/monitoring/install_workflow.py process-single-video --force
+```
+
+- `process-single-video.yml` 的模板切点是 `44c6452`（交接单第 8 节）。
+- 漂移守卫：`tests/test_workflow_templates.py::test_staged_template_only_differs_by_the_documented_changes`
+  断言活动文件与模板的差异恰为交接单记录的 4 个块；活动文件一有无关改动即失败。
+- 合入后两文件一致，该断言自动通过，此后模板随活动文件同步更新即可。
+
+
