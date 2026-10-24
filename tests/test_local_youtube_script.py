@@ -1704,8 +1704,8 @@ def test_download_source_video_without_legacy_burn_in(monkeypatch, tmp_path):
         assert "--dump-single-json" in arguments
         return subprocess.CompletedProcess([], 0, json.dumps(metadata), "")
 
-    def fake_download_video(url, video_id, directory):
-        video_downloads.append((url, video_id))
+    def fake_download_video(url, video_id, directory, video_format="bv*+ba/b"):
+        video_downloads.append((url, video_id, video_format))
         source = directory / f"{video_id}.source.mp4"
         source.write_bytes(b"video")
         return source
@@ -1735,7 +1735,7 @@ def test_download_source_video_without_legacy_burn_in(monkeypatch, tmp_path):
         ]
     ) == 0
 
-    assert video_downloads == [(url, "IySF_8OArvw")]
+    assert video_downloads == [(url, "IySF_8OArvw", "bv*+ba/b")]
     source = next(archive.rglob("IySF_8OArvw.source.mp4"))
     assert source.read_bytes() == b"video"
     assert not list(archive.rglob("Burned_Bilingual_IySF_8OArvw.mp4"))

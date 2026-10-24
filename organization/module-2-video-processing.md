@@ -59,6 +59,10 @@
 - White House 主 workflow 将下载的字幕原始格式交给 `video_processing.py`；七格式融合、
   纳秒内部时间轴、精确 ASS、`TIMING.json` 和自动字幕框判定由该流程生成。ASS/libass
   的最终刻录粒度仍为 10 毫秒。
+- 单视频端到端流程（`scripts/process_video_pipeline.py`，工作流
+  **Process Single Video (end-to-end)**）同样按此分工执行：下载器只负责取原始字幕与
+  源视频，刻录、字幕框判定、ASS/`TIMING.json`/`BURN.json` 一律由 `video_processing.py`
+  产出；缺任一交接件即判失败，不发布半成品，并补写 `INFO.txt` 供归档页索引。
 - `third_party_captions.py` 与 `speech_model_research.py` 是可选研究工具，不是刻录主
   链路的必要依赖；需要 API 凭据的厂商实测不可用代码存在性代替。
 - 独立模块本身已有实现和离线测试；是否接入具体的上游自动任务，应以对应 workflow
